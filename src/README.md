@@ -2,7 +2,7 @@
 
 Remove any remaining comments before publishing as these may be displayed on Grafana.com -->
 
-# Doctrino&#x27;s CDF Source
+# Doctrino's CDF Source
 
 <!-- To help maximize the impact of your README and improve usability for users, we propose the following loose structure:
 
