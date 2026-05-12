@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"time"
 
+	"github.com/cognite/doctrino-s-cdf-source/pkg/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
-	"github.com/cognite/doctrino-s-cdf-source/pkg/models"
 )
 
 // Make sure Datasource implements required interfaces. This is important to do
@@ -77,10 +78,20 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 	// https://grafana.com/developers/plugin-tools/introduction/data-frames
 	frame := data.NewFrame("response")
 
-	// add fields.
-	frame.Fields = append(frame.Fields,
-		data.NewField("time", nil, []time.Time{query.TimeRange.From, query.TimeRange.To}),
-		data.NewField("values", nil, []int64{10, 20}),
+	duration := query.TimeRange.To.Sub(query.TimeRange.From)
+	mid := query.TimeRange.From.Add(duration / 2)
+
+	s := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(s)
+
+	lowVal := 10.0
+	highVal := 20.0
+	midVal := lowVal + (r.Float64() * (highVal - lowVal))
+
+	frame.Fields = append(
+		frame.Fields,
+		data.NewField("time", nil, []time.Time{query.TimeRange.From, mid, query.TimeRange.To}),
+		data.NewField("values", nil, []float64{lowVal, midVal, highVal}),
 	)
 
 	// add the frames to the response.
