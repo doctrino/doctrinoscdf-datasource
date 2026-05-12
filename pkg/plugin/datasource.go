@@ -116,7 +116,7 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 
 	if config.Secrets.ApiKey == "" {
 		res.Status = backend.HealthStatusError
-		res.Message = "API key is missing"
+		res.Message = "You did not provide an API key"
 		return res, nil
 	}
 
