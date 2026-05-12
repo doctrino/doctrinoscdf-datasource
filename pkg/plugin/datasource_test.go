@@ -14,7 +14,10 @@ func TestQueryData(t *testing.T) {
 		context.Background(),
 		&backend.QueryDataRequest{
 			Queries: []backend.DataQuery{
-				{RefID: "A"},
+				{
+					RefID: "A",
+					JSON:  []byte(`{"refId":"A","queryText":"test","constant":7.5}`),
+				},
 			},
 		},
 	)
@@ -24,5 +27,9 @@ func TestQueryData(t *testing.T) {
 
 	if len(resp.Responses) != 1 {
 		t.Fatal("QueryData must return a response")
+	}
+
+	if resp.Responses["A"].Error != nil {
+		t.Fatalf("unexpected query error: %v", resp.Responses["A"].Error)
 	}
 }

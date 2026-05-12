@@ -60,7 +60,11 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 	return response, nil
 }
 
-type queryModel struct{}
+// queryModel mirrors the panel query JSON from MyQuery (src/types.ts); field names must match Grafana's camelCase keys.
+type queryModel struct {
+	QueryText string  `json:"queryText"`
+	Constant  float64 `json:"constant"`
+}
 
 func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 	var response backend.DataResponse
@@ -86,7 +90,10 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 
 	lowVal := 10.0
 	highVal := 20.0
-	midVal := lowVal + (r.Float64() * (highVal - lowVal))
+	midVal := qm.Constant
+	if midVal == 0 {
+		midVal = lowVal + (r.Float64() * (highVal - lowVal))
+	}
 
 	frame.Fields = append(
 		frame.Fields,
