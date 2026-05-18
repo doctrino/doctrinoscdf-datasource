@@ -24,7 +24,7 @@ export type LoginMode = 'manual' | 'guided'
 /**
  * These are options configured for each DataSource instance
  */
-export interface MyDataSourceOptions extends DataSourceJsonData {
+export interface CDFLoginOptions extends DataSourceJsonData {
   loginFlow: LoginFlow;
   mode:  LoginMode;
   cdfCluster?: string;
