@@ -21,6 +21,8 @@ export interface DataSourceResponse {
 
 export type LoginFlow = 'token' | 'clientCredentials' | 'deviceCode'
 export type LoginMode = 'manual' | 'guided'
+export type IdpProvider = 'entra' | 'auth0' | 'cdf' | 'other'
+
 /**
  * These are options configured for each DataSource instance
  */
