@@ -1,71 +1,102 @@
 import React, { ChangeEvent } from 'react';
-import { InlineField, Input, SecretInput } from '@grafana/ui';
+import { InlineField, Input, SecretInput, Combobox } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-import { CDFLoginOptions, MySecureJsonData } from '../types';
+import { CDFLoginOptions, LoginFlow, LoginMode, MySecureJsonData } from '../types';
 
 interface Props extends DataSourcePluginOptionsEditorProps<CDFLoginOptions, MySecureJsonData> {}
+
+const loginFlowOptions = [
+  { label: 'Token', value: 'token' as const },
+  { label: 'Client Credentials', value: 'clientCredentials' as const },
+  { label: 'Device Code', value: 'deviceCode' as const },
+];
+
+const loginModeOptions = [
+  { label: 'Guided', value: 'guided' as const },
+  { label: 'Manual', value: 'manual' as const },
+];
 
 export function ConfigEditor(props: Props) {
   const { onOptionsChange, options } = props;
   const { jsonData, secureJsonFields, secureJsonData } = options;
 
-  const onPathChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const onJsonDataChange = <K extends keyof CDFLoginOptions>(key: K, value: CDFLoginOptions[K]) => {
     onOptionsChange({
       ...options,
-      jsonData: {
-        ...jsonData,
-        path: event.target.value,
-      },
+      jsonData: { ...jsonData, [key]: value },
     });
   };
 
-  // Secure field (only sent to the backend)
-  const onAPIKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const onSecureChange = (key: keyof MySecureJsonData, value: string) => {
     onOptionsChange({
       ...options,
-      secureJsonData: {
-        apiKey: event.target.value,
-      },
+      secureJsonData: { ...secureJsonData, [key]: value },
     });
   };
 
-  const onResetAPIKey = () => {
+  const onResetSecret = (key: keyof MySecureJsonData) => {
     onOptionsChange({
       ...options,
-      secureJsonFields: {
-        ...options.secureJsonFields,
-        apiKey: false,
-      },
-      secureJsonData: {
-        ...options.secureJsonData,
-        apiKey: '',
-      },
+      secureJsonFields: { ...secureJsonFields, [key]: false },
+      secureJsonData: { ...secureJsonData, [key]: '' },
     });
   };
+
+  const { loginFlow, mode } = jsonData;
 
   return (
     <>
-      <InlineField label="Path" labelWidth={14} interactive tooltip={'Json field returned to frontend'}>
-        <Input
-          id="config-editor-path"
-          onChange={onPathChange}
-          value={jsonData.path}
-          placeholder="Enter the path, e.g. /api/v1"
+      {/* Step 1: Choose login flow */}
+      <InlineField label="Login Flow" labelWidth={14}>
+        <Combobox
+          options={loginFlowOptions}
+          value={loginFlow}
+          onChange={(opt) => onJsonDataChange('loginFlow', opt.value as LoginFlow)}
           width={40}
         />
       </InlineField>
-      <InlineField label="API Key" labelWidth={14} interactive tooltip={'Secure json field (backend only)'}>
-        <SecretInput
-          required
-          id="config-editor-api-key"
-          isConfigured={secureJsonFields.apiKey}
-          value={secureJsonData?.apiKey}
-          placeholder="Enter your API key"
-          width={40}
-          onReset={onResetAPIKey}
-          onChange={onAPIKeyChange}
-        />
-      </InlineField>
+
+      {/* Token flow: just ask for the token */}
+      {loginFlow === 'token' && (
+        <InlineField label="Token" labelWidth={14}>
+          <SecretInput
+            id="config-editor-token"
+            isConfigured={secureJsonFields.token ?? false}
+            value={secureJsonData?.token ?? ''}
+            placeholder="Enter your CDF token"
+            width={40}
+            onReset={() => onResetSecret('token')}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => onSecureChange('token', e.target.value)}
+          />
+        </InlineField>
+      )}
+
+      {/* Client Credentials / Device Code: ask for mode */}
+      {(loginFlow === 'clientCredentials' || loginFlow === 'deviceCode') && (
+        <>
+          <InlineField label="Mode" labelWidth={14}>
+            <Combobox
+              options={loginModeOptions}
+              value={mode}
+              onChange={(opt) => onJsonDataChange('mode', opt.value as LoginMode)}
+              width={40}
+            />
+          </InlineField>
+
+          {/* Guided mode: ask for idpProvider */}
+          {mode === 'guided' && (
+            <InlineField label="IDP Provider" labelWidth={14}>
+              <Input
+                id="config-editor-idp-provider"
+                value={jsonData.idpProvider ?? ''}
+                placeholder="e.g. microsoft, auth0"
+                width={40}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('idpProvider', e.target.value)}
+              />
+            </InlineField>
+          )}
+        </>
+      )}
     </>
   );
 }
