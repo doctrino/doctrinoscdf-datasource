@@ -107,16 +107,47 @@ export function ConfigEditor(props: Props) {
           width={40}
         />
       </InlineField>
-      {loginFlow !== 'token' && (
-        <InlineField label="Mode" labelWidth={14}>
-          <Combobox
-            options={loginModeOptions}
-            value={mode}
-            onChange={(opt) => onJsonDataChange('mode', opt.value as LoginMode)}
-            width={40}
-          />
-        </InlineField>
+      <InlineField label="Mode" labelWidth={14}>
+        <Combobox
+          options={loginModeOptions}
+          value={mode}
+          onChange={(opt) => onJsonDataChange('mode', opt.value as LoginMode)}
+          width={40}
+        />
+      </InlineField>
+      {/* Shared fields go here, rendered for all flows */}
+      <InlineField label="Project" labelWidth={14}>
+        <Input
+          id="config-editor-project"
+          value={jsonData.cdfProject ?? ''}
+          placeholder="Enter your CDF project"
+          width={40}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('cdfProject', e.target.value)}
+        />
+      </InlineField>
+      {mode === 'guided' && (
+          <InlineField label="CDF Cluster" labelWidth={14}>
+            <Input
+              id="config-editor-cluster"
+              value={jsonData.cdfCluster ?? ''}
+              placeholder="Enter your CDF cluster (e.g. us-west-2)"
+              width={40}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('cdfCluster', e.target.value)}
+            />
+          </InlineField>
       )}
+      {mode === "manual" && (
+          <InlineField label="CDF URL" labelWidth={14}>
+            <Input
+              id="config-editor-cdf-url"
+              value={jsonData.cdfUrl ?? ''}
+              placeholder="Enter your CDF URL (e.g. https://us-west-2.cognite.com)"
+              width={40}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('cdfUrl', e.target.value)}
+            />
+          </InlineField>
+      )
+      }
       {renderFlowFields()}
     </>
   );
