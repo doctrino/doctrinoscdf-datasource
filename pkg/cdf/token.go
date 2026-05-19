@@ -1,7 +1,12 @@
 package cdf
 
-type Token struct{}
+type token struct {
+}
 
-func (t *Token) Inspect() (*Token, error) {
+func (t *token) Inspect() (*token, error) {
 	return t, nil
+}
+
+type InspectResponse struct {
+	Subject string `json:"subject"`
 }

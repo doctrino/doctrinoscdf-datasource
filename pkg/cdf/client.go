@@ -13,11 +13,11 @@ type CogniteClient struct {
 	project    string
 	httpClient *http.Client
 	auth       TokenProvider
-	Token      *Token
+	Token      *token
 }
 
 func NewCogniteClient(baseURL, project string, auth TokenProvider) *CogniteClient {
-	token := &Token{}
+	token := &token{}
 
 	return &CogniteClient{
 		baseURL:    baseURL,

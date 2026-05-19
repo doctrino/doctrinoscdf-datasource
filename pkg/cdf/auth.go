@@ -47,7 +47,7 @@ func (p *ClientCredentialsProvider) Token(ctx context.Context) (string, error) {
 	return p.cached, nil
 }
 
-func NewClientCredentialsEntra(tenantID, clientId, clientSecret, cdfCluster string) *ClientCredentialsProvider {
+func newClientCredentialsEntra(tenantID, clientId, clientSecret, cdfCluster string) *ClientCredentialsProvider {
 	return &ClientCredentialsProvider{
 		tokenURL:     fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID),
 		clientID:     clientId,
@@ -56,7 +56,7 @@ func NewClientCredentialsEntra(tenantID, clientId, clientSecret, cdfCluster stri
 	}
 }
 
-func NewClientCredentialsCDF(clientID, clientSecret string) *ClientCredentialsProvider {
+func newClientCredentialsCDF(clientID, clientSecret string) *ClientCredentialsProvider {
 	return &ClientCredentialsProvider{
 		tokenURL:     "https://auth.cognite.com/oauth2/token",
 		clientID:     clientID,
