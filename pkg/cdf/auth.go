@@ -64,3 +64,7 @@ func NewClientCredentialsCDF(clientID, clientSecret string) *ClientCredentialsPr
 		scopes:       []string{},
 	}
 }
+
+func newTokenProviderFromSettings(settings *CDFSettings) (TokenProvider, error) {
+	return nil, fmt.Errorf("not implemented")
+}

@@ -13,7 +13,7 @@ type CogniteClient struct {
 	project    string
 	httpClient *http.Client
 	auth       TokenProvider
-	token      *Token
+	Token      *Token
 }
 
 func NewCogniteClient(baseURL, project string, auth TokenProvider) *CogniteClient {
@@ -24,8 +24,27 @@ func NewCogniteClient(baseURL, project string, auth TokenProvider) *CogniteClien
 		project:    project,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 		auth:       auth,
-		token:      token,
+		Token:      token,
 	}
+}
+
+func NewCogniteClientFromSettings(settings *CDFSettings) (*CogniteClient, error) {
+	// Validation
+	if settings.CdfProject == "" {
+		return nil, fmt.Errorf("cdfProject is required")
+	}
+	baseURL := settings.CdfUrl
+	if baseURL == "" {
+		if settings.CdfCluster == "" {
+			return nil, fmt.Errorf("either cdfUrl or cdfCluster is required")
+		}
+		baseURL = fmt.Sprintf("https://%s.cognitedata.com", settings.CdfCluster)
+	}
+	auth, err := newTokenProviderFromSettings(settings)
+	if err != nil {
+		return nil, err
+	}
+	return NewCogniteClient(baseURL, settings.CdfProject, auth), nil
 }
 
 func (c *CogniteClient) do(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {

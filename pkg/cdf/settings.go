@@ -1,4 +1,4 @@
-package models
+package cdf
 
 import (
 	"encoding/json"
@@ -31,7 +31,7 @@ type CDFSettings struct {
 	ClientSecret string `json:"-"`
 }
 
-func LoadPluginSettings(source backend.DataSourceInstanceSettings) (*CDFSettings, error) {
+func LoadCDFSettings(source backend.DataSourceInstanceSettings) (*CDFSettings, error) {
 	settings := CDFSettings{}
 	err := json.Unmarshal(source.JSONData, &settings)
 	if err != nil {

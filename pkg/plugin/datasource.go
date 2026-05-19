@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/cognite/doctrino-s-cdf-source/pkg/cdf"
-	"github.com/cognite/doctrino-s-cdf-source/pkg/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -27,18 +26,21 @@ var (
 
 // CDFDatasource creates a new datasource instance.
 func CDFDatasource(_ context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	config, err := models.LoadPluginSettings(settings)
+	config, err := cdf.LoadCDFSettings(settings)
 	if err != nil {
 		return nil, err
 	}
-	client := cdf.NewCogniteClient(config.BaseURL, config.Project, config.Secrets.ApiKey)
-	return &Datasource{cdfClient: client}, nil
+	client, err := cdf.NewCogniteClientFromSettings(config)
+	if err != nil {
+		return nil, err
+	}
+	return &Datasource{client}, nil
 }
 
 // Datasource is an example datasource which can respond to data queries, reports
 // its health and has streaming skills.
 type Datasource struct {
-	client cdf.CogniteClient
+	client *cdf.CogniteClient
 }
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
@@ -121,18 +123,21 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 // a datasource is working as expected.
 func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{}
-	config, err := models.LoadPluginSettings(*req.PluginContext.DataSourceInstanceSettings)
-
+	config, err := cdf.LoadCDFSettings(*req.PluginContext.DataSourceInstanceSettings)
 	if err != nil {
 		res.Status = backend.HealthStatusError
 		res.Message = "Unable to load settings"
 		return res, nil
 	}
-
-	if config.Secrets.ApiKey == "" {
+	client, err := cdf.NewCogniteClientFromSettings(config)
+	if err != nil {
 		res.Status = backend.HealthStatusError
-		res.Message = "You did not provide an API key"
-		return res, nil
+		res.Message = fmt.Sprintf("Unable to create Cognite client: %v", err)
+	}
+	// Todo: Do token inspect call
+	if client == nil {
+		res.Status = backend.HealthStatusError
+		res.Message = "Unable to create Cognite client"
 	}
 
 	return &backend.CheckHealthResult{
