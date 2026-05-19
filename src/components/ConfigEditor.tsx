@@ -69,6 +69,7 @@ export function ConfigEditor(props: Props) {
             placeholder="Enter your CDF project"
             width={40}
             onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('cdfProject', e.target.value)}
+            required={true}
           />
         </InlineField>
         {mode === 'guided' && (
@@ -79,6 +80,7 @@ export function ConfigEditor(props: Props) {
               placeholder="Enter your CDF cluster (e.g. us-west-2)"
               width={40}
               onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('cdfCluster', e.target.value)}
+              required={true}
             />
           </InlineField>
         )}
@@ -157,6 +159,7 @@ export function ConfigEditor(props: Props) {
               placeholder="Enter your Client ID"
               width={40}
               onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('clientId', e.target.value)}
+              required={true}
             />
           </InlineField>
         )}
@@ -169,6 +172,7 @@ export function ConfigEditor(props: Props) {
               width={40}
               onChange={(e: ChangeEvent<HTMLInputElement>) => onSecureChange('clientSecret', e.target.value)}
               onReset={() => onResetSecret('clientSecret')}
+              required={true}
               />
           </InlineField>
         )}
