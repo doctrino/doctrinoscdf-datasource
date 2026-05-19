@@ -1,5 +1,5 @@
 import React, { ChangeEvent } from 'react';
-import { InlineField, Input, SecretInput, Combobox } from '@grafana/ui';
+import { FieldSet, InlineField, Input, SecretInput, Combobox } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
 import { CDFLoginOptions, LoginFlow, LoginMode, IdpProvider, CDFSecureLoginOptions } from '../types';
 
@@ -52,15 +52,7 @@ export function ConfigEditor(props: Props) {
   const { loginFlow, mode, idpProvider } = jsonData;
   return (
     <>
-      <InlineField label="Login Flow" labelWidth={14}>
-        <Combobox
-          options={loginFlowOptions}
-          value={loginFlow}
-          onChange={(opt) => onJsonDataChange('loginFlow', opt.value as LoginFlow)}
-          width={40}
-        />
-      </InlineField>
-      <InlineField label="Mode" labelWidth={14}>
+      <InlineField label="Input mode" labelWidth={14}>
         <Combobox
           options={loginModeOptions}
           value={mode}
@@ -68,95 +60,122 @@ export function ConfigEditor(props: Props) {
           width={40}
         />
       </InlineField>
-      {/* Shared fields go here, rendered for all flows */}
-      <InlineField label="Project" labelWidth={14}>
-        <Input
-          id="config-editor-project"
-          value={jsonData.cdfProject ?? ''}
-          placeholder="Enter your CDF project"
-          width={40}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('cdfProject', e.target.value)}
-        />
-      </InlineField>
-      {mode === 'guided' && (
-        <InlineField label="CDF Cluster" labelWidth={14}>
+      <FieldSet label="Project">
+        {/* Shared fields go here, rendered for all flows */}
+        <InlineField label="Project" labelWidth={14}>
           <Input
-            id="config-editor-cluster"
-            value={jsonData.cdfCluster ?? ''}
-            placeholder="Enter your CDF cluster (e.g. us-west-2)"
+            id="config-editor-project"
+            value={jsonData.cdfProject ?? ''}
+            placeholder="Enter your CDF project"
             width={40}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('cdfCluster', e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('cdfProject', e.target.value)}
           />
         </InlineField>
-      )}
-      {mode === 'manual' && (
-        <InlineField label="CDF URL" labelWidth={14}>
-          <Input
-            id="config-editor-cdf-url"
-            value={jsonData.cdfUrl ?? ''}
-            placeholder="Enter your CDF URL (e.g. https://us-west-2.cognite.com)"
-            width={40}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('cdfUrl', e.target.value)}
-          />
-        </InlineField>
-      )}
-      {loginFlow === 'token' && (
-        <InlineField label="Token" labelWidth={14}>
-          <SecretInput
-            id="config-editor-token"
-            isConfigured={secureJsonFields.token ?? false}
-            value={secureJsonData?.token ?? ''}
-            placeholder="Enter your CDF token"
-            width={40}
-            onReset={() => onResetSecret('token')}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onSecureChange('token', e.target.value)}
-            required={true}
-          />
-        </InlineField>
-      )}
-      {mode === 'guided' && loginFlow !== 'token' && (
-        <InlineField label="IDP Provider" labelWidth={14}>
+        {mode === 'guided' && (
+          <InlineField label="CDF Cluster" labelWidth={14}>
+            <Input
+              id="config-editor-cluster"
+              value={jsonData.cdfCluster ?? ''}
+              placeholder="Enter your CDF cluster (e.g. us-west-2)"
+              width={40}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('cdfCluster', e.target.value)}
+            />
+          </InlineField>
+        )}
+        {mode === 'manual' && (
+          <InlineField label="CDF URL" labelWidth={14}>
+            <Input
+              id="config-editor-cdf-url"
+              value={jsonData.cdfUrl ?? ''}
+              placeholder="Enter your CDF URL (e.g. https://us-west-2.cognite.com)"
+              width={40}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('cdfUrl', e.target.value)}
+            />
+          </InlineField>
+        )}
+      </FieldSet>
+      <FieldSet label="Authentication">
+        <InlineField label="Login Flow" labelWidth={14}>
           <Combobox
-            options={loginProviderOptions}
-            value={idpProvider}
-            onChange={(opt) => onJsonDataChange('idpProvider', opt.value as IdpProvider)}
+            options={loginFlowOptions}
+            value={loginFlow}
+            onChange={(opt) => onJsonDataChange('loginFlow', opt.value as LoginFlow)}
             width={40}
           />
         </InlineField>
-      )}
-      {mode === 'guided' && idpProvider === 'entra' && loginFlow !== 'token' && (
-        <InlineField label="Tenant ID" labelWidth={14}>
-          <Input
-            id="config-editor-tenant"
-            value={jsonData.idpTenantID ?? ''}
-            placeholder="Enter your Entra tenant ID"
-            width={40}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('idpTenantID', e.target.value)}
-          />
-        </InlineField>
-      )}
-      {!(mode === 'guided' && ['entra', 'cdf'].includes(idpProvider ?? '')) && loginFlow !== 'token' && (
-        <InlineField label="IDP Token URL" labelWidth={14}>
-          <Input
-            id="config-editor-idp-token-url"
-            value={jsonData.idpTokenURL ?? ''}
-            placeholder="Enter your IDP token URL"
-            width={40}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('idpTokenURL', e.target.value)}
-          />
-        </InlineField>
-      )}
-      {loginFlow === 'clientCredentials' && (
-        <InlineField label="Client ID" labelWidth={14}>
-          <Input
-            id="config-editor-client-id"
-            value={jsonData.clientId ?? ''}
-            placeholder="Enter your Client ID"
-            width={40}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('clientId', e.target.value)}
-          />
-        </InlineField>
-      )}
+        {loginFlow === 'token' && (
+          <InlineField label="Token" labelWidth={14}>
+            <SecretInput
+              id="config-editor-token"
+              isConfigured={secureJsonFields.token ?? false}
+              value={secureJsonData?.token ?? ''}
+              placeholder="Enter your CDF token"
+              width={40}
+              onReset={() => onResetSecret('token')}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onSecureChange('token', e.target.value)}
+              required={true}
+            />
+          </InlineField>
+        )}
+        {mode === 'guided' && loginFlow !== 'token' && (
+          <InlineField label="IDP Provider" labelWidth={14}>
+            <Combobox
+              options={loginProviderOptions}
+              value={idpProvider}
+              onChange={(opt) => onJsonDataChange('idpProvider', opt.value as IdpProvider)}
+              width={40}
+            />
+          </InlineField>
+        )}
+        {mode === 'guided' && idpProvider === 'entra' && loginFlow !== 'token' && (
+          <InlineField label="Tenant ID" labelWidth={14}>
+            <Input
+              id="config-editor-tenant"
+              value={jsonData.idpTenantID ?? ''}
+              placeholder="Enter your Entra tenant ID"
+              width={40}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('idpTenantID', e.target.value)}
+            />
+          </InlineField>
+        )}
+        {!(mode === 'guided' && ['entra', 'cdf'].includes(idpProvider ?? '')) && loginFlow !== 'token' && (
+          <InlineField label="IDP Token URL" labelWidth={14}>
+            <Input
+              id="config-editor-idp-token-url"
+              value={jsonData.idpTokenURL ?? ''}
+              placeholder="Enter your IDP token URL"
+              width={40}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('idpTokenURL', e.target.value)}
+            />
+          </InlineField>
+        )}
+        {loginFlow === 'clientCredentials' && (
+          <InlineField label="Client ID" labelWidth={14}>
+            <Input
+              id="config-editor-client-id"
+              value={jsonData.clientId ?? ''}
+              placeholder="Enter your Client ID"
+              width={40}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('clientId', e.target.value)}
+            />
+          </InlineField>
+        )}
+        {loginFlow === 'clientCredentials' && (
+          <InlineField label="Client Secret" labelWidth={14}>
+            <SecretInput
+              isConfigured={secureJsonFields.clientSecret ?? false}
+              value={secureJsonData?.clientSecret ?? ''}
+              placeholder="Enter your Client Secret"
+              width={40}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onSecureChange('clientSecret', e.target.value)}
+              onReset={() => onResetSecret('clientSecret')}
+              />
+          </InlineField>
+        )}
+
+
+
+      </FieldSet>
     </>
   );
 }
