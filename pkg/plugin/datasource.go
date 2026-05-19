@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/cognite/doctrino-s-cdf-source/pkg/cdf"
 	"github.com/cognite/doctrino-s-cdf-source/pkg/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
@@ -25,13 +26,19 @@ var (
 )
 
 // CDFDatasource creates a new datasource instance.
-func CDFDatasource(_ context.Context, _ backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	return &Datasource{}, nil
+func CDFDatasource(_ context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	config, err := models.LoadPluginSettings(settings)
+	if err != nil {
+		return nil, err
+	}
+	client := cdf.NewCogniteClient(config.BaseURL, config.Project, config.Secrets.ApiKey)
+	return &Datasource{cdfClient: client}, nil
 }
 
 // Datasource is an example datasource which can respond to data queries, reports
 // its health and has streaming skills.
 type Datasource struct {
+	client cdf.CogniteClient
 }
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
