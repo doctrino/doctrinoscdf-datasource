@@ -176,9 +176,6 @@ export function ConfigEditor(props: Props) {
               />
           </InlineField>
         )}
-
-
-
       </FieldSet>
     </>
   );
