@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 )
 
@@ -111,32 +110,13 @@ func (t *token) Inspect(ctx context.Context) (*InspectResponse, error) {
 	if t.apiClient == nil {
 		return nil, fmt.Errorf("api client not initialized")
 	}
-	resp, err := t.apiClient.Get(ctx, "/token/inspect")
+	body, err := t.apiClient.doBody(ctx, http.MethodGet, "/token/inspect", nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cdf: token inspect: %w", err)
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("cdf: token inspect: read body: %w", err)
+	var resp InspectResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("cdf: token inspect: %w", err)
 	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("cdf: token inspect: %s: %s", resp.Status, truncateInspectBody(body, 512))
-	}
-
-	var out InspectResponse
-	if err := json.Unmarshal(body, &out); err != nil {
-		return nil, fmt.Errorf("cdf: token inspect: decode json: %w", err)
-	}
-	return &out, nil
-}
-
-func truncateInspectBody(b []byte, max int) string {
-	s := string(b)
-	if len(s) <= max {
-		return s
-	}
-	return s[:max] + "…"
+	return &resp, nil
 }

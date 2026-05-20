@@ -31,12 +31,21 @@ func (a *apiClient) do(ctx context.Context, method, path string, body io.Reader)
 	return a.httpClient.Do(req)
 }
 
-func (a *apiClient) Get(ctx context.Context, path string) (*http.Response, error) {
-	return a.do(ctx, http.MethodGet, path, nil)
-}
+func (a *apiClient) doBody(ctx context.Context, method, path string, body io.Reader) ([]byte, error) {
+	resp, err := a.do(ctx, method, path, body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
 
-func (a *apiClient) Post(ctx context.Context, path string, body io.Reader) (*http.Response, error) {
-	return a.do(ctx, http.MethodPost, path, body)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read body: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("%s: %s", resp.Status, string(respBody))
+	}
+	return respBody, nil
 }
 
 type CogniteClient struct {
