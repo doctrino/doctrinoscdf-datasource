@@ -107,7 +107,6 @@ type token struct {
 	apiClient *apiClient
 }
 
-// Inspect calls GET /token/inspect. Pass a non-nil client, or ensure the token is bound to a client (see NewCogniteClient).
 func (t *token) Inspect(ctx context.Context) (*InspectResponse, error) {
 	if t.apiClient == nil {
 		return nil, fmt.Errorf("api client not initialized")
