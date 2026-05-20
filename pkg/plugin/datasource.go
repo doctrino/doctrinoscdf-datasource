@@ -121,7 +121,7 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 // The main use case for these health checks is the test button on the
 // datasource configuration page which allows users to verify that
 // a datasource is working as expected.
-func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{}
 	config, err := cdf.LoadCDFSettings(*req.PluginContext.DataSourceInstanceSettings)
 	if err != nil {
@@ -133,15 +133,25 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 	if err != nil {
 		res.Status = backend.HealthStatusError
 		res.Message = fmt.Sprintf("Unable to create Cognite client: %v", err)
+		return res, nil
 	}
-	// Todo: Do token inspect call
-	if client == nil {
+	response, err := client.Token.Inspect(ctx)
+	if err != nil {
 		res.Status = backend.HealthStatusError
-		res.Message = "Unable to create Cognite client"
+		res.Message = fmt.Sprintf("Inspect call failed: %v", err)
+		return res, nil
+	}
+	body, err := json.Marshal(response)
+	if err != nil {
+		res.Status = backend.HealthStatusError
+		res.Message = fmt.Sprintf("Unable to marshal response: %v", err)
+		return res, nil
 	}
 
+	// Todo: Check the ACLs
 	return &backend.CheckHealthResult{
-		Status:  backend.HealthStatusOk,
-		Message: "Data source is working",
+		Status:      backend.HealthStatusOk,
+		Message:     fmt.Sprintf("CDF authentication successful for project %s: %s", config.CdfProject, string(body)),
+		JSONDetails: body,
 	}, nil
 }
