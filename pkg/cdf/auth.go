@@ -52,6 +52,17 @@ func (p *ClientCredentialsProvider) Token(ctx context.Context) (string, error) {
 	return p.cached, nil
 }
 
+type DeviceCodeProvider struct {
+	authorityURL string
+	clientID     string
+	scopes       []string
+	audience     string
+}
+
+func (p *DeviceCodeProvider) Token(ctx context.Context) (string, error) {
+	return "", errors.New("not implemented")
+}
+
 func newClientCredentialsEntra(tenantID, clientId, clientSecret, cdfCluster string) *ClientCredentialsProvider {
 	return &ClientCredentialsProvider{
 		tokenURL:     fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID),
@@ -78,6 +89,29 @@ func newTokenProviderFromSettings(settings *CDFSettings) (TokenProvider, error) 
 		}
 		static := &StaticTokenProvider{token: settings.Token}
 		return static, nil
+	case LoginFlowDeviceCode:
+		if settings.IdpProvider != "entra" {
+			return nil, errors.New("idp provider must be entra")
+		}
+		if settings.IdpTenantID == "" {
+			return nil, errors.New("idp tenant id is required")
+		}
+		if settings.CdfCluster == "" {
+			return nil, errors.New("cdf cluster is required")
+		}
+		deviceCode := &DeviceCodeProvider{
+			authorityURL: fmt.Sprintf("https://login.microsoftonline.com/%s", settings.IdpTenantID),
+			clientID:     "fb9d503b-ac25-44c7-a75d-8fbcd3a206bd",
+			scopes: []string{
+				fmt.Sprintf("https://%s.cognitedata.com/IDENTITY", settings.CdfCluster),
+				fmt.Sprintf("https://%s.cognitedata.com/user_impersonation", settings.CdfCluster),
+				"profile",
+				"openid",
+			},
+			audience: fmt.Sprintf("https://%s.cognitedata.com", settings.CdfCluster),
+		}
+		return deviceCode, nil
 	}
+
 	return nil, fmt.Errorf("not implemented")
 }
