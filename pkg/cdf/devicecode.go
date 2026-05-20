@@ -36,15 +36,13 @@ type DeviceCodeErrorResponse struct {
 	ErrorDescription string `json:"error_description"`
 }
 
-// StartDeviceCodeFlow initiates the device code flow against the Entra /devicecode endpoint.
+// StartDeviceCodeFlow initiates the device code flow against the IDP device authorization endpoint.
 func (p *DeviceCodeProvider) StartDeviceCodeFlow(ctx context.Context) (*DeviceCodeResponse, error) {
-	endpoint := fmt.Sprintf("%s/oauth2/v2.0/devicecode", p.AuthorityURL)
-
 	form := url.Values{}
 	form.Set("client_id", p.ClientID)
 	form.Set("scope", strings.Join(p.Scopes, " "))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.DeviceCodeURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
@@ -77,14 +75,12 @@ func (p *DeviceCodeProvider) StartDeviceCodeFlow(ctx context.Context) (*DeviceCo
 // Returns the token response on success, or an error.
 // The caller should check for ErrAuthorizationPending and ErrSlowDown to continue polling.
 func (p *DeviceCodeProvider) PollForToken(ctx context.Context, deviceCode string) (*DeviceCodeTokenResponse, error) {
-	endpoint := fmt.Sprintf("%s/oauth2/v2.0/token", p.AuthorityURL)
-
 	form := url.Values{}
 	form.Set("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
 	form.Set("client_id", p.ClientID)
 	form.Set("device_code", deviceCode)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.TokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}

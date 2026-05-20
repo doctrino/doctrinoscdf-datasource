@@ -142,20 +142,63 @@ export function ConfigEditor(props: Props) {
           </InlineField>
         )}
         {!(mode === 'guided' && ['entra', 'cdf'].includes(idpProvider ?? '')) && loginFlow !== 'token' && (
-          <InlineField label="IDP Token URL" labelWidth={14}>
-            <Input
-              id="config-editor-idp-token-url"
-              value={jsonData.idpTokenURL ?? ''}
-              placeholder="Enter your IDP token URL"
-              width={40}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('idpTokenURL', e.target.value)}
-            />
-          </InlineField>
+          <>
+            <InlineField label="IDP Token URL" labelWidth={14}>
+              <Input
+                id="config-editor-idp-token-url"
+                value={jsonData.idpTokenURL ?? ''}
+                placeholder="Enter your IDP token URL"
+                width={40}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('idpTokenURL', e.target.value)}
+              />
+            </InlineField>
+            {loginFlow === 'deviceCode' && (
+              <InlineField label="Device Code URL" labelWidth={14}>
+                <Input
+                  id="config-editor-idp-device-code-url"
+                  value={jsonData.idpDeviceCodeURL ?? ''}
+                  placeholder="Enter your IDP device authorization endpoint"
+                  width={40}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('idpDeviceCodeURL', e.target.value)}
+                />
+              </InlineField>
+            )}
+            <InlineField label="Scopes" labelWidth={14}>
+              <Input
+                id="config-editor-idp-scopes"
+                value={jsonData.idpScopes ?? ''}
+                placeholder="Space-separated scopes"
+                width={40}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('idpScopes', e.target.value)}
+              />
+            </InlineField>
+            <InlineField label="Audience" labelWidth={14}>
+              <Input
+                id="config-editor-idp-audience"
+                value={jsonData.idpAudienceURL ?? ''}
+                placeholder="Enter audience URL (optional)"
+                width={40}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('idpAudienceURL', e.target.value)}
+              />
+            </InlineField>
+          </>
         )}
         {loginFlow === 'clientCredentials' && (
           <InlineField label="Client ID" labelWidth={14}>
             <Input
               id="config-editor-client-id"
+              value={jsonData.clientId ?? ''}
+              placeholder="Enter your Client ID"
+              width={40}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('clientId', e.target.value)}
+              required={true}
+            />
+          </InlineField>
+        )}
+        {loginFlow === 'deviceCode' && mode === 'manual' && (
+          <InlineField label="Client ID" labelWidth={14}>
+            <Input
+              id="config-editor-client-id-dc"
               value={jsonData.clientId ?? ''}
               placeholder="Enter your Client ID"
               width={40}

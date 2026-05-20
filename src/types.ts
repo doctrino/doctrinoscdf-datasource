@@ -35,8 +35,9 @@ export interface CDFLoginOptions extends DataSourceJsonData {
   clientId?: string;
   idpProvider?: string;
   idpTokenURL?: string;
+  idpDeviceCodeURL?: string;
   idpTenantID?: string;
-  idpScopes?: string[];
+  idpScopes?: string;
   idpDiscoveryURL?: string;
   idpAudienceURL?: string;
   idpAuthorityURL?: string;

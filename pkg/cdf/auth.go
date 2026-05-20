@@ -53,10 +53,11 @@ func (p *ClientCredentialsProvider) Token(ctx context.Context) (string, error) {
 }
 
 type DeviceCodeProvider struct {
-	AuthorityURL string
-	ClientID     string
-	Scopes       []string
-	Audience     string
+	DeviceCodeURL string
+	TokenURL      string
+	ClientID      string
+	Scopes        []string
+	Audience      string
 }
 
 func (p *DeviceCodeProvider) Token(ctx context.Context) (string, error) {
@@ -100,8 +101,9 @@ func newTokenProviderFromSettings(settings *CDFSettings) (TokenProvider, error) 
 			return nil, errors.New("cdf cluster is required")
 		}
 		deviceCode := &DeviceCodeProvider{
-			AuthorityURL: fmt.Sprintf("https://login.microsoftonline.com/%s", settings.IdpTenantID),
-			ClientID:     "fb9d503b-ac25-44c7-a75d-8fbcd3a206bd",
+			DeviceCodeURL: fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/devicecode", settings.IdpTenantID),
+			TokenURL:      fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", settings.IdpTenantID),
+			ClientID:      "fb9d503b-ac25-44c7-a75d-8fbcd3a206bd",
 			Scopes: []string{
 				fmt.Sprintf("https://%s.cognitedata.com/IDENTITY", settings.CdfCluster),
 				fmt.Sprintf("https://%s.cognitedata.com/user_impersonation", settings.CdfCluster),
