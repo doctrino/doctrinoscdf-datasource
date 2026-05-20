@@ -2,6 +2,7 @@ import React, { ChangeEvent } from 'react';
 import { FieldSet, InlineField, Input, SecretInput, Combobox } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
 import { CDFLoginOptions, LoginFlow, LoginMode, IdpProvider, CDFSecureLoginOptions } from '../types';
+import { DeviceCodeLogin } from './DeviceCodeLogin';
 
 interface Props extends DataSourcePluginOptionsEditorProps<CDFLoginOptions, CDFSecureLoginOptions> {}
 
@@ -175,6 +176,9 @@ export function ConfigEditor(props: Props) {
               required={true}
               />
           </InlineField>
+        )}
+        {loginFlow === 'deviceCode' && (
+          <DeviceCodeLogin options={options} onOptionsChange={onOptionsChange} />
         )}
       </FieldSet>
     </>
