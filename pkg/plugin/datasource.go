@@ -35,13 +35,23 @@ func CDFDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 	if err != nil {
 		return nil, err
 	}
-	return &Datasource{client}, nil
+
+	d := &Datasource{
+		client: client,
+		store: &deviceCodeStore{
+			sessions: make(map[string]*deviceCodeSession),
+		},
+	}
+	d.resourceHandler = newDeviceCodeResourceHandler(d)
+	return d, nil
 }
 
 // Datasource is an example datasource which can respond to data queries, reports
 // its health and has streaming skills.
 type Datasource struct {
-	client *cdf.CogniteClient
+	client          *cdf.CogniteClient
+	resourceHandler backend.CallResourceHandler
+	store           *deviceCodeStore
 }
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance

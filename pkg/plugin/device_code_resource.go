@@ -29,10 +29,6 @@ type deviceCodeStore struct {
 	sessions map[string]*deviceCodeSession
 }
 
-var globalDeviceCodeStore = &deviceCodeStore{
-	sessions: make(map[string]*deviceCodeSession),
-}
-
 func (s *deviceCodeStore) set(dsUID string, session *deviceCodeSession) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -78,22 +74,20 @@ type DeviceCodePollResponse struct {
 	Error        string `json:"error,omitempty"`
 }
 
-// NewResourceHandler creates the HTTP mux for CallResource endpoints.
-func NewResourceHandler() backend.CallResourceHandler {
+// newDeviceCodeResourceHandler creates the HTTP mux for CallResource endpoints, bound to the datasource instance.
+func newDeviceCodeResourceHandler(d *Datasource) backend.CallResourceHandler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/device-code/start", handleDeviceCodeStart)
-	mux.HandleFunc("/device-code/poll", handleDeviceCodePoll)
+	mux.HandleFunc("/device-code/start", d.handleDeviceCodeStart)
+	mux.HandleFunc("/device-code/poll", d.handleDeviceCodePoll)
 	return httpadapter.New(mux)
 }
 
-// CallResource delegates to the shared resource handler mux.
+// CallResource delegates to the per-instance resource handler mux.
 func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
-	return resourceHandler.CallResource(ctx, req, sender)
+	return d.resourceHandler.CallResource(ctx, req, sender)
 }
 
-var resourceHandler = NewResourceHandler()
-
-func handleDeviceCodeStart(w http.ResponseWriter, r *http.Request) {
+func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -131,7 +125,7 @@ func handleDeviceCodeStart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store session
-	globalDeviceCodeStore.set(dsSettings.UID, &deviceCodeSession{
+	d.store.set(dsSettings.UID, &deviceCodeSession{
 		provider:  provider,
 		response:  dcResp,
 		createdAt: time.Now(),
@@ -149,7 +143,7 @@ func handleDeviceCodeStart(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func handleDeviceCodePoll(w http.ResponseWriter, r *http.Request) {
+func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -162,7 +156,7 @@ func handleDeviceCodePoll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, ok := globalDeviceCodeStore.get(dsSettings.UID)
+	session, ok := d.store.get(dsSettings.UID)
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(DeviceCodePollResponse{
@@ -188,7 +182,7 @@ func handleDeviceCodePoll(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if errors.Is(err, cdf.ErrDeviceCodeExpired) {
-			globalDeviceCodeStore.delete(dsSettings.UID)
+			d.store.delete(dsSettings.UID)
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(DeviceCodePollResponse{
 				Status: "expired",
@@ -197,7 +191,7 @@ func handleDeviceCodePoll(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Other error
-		globalDeviceCodeStore.delete(dsSettings.UID)
+		d.store.delete(dsSettings.UID)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(DeviceCodePollResponse{
 			Status: "error",
@@ -207,7 +201,7 @@ func handleDeviceCodePoll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Success — clean up session and return tokens
-	globalDeviceCodeStore.delete(dsSettings.UID)
+	d.store.delete(dsSettings.UID)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(DeviceCodePollResponse{
 		Status:       "complete",
