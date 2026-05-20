@@ -78,15 +78,6 @@ func newTokenProviderFromSettings(settings *CDFSettings) (TokenProvider, error) 
 		}
 		static := &StaticTokenProvider{token: settings.Token}
 		return static, nil
-	case LoginFlowClientCredentials:
-		if settings.ClientId == "" || settings.ClientSecret == "" {
-			return nil, errors.New("clientId and clientSecret are required for client credentials login flow")
-		}
-		if settings.IdpProvider == "entra" {
-			return newClientCredentialsEntra(settings.IdpTenantID, settings.ClientId, settings.ClientSecret, settings.CdfCluster), nil
-		}
-		return newClientCredentialsCDF(settings.ClientId, settings.ClientSecret), nil
 	}
-
 	return nil, fmt.Errorf("not implemented")
 }
