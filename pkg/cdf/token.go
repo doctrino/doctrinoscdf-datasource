@@ -21,9 +21,7 @@ type InspectProject struct {
 
 type ProjectScope struct {
 	AllProjects map[string]any `json:"allProjects,omitempty"`
-	Projects    []struct {
-		URLName string `json:"urlName"`
-	} `json:"projects,omitempty"`
+	Projects    []string       `json:"projects,omitempty"`
 }
 
 type ResourceACL struct {
