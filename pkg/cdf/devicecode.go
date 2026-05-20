@@ -3,6 +3,7 @@ package cdf
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -129,10 +130,7 @@ func (p *DeviceCodeProvider) PollForToken(ctx context.Context, deviceCode string
 
 // Sentinel errors for device code polling.
 var (
-	ErrAuthorizationPending = fmt.Errorf("authorization_pending")
-	ErrSlowDown             = fmt.Errorf("slow_down")
-	ErrDeviceCodeExpired    = fmt.Errorf("device_code_expired")
+	ErrAuthorizationPending = errors.New("authorization_pending")
+	ErrSlowDown             = errors.New("slow_down")
+	ErrDeviceCodeExpired    = errors.New("device_code_expired")
 )
-
-
-

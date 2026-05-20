@@ -285,5 +285,3 @@ func splitScopes(s string) []string {
 	}
 	return scopes
 }
-
-
