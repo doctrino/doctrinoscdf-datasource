@@ -110,7 +110,7 @@ func (t *token) Inspect(ctx context.Context) (*InspectResponse, error) {
 	if t.apiClient == nil {
 		return nil, fmt.Errorf("api client not initialized")
 	}
-	body, err := t.apiClient.doBody(ctx, http.MethodGet, "/token/inspect", nil)
+	body, err := t.apiClient.doBody(ctx, http.MethodGet, "/api/v1/token/inspect", nil)
 	if err != nil {
 		return nil, fmt.Errorf("cdf: token inspect: %w", err)
 	}

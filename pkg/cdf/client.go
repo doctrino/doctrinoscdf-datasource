@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -17,7 +18,12 @@ type apiClient struct {
 }
 
 func (a *apiClient) do(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
-	url := fmt.Sprintf("%s/api/v1/projects/%s%s", a.baseURL, a.project, path)
+	var url string
+	if strings.HasPrefix(path, "/api") {
+		url = fmt.Sprintf("%s%s", a.baseURL, path)
+	} else {
+		url = fmt.Sprintf("%s/api/v1/projects/%s%s", a.baseURL, a.project, path)
+	}
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err
