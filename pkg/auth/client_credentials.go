@@ -2,7 +2,12 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -28,31 +33,46 @@ func (p *ClientCredentialsProvider) Token(ctx context.Context) (string, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	// Return cached token if still valid
+	// Return cached token if still valid (with 30s buffer)
 	if p.cached != "" && time.Now().Before(p.expiry) {
 		return p.cached, nil
 	}
 
-	// Otherwise fetch a new one from the IDP...
-	// p.cached = newToken
-	// p.expiry = time.Now().Add(expiresIn)
+	form := url.Values{}
+	form.Set("grant_type", "client_credentials")
+	form.Set("client_id", p.clientID)
+	form.Set("client_secret", p.clientSecret)
+	form.Set("scope", strings.Join(p.scopes, " "))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.tokenURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("create token request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("token request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("read token response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("token request failed (%d): %s", resp.StatusCode, string(body))
+	}
+
+	var tokenResp IDPDeviceCodeTokenResponse
+	if err := json.Unmarshal(body, &tokenResp); err != nil {
+		return "", fmt.Errorf("unmarshal token response: %w", err)
+	}
+
+	p.cached = tokenResp.AccessToken
+	p.expiry = time.Now().Add(time.Duration(tokenResp.ExpiresIn)*time.Second - 30*time.Second)
+
 	return p.cached, nil
-}
-
-func newClientCredentialsEntra(tenantID, clientId, clientSecret, cdfCluster string) *ClientCredentialsProvider {
-	return &ClientCredentialsProvider{
-		tokenURL:     fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID),
-		clientID:     clientId,
-		clientSecret: clientSecret,
-		scopes:       []string{fmt.Sprintf("https://%s.cognitedata.com/.default", cdfCluster)},
-	}
-}
-
-func newClientCredentialsCDF(clientID, clientSecret string) *ClientCredentialsProvider {
-	return &ClientCredentialsProvider{
-		tokenURL:     "https://auth.cognite.com/oauth2/token",
-		clientID:     clientID,
-		clientSecret: clientSecret,
-		scopes:       []string{},
-	}
 }
