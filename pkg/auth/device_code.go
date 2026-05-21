@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-// DeviceCodeStartResponse is returned from the IDP when initiating a device code flow.
-type DeviceCodeStartResponse struct {
+// IDPDeviceCodeResponse is returned from the IDP when initiating a device code flow.
+type IDPDeviceCodeResponse struct {
 	DeviceCode      string `json:"device_code"`
 	UserCode        string `json:"user_code"`
 	VerificationURI string `json:"verification_uri"`
@@ -22,17 +22,8 @@ type DeviceCodeStartResponse struct {
 	Message         string `json:"message"`
 }
 
-// DeviceCodePollResponse is the JSON returned to the frontend on /device-code/poll.
-type DeviceCodePollResponse struct {
-	Status       string `json:"status"` // "pending", "complete", "expired", "error"
-	AccessToken  string `json:"accessToken,omitempty"`
-	RefreshToken string `json:"refreshToken,omitempty"`
-	ExpiresIn    int    `json:"expiresIn,omitempty"`
-	Error        string `json:"error,omitempty"`
-}
-
-// DeviceCodeTokenResponse is the token response after successful device code exchange.
-type DeviceCodeTokenResponse struct {
+// IDPDeviceCodeTokenResponse is the token response after successful device code exchange.
+type IDPDeviceCodeTokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int    `json:"expires_in"`
@@ -40,10 +31,28 @@ type DeviceCodeTokenResponse struct {
 	Scope        string `json:"scope"`
 }
 
-// DeviceCodeErrorResponse is returned by the IDP token endpoint while polling.
-type DeviceCodeErrorResponse struct {
+// IDPDeviceCodeErrorResponse is returned by the IDP token endpoint while polling.
+type IDPDeviceCodeErrorResponse struct {
 	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description"`
+}
+
+// FrontendDeviceCodePollResponse is the JSON returned to the frontend on /device-code/poll.
+// Todo Move these back to the device_code_resource
+type FrontendDeviceCodePollResponse struct {
+	Status       string `json:"status"` // "pending", "complete", "expired", "error"
+	AccessToken  string `json:"accessToken,omitempty"`
+	RefreshToken string `json:"refreshToken,omitempty"`
+	ExpiresIn    int    `json:"expiresIn,omitempty"`
+	Error        string `json:"error,omitempty"`
+}
+
+type FrontendStartResponse struct {
+	UserCode        string `json:"userCode"`
+	VerificationURI string `json:"verificationUri"`
+	ExpiresIn       int    `json:"expiresIn,omitempty"`
+	Interval        int    `json:"interval,omitempty"`
+	Message         string `json:"message"`
 }
 
 type DeviceCodeProvider struct {
@@ -64,7 +73,7 @@ func (p *DeviceCodeProvider) Token(ctx context.Context) (string, error) {
 }
 
 // StartDeviceCodeFlow initiates the device code flow against the IDP device authorization endpoint.
-func (p *DeviceCodeProvider) StartDeviceCodeFlow(ctx context.Context) (*DeviceCodeStartResponse, error) {
+func (p *DeviceCodeProvider) StartDeviceCodeFlow(ctx context.Context) (*FrontendStartResponse, error) {
 	form := url.Values{}
 	form.Set("client_id", p.clientID)
 	form.Set("scope", strings.Join(p.scopes, " "))
@@ -91,18 +100,24 @@ func (p *DeviceCodeProvider) StartDeviceCodeFlow(ctx context.Context) (*DeviceCo
 		return nil, fmt.Errorf("device code request failed (%d): %s", resp.StatusCode, string(body))
 	}
 
-	var result DeviceCodeStartResponse
+	var result IDPDeviceCodeResponse
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("unmarshal device code response: %w", err)
 	}
 	p.deviceCode = result.DeviceCode
-	return &result, nil
+	return &FrontendStartResponse{
+		UserCode:        result.UserCode,
+		VerificationURI: result.VerificationURI,
+		ExpiresIn:       result.ExpiresIn,
+		Interval:        result.Interval,
+		Message:         result.Message,
+	}, nil
 }
 
 // PollForToken polls the token endpoint using the device code grant type.
 // Returns the token response on success, or an error.
 // The caller should check for ErrAuthorizationPending and ErrSlowDown to continue polling.
-func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*DeviceCodePollResponse, error) {
+func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*FrontendDeviceCodePollResponse, error) {
 	if p.deviceCode == "" {
 		return nil, errors.New("no active device code session. Please start the device code flow first")
 	}
@@ -131,11 +146,11 @@ func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*DeviceCodePollR
 
 	// Success
 	if resp.StatusCode == http.StatusOK {
-		var tokenResp DeviceCodeTokenResponse
+		var tokenResp IDPDeviceCodeTokenResponse
 		if err := json.Unmarshal(body, &tokenResp); err != nil {
 			return nil, fmt.Errorf("unmarshal token response: %w", err)
 		}
-		return &DeviceCodePollResponse{
+		return &FrontendDeviceCodePollResponse{
 			Status:       "complete",
 			AccessToken:  tokenResp.AccessToken,
 			RefreshToken: tokenResp.RefreshToken,
@@ -144,18 +159,18 @@ func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*DeviceCodePollR
 	}
 
 	// Error response — check if it's a known polling error
-	var errResp DeviceCodeErrorResponse
+	var errResp IDPDeviceCodeErrorResponse
 	if err := json.Unmarshal(body, &errResp); err != nil {
 		return nil, fmt.Errorf("token endpoint error (%d): %s", resp.StatusCode, string(body))
 	}
 
 	switch errResp.Error {
 	case "authorization_pending":
-		return &DeviceCodePollResponse{Status: "pending"}, nil
+		return &FrontendDeviceCodePollResponse{Status: "pending"}, nil
 	case "slow_down":
-		return &DeviceCodePollResponse{Status: "pending"}, nil
+		return &FrontendDeviceCodePollResponse{Status: "pending"}, nil
 	case "expired_token":
-		return &DeviceCodePollResponse{
+		return &FrontendDeviceCodePollResponse{
 			Status: "expired",
 			Error:  "device code expired, please start again",
 		}, nil

@@ -35,7 +35,7 @@ func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Reques
 	provider, ok := d.client.Token.Provider.(*auth.DeviceCodeProvider)
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
+		if err := json.NewEncoder(w).Encode(auth.FrontendDeviceCodePollResponse{
 			Status: "error",
 			Error:  "device code flow not configured for this datasource",
 		}); err != nil {
@@ -72,7 +72,7 @@ func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request
 	provider, ok := d.client.Token.Provider.(*auth.DeviceCodeProvider)
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
+		if err := json.NewEncoder(w).Encode(auth.FrontendDeviceCodePollResponse{
 			Status: "expired",
 			Error:  "no active device code session, please start again",
 		}); err != nil {
@@ -87,7 +87,7 @@ func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request
 	tokenResp, err := provider.PollForToken(ctx)
 	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
-		err = json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
+		err = json.NewEncoder(w).Encode(auth.FrontendDeviceCodePollResponse{
 			Status: "error",
 			Error:  err.Error(),
 		})
