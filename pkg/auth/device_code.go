@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -56,6 +57,7 @@ type FrontendStartResponse struct {
 }
 
 type DeviceCodeProvider struct {
+	mu            sync.Mutex
 	deviceCodeURL string
 	tokenURL      string
 	clientID      string
@@ -69,7 +71,64 @@ type DeviceCodeProvider struct {
 }
 
 func (p *DeviceCodeProvider) Token(ctx context.Context) (string, error) {
-	return "", errors.New("not implemented")
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.accessToken == "" {
+		return "", errors.New("no access token available. Please complete the device code flow first")
+	}
+
+	// Return cached token if still valid (with 30s buffer)
+	if time.Now().Before(p.createdAt.Add(p.ExpiresIn - 30*time.Second)) {
+		return p.accessToken, nil
+	}
+
+	// Refresh the token
+	if p.refreshToken == "" {
+		return "", errors.New("access token expired and no refresh token available")
+	}
+
+	form := url.Values{}
+	form.Set("grant_type", "refresh_token")
+	form.Set("client_id", p.clientID)
+	form.Set("refresh_token", p.refreshToken)
+	form.Set("scope", strings.Join(p.scopes, " "))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.tokenURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("create refresh request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("refresh token request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("read refresh response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("refresh token failed (%d): %s", resp.StatusCode, string(body))
+	}
+
+	var tokenResp IDPDeviceCodeTokenResponse
+	if err := json.Unmarshal(body, &tokenResp); err != nil {
+		return "", fmt.Errorf("unmarshal refresh response: %w", err)
+	}
+
+	p.accessToken = tokenResp.AccessToken
+	if tokenResp.RefreshToken != "" {
+		p.refreshToken = tokenResp.RefreshToken
+	}
+	p.ExpiresIn = time.Duration(tokenResp.ExpiresIn) * time.Second
+	p.createdAt = time.Now()
+
+	return p.accessToken, nil
 }
 
 // StartDeviceCodeFlow initiates the device code flow against the IDP device authorization endpoint.
