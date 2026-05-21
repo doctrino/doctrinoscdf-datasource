@@ -3,7 +3,6 @@ package plugin
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -101,44 +100,21 @@ func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request
 	defer cancel()
 
 	tokenResp, err := provider.PollForToken(ctx)
+	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
-		if errors.Is(err, auth.ErrAuthorizationPending) {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{Status: "pending"})
-			return
-		}
-		if errors.Is(err, auth.ErrSlowDown) {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{Status: "pending"})
-			return
-		}
-		if errors.Is(err, auth.ErrDeviceCodeExpired) {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
-				Status: "expired",
-				Error:  "device code expired, please start again",
-			})
-			return
-		}
-		// Other error
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
+		err = json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
 			Status: "error",
 			Error:  err.Error(),
 		})
+		if err != nil {
+			log.DefaultLogger.Error("failed to encode device code poll response", "error", err)
+		}
 		return
 	}
-
-	// Success — clean up session and return tokens
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
-		Status:       "complete",
-		AccessToken:  tokenResp.AccessToken,
-		RefreshToken: tokenResp.RefreshToken,
-		ExpiresIn:    tokenResp.ExpiresIn,
-	})
+	err = json.NewEncoder(w).Encode(tokenResp)
 	if err != nil {
 		log.DefaultLogger.Error("encoding device code poll response", "error", err)
 		http.Error(w, fmt.Sprintf("encoding device code poll response: %v", err), http.StatusInternalServerError)
 	}
+
 }

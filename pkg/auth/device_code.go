@@ -95,13 +95,17 @@ func (p *DeviceCodeProvider) StartDeviceCodeFlow(ctx context.Context) (*DeviceCo
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("unmarshal device code response: %w", err)
 	}
+	p.deviceCode = result.DeviceCode
 	return &result, nil
 }
 
 // PollForToken polls the token endpoint using the device code grant type.
 // Returns the token response on success, or an error.
 // The caller should check for ErrAuthorizationPending and ErrSlowDown to continue polling.
-func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*DeviceCodeTokenResponse, error) {
+func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*DeviceCodePollResponse, error) {
+	if p.deviceCode == "" {
+		return nil, errors.New("no active device code session. Please start the device code flow first")
+	}
 	form := url.Values{}
 	form.Set("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
 	form.Set("client_id", p.clientID)
@@ -131,7 +135,12 @@ func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*DeviceCodeToken
 		if err := json.Unmarshal(body, &tokenResp); err != nil {
 			return nil, fmt.Errorf("unmarshal token response: %w", err)
 		}
-		return &tokenResp, nil
+		return &DeviceCodePollResponse{
+			Status:       "complete",
+			AccessToken:  tokenResp.AccessToken,
+			RefreshToken: tokenResp.RefreshToken,
+			ExpiresIn:    tokenResp.ExpiresIn,
+		}, nil
 	}
 
 	// Error response — check if it's a known polling error
@@ -142,21 +151,17 @@ func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*DeviceCodeToken
 
 	switch errResp.Error {
 	case "authorization_pending":
-		return nil, ErrAuthorizationPending
+		return &DeviceCodePollResponse{Status: "pending"}, nil
 	case "slow_down":
-		return nil, ErrSlowDown
+		return &DeviceCodePollResponse{Status: "pending"}, nil
 	case "expired_token":
-		return nil, ErrDeviceCodeExpired
+		return &DeviceCodePollResponse{
+			Status: "expired",
+			Error:  "device code expired, please start again",
+		}, nil
 	case "access_denied":
 		return nil, fmt.Errorf("access denied: %s", errResp.ErrorDescription)
 	default:
 		return nil, fmt.Errorf("token error (%s): %s", errResp.Error, errResp.ErrorDescription)
 	}
 }
-
-// Sentinel errors for device code polling.
-var (
-	ErrAuthorizationPending = errors.New("authorization_pending")
-	ErrSlowDown             = errors.New("slow_down")
-	ErrDeviceCodeExpired    = errors.New("device_code_expired")
-)
