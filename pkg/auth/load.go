@@ -15,28 +15,7 @@ func NewTokenProviderFromSettings(settings *Settings) (TokenProvider, error) {
 		static := &StaticTokenProvider{token: settings.Token}
 		return static, nil
 	case LoginFlowDeviceCode:
-		if settings.IdpProvider != "entra" {
-			return nil, errors.New("idp provider must be entra")
-		}
-		if settings.IdpTenantID == "" {
-			return nil, errors.New("idp tenant id is required")
-		}
-		if settings.CdfCluster == "" {
-			return nil, errors.New("cdf cluster is required")
-		}
-		deviceCode := &DeviceCodeProvider{
-			DeviceCodeURL: fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/devicecode", settings.IdpTenantID),
-			TokenURL:      fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", settings.IdpTenantID),
-			ClientID:      "fb9d503b-ac25-44c7-a75d-8fbcd3a206bd",
-			Scopes: []string{
-				fmt.Sprintf("https://%s.cognitedata.com/IDENTITY", settings.CdfCluster),
-				fmt.Sprintf("https://%s.cognitedata.com/user_impersonation", settings.CdfCluster),
-				"profile",
-				"openid",
-			},
-			Audience: fmt.Sprintf("https://%s.cognitedata.com", settings.CdfCluster),
-		}
-		return deviceCode, nil
+		return newDeviceCodeProviderFromSettings(settings)
 	}
 
 	return nil, fmt.Errorf("not implemented")
@@ -53,14 +32,9 @@ func splitScopes(s string) []string {
 	return scopes
 }
 
-func NewDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider, error) {
-	return nil, errors.New("not implemented")
-}
-
-func buildDeviceCodeProvider(settings *auth.CDFSettings) (*auth.DeviceCodeProvider, error) {
+func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider, error) {
 	var deviceCodeURL, tokenURL, clientID string
 	var scopes []string
-	var audience string
 
 	if settings.Mode == "guided" {
 		// Guided mode: derive URLs from provider + cluster + tenant
@@ -81,7 +55,6 @@ func buildDeviceCodeProvider(settings *auth.CDFSettings) (*auth.DeviceCodeProvid
 				"profile",
 				"openid",
 			}
-			audience = fmt.Sprintf("https://%s.cognitedata.com", settings.CdfCluster)
 		default:
 			return nil, fmt.Errorf("guided device code flow is only supported for entra provider, got %q", settings.IdpProvider)
 		}
@@ -93,7 +66,6 @@ func buildDeviceCodeProvider(settings *auth.CDFSettings) (*auth.DeviceCodeProvid
 		if settings.IdpScopes != "" {
 			scopes = splitScopes(settings.IdpScopes)
 		}
-		audience = settings.IdpAudienceURL
 
 		if deviceCodeURL == "" {
 			return nil, fmt.Errorf("device code URL is required in manual mode")
@@ -106,11 +78,10 @@ func buildDeviceCodeProvider(settings *auth.CDFSettings) (*auth.DeviceCodeProvid
 		}
 	}
 
-	return &auth.DeviceCodeProvider{
-		DeviceCodeURL: deviceCodeURL,
-		TokenURL:      tokenURL,
-		ClientID:      clientID,
-		Scopes:        scopes,
-		Audience:      audience,
+	return &DeviceCodeProvider{
+		deviceCodeURL: deviceCodeURL,
+		tokenURL:      tokenURL,
+		clientID:      clientID,
+		scopes:        scopes,
 	}, nil
 }
