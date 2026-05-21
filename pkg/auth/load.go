@@ -95,10 +95,10 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 func newClientCredentialsFromSettings(settings *Settings) (*ClientCredentialsProvider, error) {
 	var tokenURL string
 	var scopes []string
-	if settings.ClientId != "" {
+	if settings.ClientId == "" {
 		return nil, errors.New("client ID should not be set in client credentials flow")
 	}
-	if settings.ClientSecret != "" {
+	if settings.ClientSecret == "" {
 		return nil, errors.New("client secret should not be set in client credentials flow")
 	}
 
@@ -125,11 +125,12 @@ func newClientCredentialsFromSettings(settings *Settings) (*ClientCredentialsPro
 		if settings.IdpTokenURL == "" {
 			return nil, fmt.Errorf("idp token URL is required in manual mode")
 		}
+		tokenURL = settings.IdpTokenURL
+		if settings.IdpScopes != "" {
+			scopes = splitScopes(settings.IdpScopes)
+		}
 	}
-	tokenURL = settings.IdpTokenURL
-	if settings.IdpScopes != "" {
-		scopes = splitScopes(settings.IdpScopes)
-	}
+
 	return &ClientCredentialsProvider{
 		tokenURL:     tokenURL,
 		clientID:     settings.ClientId,
