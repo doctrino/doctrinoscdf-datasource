@@ -106,7 +106,7 @@ func (p *DeviceCodeProvider) Token(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("refresh token request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -149,7 +149,7 @@ func (p *DeviceCodeProvider) StartDeviceCodeFlow(ctx context.Context) (*Frontend
 	if err != nil {
 		return nil, fmt.Errorf("device code request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -197,7 +197,7 @@ func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*FrontendDeviceC
 	if err != nil {
 		return nil, fmt.Errorf("token poll request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

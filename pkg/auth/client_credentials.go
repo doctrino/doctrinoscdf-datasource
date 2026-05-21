@@ -55,7 +55,7 @@ func (p *ClientCredentialsProvider) Token(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("token request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
