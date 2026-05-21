@@ -150,6 +150,11 @@ func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*FrontendDeviceC
 		if err := json.Unmarshal(body, &tokenResp); err != nil {
 			return nil, fmt.Errorf("unmarshal token response: %w", err)
 		}
+		p.accessToken = tokenResp.AccessToken
+		p.refreshToken = tokenResp.RefreshToken
+		p.ExpiresIn = time.Duration(tokenResp.ExpiresIn) * time.Second
+		p.createdAt = time.Now()
+
 		return &FrontendDeviceCodePollResponse{
 			Status:       "complete",
 			AccessToken:  tokenResp.AccessToken,
