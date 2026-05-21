@@ -44,7 +44,7 @@ func (a *apiClient) doBody(ctx context.Context, method, path string, body io.Rea
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
