@@ -13,10 +13,10 @@ import (
 
 // internal transport shared by all resource APIs
 type apiClient struct {
-	baseURL    string
-	project    string
-	httpClient *http.Client
-	auth       auth.TokenProvider
+	baseURL       string
+	project       string
+	httpClient    *http.Client
+	tokenProvider auth.TokenProvider
 }
 
 func (a *apiClient) do(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
@@ -30,7 +30,7 @@ func (a *apiClient) do(ctx context.Context, method, path string, body io.Reader)
 	if err != nil {
 		return nil, err
 	}
-	token, err := a.auth.Token(ctx)
+	token, err := a.tokenProvider.Token(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("auth: %w", err)
 	}
@@ -62,13 +62,13 @@ type CogniteClient struct {
 
 func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *CogniteClient {
 	apiClient := &apiClient{
-		baseURL:    baseURL,
-		project:    project,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
-		auth:       auth,
+		baseURL:       baseURL,
+		project:       project,
+		httpClient:    &http.Client{Timeout: 30 * time.Second},
+		tokenProvider: auth,
 	}
 
-	token := &token{apiClient: apiClient}
+	token := &token{apiClient: apiClient, Provider: auth}
 
 	return &CogniteClient{
 		Token: token,
@@ -87,7 +87,7 @@ func NewCogniteClientFromSettings(settings *auth.Settings) (*CogniteClient, erro
 		}
 		baseURL = fmt.Sprintf("https://%s.cognitedata.com", settings.CdfCluster)
 	}
-	auth, err := auth.newTokenProviderFromSettings(settings)
+	auth, err := auth.NewTokenProviderFromSettings(settings)
 	if err != nil {
 		return nil, err
 	}

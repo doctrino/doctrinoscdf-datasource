@@ -47,7 +47,7 @@ func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Build a DeviceCodeProvider from settings
-	provider, err := buildDeviceCodeProvider(settings)
+	provider, err := auth.NewDeviceCodeProviderFromSettings(settings)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("invalid config: %v", err), http.StatusBadRequest)
 		return
@@ -64,23 +64,13 @@ func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Store session
-	d.store.set(dsSettings.UID, &deviceCodeSession{
-		provider:  provider,
-		response:  dcResp,
-		createdAt: time.Now(),
-	})
-
-	resp := DeviceCodeStartResponse{
-		UserCode:        dcResp.UserCode,
-		VerificationURI: dcResp.VerificationURI,
-		ExpiresIn:       dcResp.ExpiresIn,
-		Interval:        dcResp.Interval,
-		Message:         dcResp.Message,
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	err = json.NewEncoder(w).Encode(dcResp)
+	if err != nil {
+		log.DefaultLogger.Error("encoding device code start response", "error", err)
+		http.Error(w, fmt.Sprintf("encoding device code start: %v", err), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request) {
@@ -95,45 +85,44 @@ func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request
 		http.Error(w, "missing datasource settings", http.StatusBadRequest)
 		return
 	}
-
-	session, ok := d.store.get(dsSettings.UID)
+	provider, ok := d.client.Token.Provider.(*auth.DeviceCodeProvider)
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(DeviceCodePollResponse{
+		if err := json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
 			Status: "expired",
 			Error:  "no active device code session, please start again",
-		})
+		}); err != nil {
+			log.DefaultLogger.Error("failed to encode device code poll response", "error", err)
+		}
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
-	tokenResp, err := session.provider.PollForToken(ctx, session.response.DeviceCode)
+	tokenResp, err := provider.PollForToken(ctx)
 	if err != nil {
 		if errors.Is(err, auth.ErrAuthorizationPending) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(DeviceCodePollResponse{Status: "pending"})
+			json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{Status: "pending"})
 			return
 		}
 		if errors.Is(err, auth.ErrSlowDown) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(DeviceCodePollResponse{Status: "pending"})
+			json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{Status: "pending"})
 			return
 		}
 		if errors.Is(err, auth.ErrDeviceCodeExpired) {
-			d.store.delete(dsSettings.UID)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(DeviceCodePollResponse{
+			json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
 				Status: "expired",
 				Error:  "device code expired, please start again",
 			})
 			return
 		}
 		// Other error
-		d.store.delete(dsSettings.UID)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(DeviceCodePollResponse{
+		json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
 			Status: "error",
 			Error:  err.Error(),
 		})
@@ -141,12 +130,15 @@ func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request
 	}
 
 	// Success — clean up session and return tokens
-	d.store.delete(dsSettings.UID)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(DeviceCodePollResponse{
+	err = json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
 		Status:       "complete",
 		AccessToken:  tokenResp.AccessToken,
 		RefreshToken: tokenResp.RefreshToken,
 		ExpiresIn:    tokenResp.ExpiresIn,
 	})
+	if err != nil {
+		log.DefaultLogger.Error("encoding device code poll response", "error", err)
+		http.Error(w, fmt.Sprintf("encoding device code poll response: %v", err), http.StatusInternalServerError)
+	}
 }

@@ -153,7 +153,6 @@ func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRe
 		res.Message = fmt.Sprintf("Unable to marshal response: %v", err)
 		return res, nil
 	}
-
 	// Todo: Check the ACLs
 	return &backend.CheckHealthResult{
 		Status:      backend.HealthStatusOk,
