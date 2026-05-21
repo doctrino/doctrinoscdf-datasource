@@ -9,6 +9,9 @@ datasources:
     version: 1
     editable: true
     jsonData:
-      path: '/resources'
+      loginFlow: 'token'
+      mode: 'guided'
+      cdfProject: 'test-project'
+      cdfCluster: 'westeurope-1'
     secureJsonData:
-      apiKey: 'api-key'
+      token: 'test-token'

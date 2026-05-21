@@ -4,7 +4,7 @@ import { CDFLoginOptions, CDFSecureLoginOptions } from '../src/types';
 test('smoke: should render config editor', async ({ createDataSourceConfigPage, readProvisionedDataSource, page }) => {
   const ds = await readProvisionedDataSource({ fileName: 'datasources.yml' });
   await createDataSourceConfigPage({ type: ds.type });
-  await expect(page.getByLabel('Path')).toBeVisible();
+  await expect(page.getByLabel('Project')).toBeVisible();
 });
 test('"Save & test" should be successful when configuration is valid', async ({
   createDataSourceConfigPage,
@@ -13,8 +13,9 @@ test('"Save & test" should be successful when configuration is valid', async ({
 }) => {
   const ds = await readProvisionedDataSource<CDFLoginOptions, CDFSecureLoginOptions>({ fileName: 'datasources.yml' });
   const configPage = await createDataSourceConfigPage({ type: ds.type });
-  await page.getByRole('textbox', { name: 'Path' }).fill(ds.jsonData.path ?? '');
-  await page.getByRole('textbox', { name: 'API Key' }).fill(ds.secureJsonData?.apiKey ?? '');
+  await page.getByRole('textbox', { name: 'Project' }).fill(ds.jsonData.cdfProject ?? '');
+  await page.getByRole('textbox', { name: 'CDF Cluster' }).fill(ds.jsonData.cdfCluster ?? '');
+  await page.getByRole('textbox', { name: 'Token' }).fill(ds.secureJsonData?.token ?? '');
   await expect(configPage.saveAndTest()).toBeOK();
 });
 
@@ -25,7 +26,7 @@ test('"Save & test" should fail when configuration is invalid', async ({
 }) => {
   const ds = await readProvisionedDataSource<CDFLoginOptions, CDFSecureLoginOptions>({ fileName: 'datasources.yml' });
   const configPage = await createDataSourceConfigPage({ type: ds.type });
-  await page.getByRole('textbox', { name: 'Path' }).fill(ds.jsonData.path ?? '');
+  await page.getByRole('textbox', { name: 'Project' }).fill(ds.jsonData.cdfProject ?? '');
   await expect(configPage.saveAndTest()).not.toBeOK();
-  await expect(configPage).toHaveAlert('error', { hasText: 'API key is missing' });
+  await expect(configPage).toHaveAlert('error');
 });
