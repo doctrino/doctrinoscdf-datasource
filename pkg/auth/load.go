@@ -16,6 +16,8 @@ func NewTokenProviderFromSettings(settings *Settings) (TokenProvider, error) {
 		return static, nil
 	case LoginFlowDeviceCode:
 		return newDeviceCodeProviderFromSettings(settings)
+	case LoginFlowClientCredentials:
+		return newClientCredentialsFromSettings(settings)
 	}
 
 	return nil, fmt.Errorf("not implemented")
@@ -87,5 +89,51 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 		refreshToken:  settings.RefreshToken,
 		expiresIn:     settings.ExpiresIn,
 		createdAt:     settings.CreatedAt,
+	}, nil
+}
+
+func newClientCredentialsFromSettings(settings *Settings) (*ClientCredentialsProvider, error) {
+	var tokenURL string
+	var scopes []string
+	if settings.ClientId != "" {
+		return nil, errors.New("client ID should not be set in client credentials flow")
+	}
+	if settings.ClientSecret != "" {
+		return nil, errors.New("client secret should not be set in client credentials flow")
+	}
+
+	if settings.Mode == "guided" {
+		switch settings.IdpProvider {
+		case "entra":
+			if settings.IdpTenantID == "" {
+				return nil, fmt.Errorf("idp tenant id is required for guided Entra mode")
+			}
+			tokenURL = fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", settings.IdpTenantID)
+			scopes = []string{fmt.Sprintf("https://%s.cognitedata.com/.default", settings.CdfCluster)}
+		case "cdf":
+			tokenURL = "https://auth.cognite.com/oauth2/token"
+		case "auth0":
+			if settings.IdpTokenURL == "" {
+				return nil, fmt.Errorf("idp token URL is required in guided Auth0 mode")
+			}
+			scopes = []string{"IDENTITY", "user_impersonation"}
+			tokenURL = settings.IdpTokenURL
+		}
+
+	} else {
+		// Manual mode: user provides URLs directly
+		if settings.IdpTokenURL == "" {
+			return nil, fmt.Errorf("idp token URL is required in manual mode")
+		}
+	}
+	tokenURL = settings.IdpTokenURL
+	if settings.IdpScopes != "" {
+		scopes = splitScopes(settings.IdpScopes)
+	}
+	return &ClientCredentialsProvider{
+		tokenURL:     tokenURL,
+		clientID:     settings.ClientId,
+		clientSecret: settings.ClientSecret,
+		scopes:       scopes,
 	}, nil
 }
