@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/cognite/doctrino-s-cdf-source/pkg/auth"
 	"github.com/cognite/doctrino-s-cdf-source/pkg/cdf"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
@@ -27,7 +28,7 @@ var (
 
 // CDFDatasource creates a new datasource instance.
 func CDFDatasource(_ context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	config, err := cdf.LoadCDFSettings(settings)
+	config, err := auth.LoadSettings(settings)
 	if err != nil {
 		return nil, err
 	}
@@ -36,22 +37,16 @@ func CDFDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 		return nil, err
 	}
 
-	d := &Datasource{
-		client: client,
-		store: &deviceCodeStore{
-			sessions: make(map[string]*deviceCodeSession),
-		},
-	}
-	d.resourceHandler = newDeviceCodeResourceHandler(d)
+	d := &Datasource{client: client}
+	d.deviceCodeResourceHandler = newDeviceCodeResourceHandler(d)
 	return d, nil
 }
 
 // Datasource is an example datasource which can respond to data queries, reports
 // its health and has streaming skills.
 type Datasource struct {
-	client          *cdf.CogniteClient
-	resourceHandler backend.CallResourceHandler
-	store           *deviceCodeStore
+	client                    *cdf.CogniteClient
+	deviceCodeResourceHandler backend.CallResourceHandler
 }
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
@@ -134,7 +129,7 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 // a datasource is working as expected.
 func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{}
-	config, err := cdf.LoadCDFSettings(*req.PluginContext.DataSourceInstanceSettings)
+	config, err := auth.LoadSettings(*req.PluginContext.DataSourceInstanceSettings)
 	if err != nil {
 		res.Status = backend.HealthStatusError
 		res.Message = "Unable to load settings"

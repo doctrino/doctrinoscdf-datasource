@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/cognite/doctrino-s-cdf-source/pkg/auth"
 )
 
 // internal transport shared by all resource APIs
@@ -14,7 +16,7 @@ type apiClient struct {
 	baseURL    string
 	project    string
 	httpClient *http.Client
-	auth       TokenProvider
+	auth       auth.TokenProvider
 }
 
 func (a *apiClient) do(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
@@ -58,7 +60,7 @@ type CogniteClient struct {
 	Token *token
 }
 
-func NewCogniteClient(baseURL, project string, auth TokenProvider) *CogniteClient {
+func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *CogniteClient {
 	apiClient := &apiClient{
 		baseURL:    baseURL,
 		project:    project,
@@ -73,7 +75,7 @@ func NewCogniteClient(baseURL, project string, auth TokenProvider) *CogniteClien
 	}
 }
 
-func NewCogniteClientFromSettings(settings *CDFSettings) (*CogniteClient, error) {
+func NewCogniteClientFromSettings(settings *auth.Settings) (*CogniteClient, error) {
 	// Validation
 	if settings.CdfProject == "" {
 		return nil, fmt.Errorf("cdfProject is required")
@@ -85,7 +87,7 @@ func NewCogniteClientFromSettings(settings *CDFSettings) (*CogniteClient, error)
 		}
 		baseURL = fmt.Sprintf("https://%s.cognitedata.com", settings.CdfCluster)
 	}
-	auth, err := newTokenProviderFromSettings(settings)
+	auth, err := auth.newTokenProviderFromSettings(settings)
 	if err != nil {
 		return nil, err
 	}
