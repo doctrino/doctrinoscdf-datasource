@@ -45,6 +45,7 @@ type FrontendDeviceCodePollResponse struct {
 	AccessToken  string `json:"accessToken,omitempty"`
 	RefreshToken string `json:"refreshToken,omitempty"`
 	ExpiresIn    int    `json:"expiresIn,omitempty"`
+	CreatedAt    int64  `json:"createdAt,omitempty"`
 	Error        string `json:"error,omitempty"`
 }
 
@@ -212,13 +213,15 @@ func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*FrontendDeviceC
 		p.accessToken = tokenResp.AccessToken
 		p.refreshToken = tokenResp.RefreshToken
 		p.ExpiresIn = time.Duration(tokenResp.ExpiresIn) * time.Second
-		p.createdAt = time.Now()
+		now := time.Now()
+		p.createdAt = now
 
 		return &FrontendDeviceCodePollResponse{
 			Status:       "complete",
 			AccessToken:  tokenResp.AccessToken,
 			RefreshToken: tokenResp.RefreshToken,
 			ExpiresIn:    tokenResp.ExpiresIn,
+			CreatedAt:    now.Unix(),
 		}, nil
 	}
 

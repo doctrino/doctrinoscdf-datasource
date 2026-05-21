@@ -66,10 +66,16 @@ export function DeviceCodeLogin({ options, onOptionsChange }: Props) {
               secureJsonData: {
                 ...options.secureJsonData,
                 token: resp.accessToken ?? '',
+                refreshToken: resp.refreshToken ?? '',
+                expiresIn: String(resp.expiresIn ?? 0),
+                createdAt: resp.createdAt !== undefined ? String(resp.createdAt) : undefined,
               },
               secureJsonFields: {
                 ...options.secureJsonFields,
                 token: true,
+                refreshToken: true,
+                expiresIn: true,
+                createdAt: true,
               },
             });
             break;

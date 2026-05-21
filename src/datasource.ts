@@ -16,6 +16,7 @@ export interface DeviceCodePollResponse {
   accessToken?: string;
   refreshToken?: string;
   expiresIn?: number;
+  createdAt?: number;
   error?: string;
 }
 
