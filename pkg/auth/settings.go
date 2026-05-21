@@ -32,11 +32,11 @@ type Settings struct {
 	IdpAudienceURL   string    `json:"idpAudienceURL"`
 
 	// Secrets (from DecryptedSecureJSONData)
-	Token        string    `json:"-"`
-	ClientSecret string    `json:"-"`
-	RefreshToken string    `json:"-"`
-	ExpiresIn    int       `json:"-"`
-	CreatedAt    time.Time `json:"-"`
+	Token        string        `json:"-"`
+	ClientSecret string        `json:"-"`
+	RefreshToken string        `json:"-"`
+	ExpiresIn    time.Duration `json:"-"`
+	CreatedAt    time.Time     `json:"-"`
 }
 
 func LoadSettings(source backend.DataSourceInstanceSettings) (*Settings, error) {
@@ -50,7 +50,7 @@ func LoadSettings(source backend.DataSourceInstanceSettings) (*Settings, error) 
 	settings.ClientSecret = source.DecryptedSecureJSONData["clientSecret"]
 	settings.RefreshToken = source.DecryptedSecureJSONData["refreshToken"]
 	if v, err := strconv.Atoi(source.DecryptedSecureJSONData["expiresIn"]); err == nil {
-		settings.ExpiresIn = v
+		settings.ExpiresIn = time.Duration(v) * time.Second
 	}
 	if v, err := strconv.ParseInt(source.DecryptedSecureJSONData["createdAt"], 10, 64); err == nil {
 		settings.CreatedAt = time.Unix(v, 0)
