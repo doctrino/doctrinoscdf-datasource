@@ -87,9 +87,9 @@ func NewCogniteClientFromSettings(settings *auth.Settings) (*CogniteClient, erro
 		}
 		baseURL = fmt.Sprintf("https://%s.cognitedata.com", settings.CdfCluster)
 	}
-	auth, err := auth.NewTokenProviderFromSettings(settings)
+	provider, err := auth.NewTokenProviderFromSettings(settings)
 	if err != nil {
 		return nil, err
 	}
-	return NewCogniteClient(baseURL, settings.CdfProject, auth), nil
+	return NewCogniteClient(baseURL, settings.CdfProject, provider), nil
 }

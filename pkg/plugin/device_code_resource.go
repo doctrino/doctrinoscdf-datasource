@@ -32,23 +32,15 @@ func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	pluginCtx := httpadapter.PluginConfigFromContext(r.Context())
-	dsSettings := pluginCtx.DataSourceInstanceSettings
-	if dsSettings == nil {
-		http.Error(w, "missing datasource settings", http.StatusBadRequest)
-		return
-	}
-
-	settings, err := auth.LoadSettings(*dsSettings)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("load settings: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Build a DeviceCodeProvider from settings
-	provider, err := auth.NewDeviceCodeProviderFromSettings(settings)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("invalid config: %v", err), http.StatusBadRequest)
+	provider, ok := d.client.Token.Provider.(*auth.DeviceCodeProvider)
+	if !ok {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(auth.DeviceCodePollResponse{
+			Status: "error",
+			Error:  "device code flow not configured for this datasource",
+		}); err != nil {
+			log.DefaultLogger.Error("failed to encode device code poll response", "error", err)
+		}
 		return
 	}
 
@@ -75,13 +67,6 @@ func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Reques
 func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	pluginCtx := httpadapter.PluginConfigFromContext(r.Context())
-	dsSettings := pluginCtx.DataSourceInstanceSettings
-	if dsSettings == nil {
-		http.Error(w, "missing datasource settings", http.StatusBadRequest)
 		return
 	}
 	provider, ok := d.client.Token.Provider.(*auth.DeviceCodeProvider)
@@ -116,5 +101,4 @@ func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request
 		log.DefaultLogger.Error("encoding device code poll response", "error", err)
 		http.Error(w, fmt.Sprintf("encoding device code poll response: %v", err), http.StatusInternalServerError)
 	}
-
 }
