@@ -129,19 +129,7 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 // a datasource is working as expected.
 func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{}
-	config, err := auth.LoadSettings(*req.PluginContext.DataSourceInstanceSettings)
-	if err != nil {
-		res.Status = backend.HealthStatusError
-		res.Message = "Unable to load settings"
-		return res, nil
-	}
-	client, err := cdf.NewCogniteClientFromSettings(config)
-	if err != nil {
-		res.Status = backend.HealthStatusError
-		res.Message = fmt.Sprintf("Unable to create Cognite client: %v", err)
-		return res, nil
-	}
-	response, err := client.Token.Inspect(ctx)
+	response, err := d.client.Token.Inspect(ctx)
 	if err != nil {
 		res.Status = backend.HealthStatusError
 		res.Message = fmt.Sprintf("Inspect call failed: %v", err)
@@ -156,7 +144,7 @@ func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRe
 	// Todo: Check the ACLs
 	return &backend.CheckHealthResult{
 		Status:      backend.HealthStatusOk,
-		Message:     fmt.Sprintf("CDF authentication successful for project %s: %s", config.CdfProject, string(body)),
+		Message:     fmt.Sprintf("CDF authentication successful for project %s: %s", d.client.CDFProject, string(body)),
 		JSONDetails: body,
 	}, nil
 }

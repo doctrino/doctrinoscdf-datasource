@@ -57,7 +57,8 @@ func (a *apiClient) doBody(ctx context.Context, method, path string, body io.Rea
 }
 
 type CogniteClient struct {
-	Token *token
+	CDFProject string
+	Token      *token
 }
 
 func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *CogniteClient {
@@ -71,7 +72,8 @@ func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *Cognite
 	token := &token{apiClient: apiClient, Provider: auth}
 
 	return &CogniteClient{
-		Token: token,
+		CDFProject: project,
+		Token:      token,
 	}
 }
 

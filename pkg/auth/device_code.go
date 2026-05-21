@@ -67,7 +67,7 @@ type DeviceCodeProvider struct {
 	deviceCode   string
 	accessToken  string
 	refreshToken string
-	ExpiresIn    time.Duration
+	expiresIn    time.Duration
 	createdAt    time.Time
 }
 
@@ -80,7 +80,7 @@ func (p *DeviceCodeProvider) Token(ctx context.Context) (string, error) {
 	}
 
 	// Return cached token if still valid (with 30s buffer)
-	if time.Now().Before(p.createdAt.Add(p.ExpiresIn - 30*time.Second)) {
+	if time.Now().Before(p.createdAt.Add(p.expiresIn - 30*time.Second)) {
 		return p.accessToken, nil
 	}
 
@@ -126,7 +126,7 @@ func (p *DeviceCodeProvider) Token(ctx context.Context) (string, error) {
 	if tokenResp.RefreshToken != "" {
 		p.refreshToken = tokenResp.RefreshToken
 	}
-	p.ExpiresIn = time.Duration(tokenResp.ExpiresIn) * time.Second
+	p.expiresIn = time.Duration(tokenResp.ExpiresIn) * time.Second
 	p.createdAt = time.Now()
 
 	return p.accessToken, nil
@@ -212,7 +212,7 @@ func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*FrontendDeviceC
 		}
 		p.accessToken = tokenResp.AccessToken
 		p.refreshToken = tokenResp.RefreshToken
-		p.ExpiresIn = time.Duration(tokenResp.ExpiresIn) * time.Second
+		p.expiresIn = time.Duration(tokenResp.ExpiresIn) * time.Second
 		now := time.Now()
 		p.createdAt = now
 
