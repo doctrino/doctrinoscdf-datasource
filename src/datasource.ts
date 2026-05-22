@@ -1,10 +1,27 @@
 import { DataSourceInstanceSettings, CoreApp, ScopedVars } from '@grafana/data';
-import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
+import { DataSourceWithBackend, getTemplateSrv, getBackendSrv } from '@grafana/runtime';
 
-import { MyQuery, MyDataSourceOptions, DEFAULT_QUERY } from './types';
+import { MyQuery, CDFLoginOptions, DEFAULT_QUERY } from './types';
 
-export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
-  constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
+export interface DeviceCodeStartResponse {
+  userCode: string;
+  verificationUri: string;
+  expiresIn: number;
+  interval: number;
+  message: string;
+}
+
+export interface DeviceCodePollResponse {
+  status: 'pending' | 'complete' | 'expired' | 'error';
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  createdAt?: number;
+  error?: string;
+}
+
+export class DataSource extends DataSourceWithBackend<MyQuery, CDFLoginOptions> {
+  constructor(instanceSettings: DataSourceInstanceSettings<CDFLoginOptions>) {
     super(instanceSettings);
   }
 
@@ -22,5 +39,13 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
   filterQuery(query: MyQuery): boolean {
     // if no query has been provided, prevent the query from being executed
     return !!query.queryText;
+  }
+
+  async startDeviceCodeLogin(): Promise<DeviceCodeStartResponse> {
+    return getBackendSrv().post(`/api/datasources/uid/${this.uid}/resources/device-code/start`, {});
+  }
+
+  async pollDeviceCodeLogin(): Promise<DeviceCodePollResponse> {
+    return getBackendSrv().post(`/api/datasources/uid/${this.uid}/resources/device-code/poll`, {});
   }
 }

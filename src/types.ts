@@ -19,16 +19,37 @@ export interface DataSourceResponse {
   datapoints: DataPoint[];
 }
 
+export type LoginFlow = 'token' | 'clientCredentials' | 'deviceCode'
+export type LoginMode = 'manual' | 'guided'
+export type IdpProvider = 'entra' | 'auth0' | 'cdf' | 'other'
+
 /**
  * These are options configured for each DataSource instance
  */
-export interface MyDataSourceOptions extends DataSourceJsonData {
-  path?: string;
+export interface CDFLoginOptions extends DataSourceJsonData {
+  loginFlow: LoginFlow;
+  mode:  LoginMode;
+  cdfCluster?: string;
+  cdfProject?: string;
+  cdfUrl?: string;
+  clientId?: string;
+  idpProvider?: string;
+  idpTokenURL?: string;
+  idpDeviceCodeURL?: string;
+  idpTenantID?: string;
+  idpScopes?: string;
+  idpDiscoveryURL?: string;
+  idpAudienceURL?: string;
+  idpAuthorityURL?: string;
 }
 
 /**
  * Value that is used in the backend, but never sent over HTTP to the frontend
  */
-export interface MySecureJsonData {
-  apiKey?: string;
+export interface CDFSecureLoginOptions {
+  token?: string;
+  clientSecret?: string;
+  refreshToken?: string;
+  expiresIn?: string;
+  createdAt?: string;
 }

@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"time"
 
+	"github.com/cognite/doctrino-s-cdf-source/pkg/auth"
+	"github.com/cognite/doctrino-s-cdf-source/pkg/cdf"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
-	"github.com/cognite/doctrino-s-cdf-source/pkg/models"
 )
 
 // Make sure Datasource implements required interfaces. This is important to do
@@ -20,17 +22,32 @@ import (
 var (
 	_ backend.QueryDataHandler      = (*Datasource)(nil)
 	_ backend.CheckHealthHandler    = (*Datasource)(nil)
+	_ backend.CallResourceHandler   = (*Datasource)(nil)
 	_ instancemgmt.InstanceDisposer = (*Datasource)(nil)
 )
 
-// NewDatasource creates a new datasource instance.
-func NewDatasource(_ context.Context, _ backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	return &Datasource{}, nil
+// CDFDatasource creates a new datasource instance.
+func CDFDatasource(_ context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	config, err := auth.LoadSettings(settings)
+	if err != nil {
+		return nil, err
+	}
+	client, err := cdf.NewCogniteClientFromSettings(config)
+	if err != nil {
+		return nil, err
+	}
+
+	d := &Datasource{client: client}
+	d.deviceCodeResourceHandler = newDeviceCodeResourceHandler(d)
+	return d, nil
 }
 
 // Datasource is an example datasource which can respond to data queries, reports
 // its health and has streaming skills.
-type Datasource struct{}
+type Datasource struct {
+	client                    *cdf.CogniteClient
+	deviceCodeResourceHandler backend.CallResourceHandler
+}
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
 // created. As soon as datasource settings change detected by SDK old datasource instance will
@@ -59,7 +76,11 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 	return response, nil
 }
 
-type queryModel struct{}
+// queryModel mirrors the panel query JSON from MyQuery (src/types.ts); field names must match Grafana's camelCase keys.
+type queryModel struct {
+	QueryText string  `json:"queryText"`
+	Constant  float64 `json:"constant"`
+}
 
 func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 	var response backend.DataResponse
@@ -77,10 +98,23 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 	// https://grafana.com/developers/plugin-tools/introduction/data-frames
 	frame := data.NewFrame("response")
 
-	// add fields.
-	frame.Fields = append(frame.Fields,
-		data.NewField("time", nil, []time.Time{query.TimeRange.From, query.TimeRange.To}),
-		data.NewField("values", nil, []int64{10, 20}),
+	duration := query.TimeRange.To.Sub(query.TimeRange.From)
+	mid := query.TimeRange.From.Add(duration / 2)
+
+	s := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(s)
+
+	lowVal := 10.0
+	highVal := 20.0
+	midVal := qm.Constant
+	if midVal == 0 {
+		midVal = lowVal + (r.Float64() * (highVal - lowVal))
+	}
+
+	frame.Fields = append(
+		frame.Fields,
+		data.NewField("time", nil, []time.Time{query.TimeRange.From, mid, query.TimeRange.To}),
+		data.NewField("values", nil, []float64{lowVal, midVal, highVal}),
 	)
 
 	// add the frames to the response.
@@ -93,24 +127,24 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 // The main use case for these health checks is the test button on the
 // datasource configuration page which allows users to verify that
 // a datasource is working as expected.
-func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{}
-	config, err := models.LoadPluginSettings(*req.PluginContext.DataSourceInstanceSettings)
-
+	response, err := d.client.Token.Inspect(ctx)
 	if err != nil {
 		res.Status = backend.HealthStatusError
-		res.Message = "Unable to load settings"
+		res.Message = fmt.Sprintf("Inspect call failed: %v", err)
 		return res, nil
 	}
-
-	if config.Secrets.ApiKey == "" {
+	body, err := json.Marshal(response)
+	if err != nil {
 		res.Status = backend.HealthStatusError
-		res.Message = "API key is missing"
+		res.Message = fmt.Sprintf("Unable to marshal response: %v", err)
 		return res, nil
 	}
-
+	// Todo: Check the ACLs
 	return &backend.CheckHealthResult{
-		Status:  backend.HealthStatusOk,
-		Message: "Data source is working",
+		Status:      backend.HealthStatusOk,
+		Message:     fmt.Sprintf("CDF authentication successful for project %s: %s", d.client.CDFProject, string(body)),
+		JSONDetails: body,
 	}, nil
 }
