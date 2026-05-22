@@ -6,6 +6,9 @@
 * [ ] **Get more comfortable with Typescript and React** (Learning goal). Go through and refactor the 
   components to make the code more understandable. There is likely some AI-slop in the code that
   can be simplified.
+* [ ] **Hardening my golang understanding** (Learning goal). Refactor the auth package. There
+  are a few functions and structs that can be privatized. In addition, there can be a cleaner
+  separation between the auth backage and the device code resource.
 * [ ] **Create a TimeSeries Search query editor**. Enable the user to search for specific
   time series in the UI. This should use the inspect endpoint to find time series views and
   then have predefined search options defined on the field type. 
