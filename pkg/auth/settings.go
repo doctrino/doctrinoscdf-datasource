@@ -9,34 +9,30 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 )
 
-type LoginFlow string
-
 const (
-	LoginFlowToken             LoginFlow = "token"
-	LoginFlowClientCredentials LoginFlow = "clientCredentials"
-	LoginFlowDeviceCode        LoginFlow = "deviceCode"
+	loginFlowToken             string = "token"
+	loginFlowClientCredentials string = "clientCredentials"
+	loginFlowDeviceCode        string = "deviceCode"
 )
 
-type InputMode string
-
 const (
-	Manual InputMode = "manual"
-	Guided InputMode = "guided"
+	manual string = "manual"
+	guided string = "guided"
 )
 
 type Settings struct {
-	LoginFlow        LoginFlow `json:"loginFlow"`
-	Mode             InputMode `json:"mode"`
-	CdfCluster       string    `json:"cdfCluster"`
-	CdfProject       string    `json:"cdfProject"`
-	CdfUrl           string    `json:"cdfUrl"`
-	ClientId         string    `json:"clientId"`
-	IdpProvider      string    `json:"idpProvider"`
-	IdpTokenURL      string    `json:"idpTokenURL"`
-	IdpTenantID      string    `json:"idpTenantID"`
-	IdpDeviceCodeURL string    `json:"idpDeviceCodeURL"`
-	IdpScopes        string    `json:"idpScopes"`
-	IdpAudienceURL   string    `json:"idpAudienceURL"`
+	LoginFlow        string `json:"loginFlow"`
+	Mode             string `json:"mode"`
+	CdfCluster       string `json:"cdfCluster"`
+	CdfProject       string `json:"cdfProject"`
+	CdfUrl           string `json:"cdfUrl"`
+	ClientId         string `json:"clientId"`
+	IdpProvider      string `json:"idpProvider"`
+	IdpTokenURL      string `json:"idpTokenURL"`
+	IdpTenantID      string `json:"idpTenantID"`
+	IdpDeviceCodeURL string `json:"idpDeviceCodeURL"`
+	IdpScopes        string `json:"idpScopes"`
+	IdpAudienceURL   string `json:"idpAudienceURL"`
 
 	// Secrets (from DecryptedSecureJSONData)
 	Token        string        `json:"-"`

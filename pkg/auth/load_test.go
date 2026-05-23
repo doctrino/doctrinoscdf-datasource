@@ -16,18 +16,18 @@ func TestNewTokenProviderFromSettings(t *testing.T) {
 	}{
 		{
 			name:     "static token",
-			settings: &Settings{LoginFlow: LoginFlowToken, Token: "my-token"},
+			settings: &Settings{LoginFlow: loginFlowToken, Token: "my-token"},
 			wantType: &staticTokenProvider{},
 		},
 		{
 			name:     "token flow missing token",
-			settings: &Settings{LoginFlow: LoginFlowToken},
+			settings: &Settings{LoginFlow: loginFlowToken},
 			wantErr:  "token is required",
 		},
 		{
 			name: "device code guided entra",
 			settings: &Settings{
-				LoginFlow:   LoginFlowDeviceCode,
+				LoginFlow:   loginFlowDeviceCode,
 				Mode:        "guided",
 				IdpProvider: "entra",
 				IdpTenantID: "my-tenant",
@@ -38,7 +38,7 @@ func TestNewTokenProviderFromSettings(t *testing.T) {
 		{
 			name: "device code manual missing token URL",
 			settings: &Settings{
-				LoginFlow:        LoginFlowDeviceCode,
+				LoginFlow:        loginFlowDeviceCode,
 				Mode:             "manual",
 				IdpDeviceCodeURL: "https://example.com/devicecode",
 				ClientId:         "client-123",
@@ -48,7 +48,7 @@ func TestNewTokenProviderFromSettings(t *testing.T) {
 		{
 			name: "client credentials guided entra",
 			settings: &Settings{
-				LoginFlow:    LoginFlowClientCredentials,
+				LoginFlow:    loginFlowClientCredentials,
 				Mode:         "guided",
 				IdpProvider:  "entra",
 				IdpTenantID:  "my-tenant",

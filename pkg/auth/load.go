@@ -8,15 +8,15 @@ import (
 
 func NewTokenProviderFromSettings(settings *Settings) (TokenProvider, error) {
 	switch settings.LoginFlow {
-	case LoginFlowToken:
+	case loginFlowToken:
 		if settings.Token == "" {
 			return nil, errors.New("token is required for token login flow")
 		}
 		static := &staticTokenProvider{token: settings.Token}
 		return static, nil
-	case LoginFlowDeviceCode:
+	case loginFlowDeviceCode:
 		return newDeviceCodeProviderFromSettings(settings)
-	case LoginFlowClientCredentials:
+	case loginFlowClientCredentials:
 		return newClientCredentialsFromSettings(settings)
 	}
 
@@ -38,7 +38,7 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 	var deviceCodeURL, tokenURL, clientID string
 	var scopes []string
 
-	if settings.Mode == Guided {
+	if settings.Mode == guided {
 		// Guided mode: derive URLs from provider + cluster + tenant
 		switch settings.IdpProvider {
 		case "entra":
@@ -60,7 +60,7 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 		default:
 			return nil, fmt.Errorf("guided device code flow is only supported for entra provider, got %q", settings.IdpProvider)
 		}
-	} else if settings.Mode == Manual {
+	} else if settings.Mode == manual {
 		deviceCodeURL = settings.IdpDeviceCodeURL
 		tokenURL = settings.IdpTokenURL
 		clientID = settings.ClientId
@@ -103,7 +103,7 @@ func newClientCredentialsFromSettings(settings *Settings) (*clientCredentialsPro
 		return nil, errors.New("client secret should not be set in client credentials flow")
 	}
 
-	if settings.Mode == Guided {
+	if settings.Mode == guided {
 		switch settings.IdpProvider {
 		case "entra":
 			if settings.IdpTenantID == "" {
@@ -120,7 +120,7 @@ func newClientCredentialsFromSettings(settings *Settings) (*clientCredentialsPro
 			scopes = []string{"IDENTITY", "user_impersonation"}
 			tokenURL = settings.IdpTokenURL
 		}
-	} else if settings.Mode == Manual {
+	} else if settings.Mode == manual {
 		if settings.IdpTokenURL == "" {
 			return nil, fmt.Errorf("idp token URL is required in manual mode")
 		}
