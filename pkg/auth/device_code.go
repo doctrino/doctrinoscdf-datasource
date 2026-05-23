@@ -23,8 +23,8 @@ type IDPDeviceCodeResponse struct {
 	Message         string `json:"message"`
 }
 
-// IDPDeviceCodeTokenResponse is the token response after successful device code exchange.
-type IDPDeviceCodeTokenResponse struct {
+// IDPTokenResponse is the token response after successful device code exchange.
+type IDPTokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int    `json:"expires_in"`
@@ -98,7 +98,7 @@ func (p *DeviceCodeProvider) Token(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("refresh token failed (%d): %s", resp.StatusCode, string(body))
 	}
 
-	var tokenResp IDPDeviceCodeTokenResponse
+	var tokenResp IDPTokenResponse
 	if err := json.Unmarshal(body, &tokenResp); err != nil {
 		return "", fmt.Errorf("unmarshal refresh response: %w", err)
 	}
@@ -152,7 +152,7 @@ func (p *DeviceCodeProvider) StartDeviceCodeFlow(ctx context.Context) (*IDPDevic
 // PollForToken polls the token endpoint using the device code grant type.
 // Returns the token response on success, or an error.
 // The caller should check for ErrDeviceCodeAuthorizationPending and ErrSlowDown to continue polling.
-func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*IDPDeviceCodeTokenResponse, error) {
+func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*IDPTokenResponse, error) {
 	if p.deviceCode == "" {
 		return nil, errors.New("no active device code session. Please start the device code flow first")
 	}
@@ -181,7 +181,7 @@ func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*IDPDeviceCodeTo
 
 	// Success
 	if resp.StatusCode == http.StatusOK {
-		var tokenResp IDPDeviceCodeTokenResponse
+		var tokenResp IDPTokenResponse
 		if err := json.Unmarshal(body, &tokenResp); err != nil {
 			return nil, fmt.Errorf("unmarshal token response: %w", err)
 		}

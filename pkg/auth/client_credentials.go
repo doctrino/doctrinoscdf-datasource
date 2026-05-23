@@ -66,7 +66,7 @@ func (p *clientCredentialsProvider) Token(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("token request failed (%d): %s", resp.StatusCode, string(body))
 	}
 
-	var tokenResp IDPDeviceCodeTokenResponse
+	var tokenResp IDPTokenResponse
 	if err := json.Unmarshal(body, &tokenResp); err != nil {
 		return "", fmt.Errorf("unmarshal token response: %w", err)
 	}

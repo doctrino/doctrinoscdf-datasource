@@ -24,7 +24,7 @@ func TestDeviceCodeFlow_StartPollPendingPollSuccess(t *testing.T) {
 		Message:         "Go to https://example.com/device and enter ABCD-1234",
 	}
 
-	tokenResp := IDPDeviceCodeTokenResponse{
+	tokenResp := IDPTokenResponse{
 		AccessToken:  "test-access-token",
 		RefreshToken: "test-refresh-token",
 		ExpiresIn:    3600,
@@ -83,4 +83,5 @@ func TestDeviceCodeFlow_StartPollPendingPollSuccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "test-access-token", tkResp.AccessToken)
 	assert.Equal(t, "test-refresh-token", tkResp.RefreshToken)
+
 }
