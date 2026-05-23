@@ -38,7 +38,7 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 	var deviceCodeURL, tokenURL, clientID string
 	var scopes []string
 
-	if settings.Mode == "guided" {
+	if settings.Mode == Guided {
 		// Guided mode: derive URLs from provider + cluster + tenant
 		switch settings.IdpProvider {
 		case "entra":
@@ -60,8 +60,7 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 		default:
 			return nil, fmt.Errorf("guided device code flow is only supported for entra provider, got %q", settings.IdpProvider)
 		}
-	} else {
-		// Manual mode: user provides URLs directly
+	} else if settings.Mode == Manual {
 		deviceCodeURL = settings.IdpDeviceCodeURL
 		tokenURL = settings.IdpTokenURL
 		clientID = settings.ClientId
@@ -78,6 +77,8 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 		if clientID == "" {
 			return nil, fmt.Errorf("client ID is required in manual mode")
 		}
+	} else {
+		return nil, fmt.Errorf("invalid settings mode")
 	}
 
 	return &DeviceCodeProvider{
@@ -102,7 +103,7 @@ func newClientCredentialsFromSettings(settings *Settings) (*clientCredentialsPro
 		return nil, errors.New("client secret should not be set in client credentials flow")
 	}
 
-	if settings.Mode == "guided" {
+	if settings.Mode == Guided {
 		switch settings.IdpProvider {
 		case "entra":
 			if settings.IdpTenantID == "" {
@@ -119,9 +120,7 @@ func newClientCredentialsFromSettings(settings *Settings) (*clientCredentialsPro
 			scopes = []string{"IDENTITY", "user_impersonation"}
 			tokenURL = settings.IdpTokenURL
 		}
-
-	} else {
-		// Manual mode: user provides URLs directly
+	} else if settings.Mode == Manual {
 		if settings.IdpTokenURL == "" {
 			return nil, fmt.Errorf("idp token URL is required in manual mode")
 		}
@@ -129,6 +128,8 @@ func newClientCredentialsFromSettings(settings *Settings) (*clientCredentialsPro
 		if settings.IdpScopes != "" {
 			scopes = splitScopes(settings.IdpScopes)
 		}
+	} else {
+		return nil, fmt.Errorf("unsupported input mode: %q", settings.Mode)
 	}
 
 	return &clientCredentialsProvider{

@@ -17,9 +17,16 @@ const (
 	LoginFlowDeviceCode        LoginFlow = "deviceCode"
 )
 
+type InputMode string
+
+const (
+	Manual InputMode = "manual"
+	Guided InputMode = "guided"
+)
+
 type Settings struct {
 	LoginFlow        LoginFlow `json:"loginFlow"`
-	Mode             string    `json:"mode"`
+	Mode             InputMode `json:"mode"`
 	CdfCluster       string    `json:"cdfCluster"`
 	CdfProject       string    `json:"cdfProject"`
 	CdfUrl           string    `json:"cdfUrl"`
