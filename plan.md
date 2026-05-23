@@ -4,7 +4,7 @@
    testing in golang and create unit tests (and if applicable, integration tests) for the backend.
 2. [x] **Hardening my golang understanding** (Learning goal). Refactor the auth package. There
    are a few functions and structs that can be privatized. In addition, there can be a cleaner
-   separation between the auth backage and the device code resource.
+   separation between the auth package and the device code resource.
 3. [ ] **Get more comfortable with Typescript and React** (Learning goal). Go through and refactor the
    components to make the code more understandable. There is likely some AI-slop in the code that
    can be simplified.
