@@ -13,6 +13,14 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
 )
 
+type frontendStartResponse struct {
+	UserCode        string `json:"userCode"`
+	VerificationURI string `json:"verificationUri"`
+	ExpiresIn       int    `json:"expiresIn,omitempty"`
+	Interval        int    `json:"interval,omitempty"`
+	Message         string `json:"message"`
+}
+
 // newDeviceCodeResourceHandler creates the HTTP mux for CallResource endpoints, bound to the datasource instance.
 func newDeviceCodeResourceHandler(d *Datasource) backend.CallResourceHandler {
 	mux := http.NewServeMux()
@@ -55,8 +63,17 @@ func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Convert to frontend response that use camelCase.
+	response := frontendStartResponse{
+		UserCode:        dcResp.UserCode,
+		VerificationURI: dcResp.VerificationURI,
+		ExpiresIn:       dcResp.ExpiresIn,
+		Interval:        dcResp.Interval,
+		Message:         dcResp.Message,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(dcResp)
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		log.DefaultLogger.Error("encoding device code start response", "error", err)
 		http.Error(w, fmt.Sprintf("encoding device code start: %v", err), http.StatusInternalServerError)

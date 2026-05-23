@@ -32,8 +32,8 @@ type IDPDeviceCodeTokenResponse struct {
 	Scope        string `json:"scope"`
 }
 
-// IDPDeviceCodeErrorResponse is returned by the IDP token endpoint while polling.
-type IDPDeviceCodeErrorResponse struct {
+// IDPDeviceCodeTokenErrorResponse is returned by the IDP token endpoint while polling.
+type IDPDeviceCodeTokenErrorResponse struct {
 	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description"`
 }
@@ -47,14 +47,6 @@ type FrontendDeviceCodePollResponse struct {
 	ExpiresIn    int    `json:"expiresIn,omitempty"`
 	CreatedAt    int64  `json:"createdAt,omitempty"`
 	Error        string `json:"error,omitempty"`
-}
-
-type FrontendStartResponse struct {
-	UserCode        string `json:"userCode"`
-	VerificationURI string `json:"verificationUri"`
-	ExpiresIn       int    `json:"expiresIn,omitempty"`
-	Interval        int    `json:"interval,omitempty"`
-	Message         string `json:"message"`
 }
 
 type DeviceCodeProvider struct {
@@ -133,7 +125,7 @@ func (p *DeviceCodeProvider) Token(ctx context.Context) (string, error) {
 }
 
 // StartDeviceCodeFlow initiates the device code flow against the IDP device authorization endpoint.
-func (p *DeviceCodeProvider) StartDeviceCodeFlow(ctx context.Context) (*FrontendStartResponse, error) {
+func (p *DeviceCodeProvider) StartDeviceCodeFlow(ctx context.Context) (*IDPDeviceCodeResponse, error) {
 	form := url.Values{}
 	form.Set("client_id", p.clientID)
 	form.Set("scope", strings.Join(p.scopes, " "))
@@ -165,13 +157,7 @@ func (p *DeviceCodeProvider) StartDeviceCodeFlow(ctx context.Context) (*Frontend
 		return nil, fmt.Errorf("unmarshal device code response: %w", err)
 	}
 	p.deviceCode = result.DeviceCode
-	return &FrontendStartResponse{
-		UserCode:        result.UserCode,
-		VerificationURI: result.VerificationURI,
-		ExpiresIn:       result.ExpiresIn,
-		Interval:        result.Interval,
-		Message:         result.Message,
-	}, nil
+	return &result, nil
 }
 
 // PollForToken polls the token endpoint using the device code grant type.
@@ -226,7 +212,7 @@ func (p *DeviceCodeProvider) PollForToken(ctx context.Context) (*FrontendDeviceC
 	}
 
 	// Error response — check if it's a known polling error
-	var errResp IDPDeviceCodeErrorResponse
+	var errResp IDPDeviceCodeTokenErrorResponse
 	if err := json.Unmarshal(body, &errResp); err != nil {
 		return nil, fmt.Errorf("token endpoint error (%d): %s", resp.StatusCode, string(body))
 	}
