@@ -12,7 +12,7 @@ func NewTokenProviderFromSettings(settings *Settings) (TokenProvider, error) {
 		if settings.Token == "" {
 			return nil, errors.New("token is required for token login flow")
 		}
-		static := &StaticTokenProvider{token: settings.Token}
+		static := &staticTokenProvider{token: settings.Token}
 		return static, nil
 	case LoginFlowDeviceCode:
 		return newDeviceCodeProviderFromSettings(settings)
@@ -92,7 +92,7 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 	}, nil
 }
 
-func newClientCredentialsFromSettings(settings *Settings) (*ClientCredentialsProvider, error) {
+func newClientCredentialsFromSettings(settings *Settings) (*clientCredentialsProvider, error) {
 	var tokenURL string
 	var scopes []string
 	if settings.ClientId == "" {
@@ -131,7 +131,7 @@ func newClientCredentialsFromSettings(settings *Settings) (*ClientCredentialsPro
 		}
 	}
 
-	return &ClientCredentialsProvider{
+	return &clientCredentialsProvider{
 		tokenURL:     tokenURL,
 		clientID:     settings.ClientId,
 		clientSecret: settings.ClientSecret,

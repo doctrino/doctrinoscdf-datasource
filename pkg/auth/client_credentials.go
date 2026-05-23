@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-type ClientCredentialsProvider struct {
+type clientCredentialsProvider struct {
 	tokenURL     string
 	clientID     string
 	clientSecret string
@@ -29,7 +29,7 @@ type ClientCredentialsProvider struct {
 	expiry time.Time
 }
 
-func (p *ClientCredentialsProvider) Token(ctx context.Context) (string, error) {
+func (p *clientCredentialsProvider) Token(ctx context.Context) (string, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

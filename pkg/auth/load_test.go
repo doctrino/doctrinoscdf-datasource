@@ -17,7 +17,7 @@ func TestNewTokenProviderFromSettings(t *testing.T) {
 		{
 			name:     "static token",
 			settings: &Settings{LoginFlow: LoginFlowToken, Token: "my-token"},
-			wantType: &StaticTokenProvider{},
+			wantType: &staticTokenProvider{},
 		},
 		{
 			name:     "token flow missing token",
@@ -56,7 +56,7 @@ func TestNewTokenProviderFromSettings(t *testing.T) {
 				ClientId:     "client-123",
 				ClientSecret: "secret",
 			},
-			wantType: &ClientCredentialsProvider{},
+			wantType: &clientCredentialsProvider{},
 		},
 		{
 			name:     "unsupported login flow",
