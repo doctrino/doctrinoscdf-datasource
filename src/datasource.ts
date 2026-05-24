@@ -15,8 +15,7 @@ export interface DeviceCodePollResponse {
   status: 'pending' | 'complete' | 'expired' | 'error';
   accessToken?: string;
   refreshToken?: string;
-  expiresIn?: number;
-  createdAt?: number;
+  expiry?: number;
   error?: string;
 }
 
