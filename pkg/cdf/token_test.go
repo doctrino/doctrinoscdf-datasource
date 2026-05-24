@@ -34,10 +34,9 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	err = godotenv.Load(filepath.Join(root, ".env"))
-	if err != nil {
-		panic(err)
-	}
+	// If there is no .env file, we assume the environment variables
+	// are set in the environment and continue without error.
+	_ = godotenv.Load(filepath.Join(root, ".env"))
 
 	// Runs once before all tests in this package (like a session-scoped fixture)
 	settings := &auth.Settings{
