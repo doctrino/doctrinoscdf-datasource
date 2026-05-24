@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -108,6 +109,7 @@ func TestDeviceCodeFlow_Token(t *testing.T) {
 		clientID:     "test-client-id",
 		accessToken:  "expired",
 		refreshToken: "test-refresh-token",
+		expiry:       time.Now().Add(-time.Minute), // expired token
 		scopes:       []string{"openid"},
 	}
 
