@@ -23,7 +23,8 @@ func TestClientCredentialsProvider_Token(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(tokenResp)
+		err := json.NewEncoder(w).Encode(tokenResp)
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 

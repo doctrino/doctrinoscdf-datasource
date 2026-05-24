@@ -36,27 +36,29 @@ func TestDeviceCodeFlow_StartPollPendingPollSuccess(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.NoError(t, r.ParseForm())
 
+		var err error
 		switch r.Form.Get("grant_type") {
 		case "": // device code initiation has no grant_type
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(deviceCodeResp)
+			err = json.NewEncoder(w).Encode(deviceCodeResp)
 		case "urn:ietf:params:oauth:grant-type:device_code":
 			count := pollCount.Add(1)
 			if count == 1 {
 				// First poll: authorization_pending
 				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(iDPDeviceCodeTokenErrorResponse{
+				err = json.NewEncoder(w).Encode(iDPDeviceCodeTokenErrorResponse{
 					Error:            "authorization_pending",
 					ErrorDescription: "user has not yet authenticated",
 				})
 			} else {
 				// Second poll: success
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(tokenResp)
+				err = json.NewEncoder(w).Encode(tokenResp)
 			}
 		default:
 			t.Fatalf("unexpected grant_type: %s", r.Form.Get("grant_type"))
 		}
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -100,7 +102,8 @@ func TestDeviceCodeFlow_Token(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(tokenResp)
+		err := json.NewEncoder(w).Encode(tokenResp)
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 
