@@ -1,0 +1,67 @@
+package cdf
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/cognite/doctrino-s-cdf-source/pkg/auth"
+	"github.com/joho/godotenv"
+	"github.com/stretchr/testify/require"
+)
+
+var testClient *CogniteClient
+
+func findRepoRoot(start string) (string, error) {
+	dir := start
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("no .git directory found")
+		}
+		dir = parent
+	}
+}
+
+func TestMain(m *testing.M) {
+	wd, _ := os.Getwd()
+	root, err := findRepoRoot(wd)
+	if err != nil {
+		panic(err)
+	}
+	err = godotenv.Load(filepath.Join(root, ".env"))
+	if err != nil {
+		panic(err)
+	}
+
+	// Runs once before all tests in this package (like a session-scoped fixture)
+	settings := &auth.Settings{
+		CdfProject:   os.Getenv("CDF_PROJECT"),
+		CdfCluster:   os.Getenv("CDF_CLUSTER"),
+		LoginFlow:    "clientCredentials",
+		ClientId:     os.Getenv("IDP_CLIENT_ID"),
+		ClientSecret: os.Getenv("IDP_CLIENT_SECRET"),
+		IdpProvider:  "entra",
+		IdpTenantID:  os.Getenv("IDP_TENANT_ID"),
+		Mode:         "guided",
+	}
+	client, err := NewCogniteClientFromSettings(settings)
+	if err != nil {
+		panic(err)
+	}
+	testClient = client
+
+	os.Exit(m.Run())
+}
+
+func TestToken_Inspect(t *testing.T) {
+	ctx := context.Background()
+	resp, err := testClient.Token.Inspect(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+}

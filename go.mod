@@ -4,6 +4,7 @@ go 1.25.7
 
 require (
 	github.com/grafana/grafana-plugin-sdk-go v0.292.0
+	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.11.1
 )
 
