@@ -8,15 +8,15 @@ import (
 
 func NewTokenProviderFromSettings(settings *Settings) (TokenProvider, error) {
 	switch settings.LoginFlow {
-	case LoginFlowToken:
+	case loginFlowToken:
 		if settings.Token == "" {
 			return nil, errors.New("token is required for token login flow")
 		}
-		static := &StaticTokenProvider{token: settings.Token}
+		static := &staticTokenProvider{token: settings.Token}
 		return static, nil
-	case LoginFlowDeviceCode:
+	case loginFlowDeviceCode:
 		return newDeviceCodeProviderFromSettings(settings)
-	case LoginFlowClientCredentials:
+	case loginFlowClientCredentials:
 		return newClientCredentialsFromSettings(settings)
 	}
 
@@ -38,7 +38,8 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 	var deviceCodeURL, tokenURL, clientID string
 	var scopes []string
 
-	if settings.Mode == "guided" {
+	switch settings.Mode {
+	case guided:
 		// Guided mode: derive URLs from provider + cluster + tenant
 		switch settings.IdpProvider {
 		case "entra":
@@ -60,8 +61,7 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 		default:
 			return nil, fmt.Errorf("guided device code flow is only supported for entra provider, got %q", settings.IdpProvider)
 		}
-	} else {
-		// Manual mode: user provides URLs directly
+	case manual:
 		deviceCodeURL = settings.IdpDeviceCodeURL
 		tokenURL = settings.IdpTokenURL
 		clientID = settings.ClientId
@@ -78,6 +78,8 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 		if clientID == "" {
 			return nil, fmt.Errorf("client ID is required in manual mode")
 		}
+	default:
+		return nil, fmt.Errorf("invalid settings mode")
 	}
 
 	return &DeviceCodeProvider{
@@ -87,12 +89,11 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 		scopes:        scopes,
 		accessToken:   settings.Token,
 		refreshToken:  settings.RefreshToken,
-		expiresIn:     settings.ExpiresIn,
-		createdAt:     settings.CreatedAt,
+		expiry:        settings.Expiry,
 	}, nil
 }
 
-func newClientCredentialsFromSettings(settings *Settings) (*ClientCredentialsProvider, error) {
+func newClientCredentialsFromSettings(settings *Settings) (*clientCredentialsProvider, error) {
 	var tokenURL string
 	var scopes []string
 	if settings.ClientId == "" {
@@ -102,7 +103,8 @@ func newClientCredentialsFromSettings(settings *Settings) (*ClientCredentialsPro
 		return nil, errors.New("client secret should not be set in client credentials flow")
 	}
 
-	if settings.Mode == "guided" {
+	switch settings.Mode {
+	case guided:
 		switch settings.IdpProvider {
 		case "entra":
 			if settings.IdpTenantID == "" {
@@ -119,9 +121,7 @@ func newClientCredentialsFromSettings(settings *Settings) (*ClientCredentialsPro
 			scopes = []string{"IDENTITY", "user_impersonation"}
 			tokenURL = settings.IdpTokenURL
 		}
-
-	} else {
-		// Manual mode: user provides URLs directly
+	case manual:
 		if settings.IdpTokenURL == "" {
 			return nil, fmt.Errorf("idp token URL is required in manual mode")
 		}
@@ -129,9 +129,11 @@ func newClientCredentialsFromSettings(settings *Settings) (*ClientCredentialsPro
 		if settings.IdpScopes != "" {
 			scopes = splitScopes(settings.IdpScopes)
 		}
+	default:
+		return nil, fmt.Errorf("unsupported input mode: %q", settings.Mode)
 	}
 
-	return &ClientCredentialsProvider{
+	return &clientCredentialsProvider{
 		tokenURL:     tokenURL,
 		clientID:     settings.ClientId,
 		clientSecret: settings.ClientSecret,

@@ -2,7 +2,11 @@ module github.com/cognite/doctrino-s-cdf-source
 
 go 1.25.7
 
-require github.com/grafana/grafana-plugin-sdk-go v0.292.0
+require (
+	github.com/grafana/grafana-plugin-sdk-go v0.292.0
+	github.com/joho/godotenv v1.5.1
+	github.com/stretchr/testify v1.11.1
+)
 
 require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
@@ -14,6 +18,7 @@ require (
 	github.com/clipperhouse/displaywidth v0.10.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.6.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -51,6 +56,7 @@ require (
 	github.com/olekukonko/tablewriter v1.1.4 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pierrec/lz4/v4 v4.1.25 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.5 // indirect
@@ -87,4 +93,5 @@ require (
 	google.golang.org/grpc v1.80.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/fsnotify/fsnotify.v1 v1.4.7 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -3,6 +3,7 @@ package plugin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -12,6 +13,22 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
 )
+
+type deviceCodeStartResponse struct {
+	UserCode        string `json:"userCode"`
+	VerificationURI string `json:"verificationUri"`
+	ExpiresIn       int    `json:"expiresIn,omitempty"`
+	Interval        int    `json:"interval,omitempty"`
+	Message         string `json:"message"`
+}
+
+type deviceCodePollResponse struct {
+	Status       string `json:"status"` // "pending", "complete", "expired", "error"
+	AccessToken  string `json:"accessToken,omitempty"`
+	RefreshToken string `json:"refreshToken,omitempty"`
+	Expiry       int64  `json:"expiry,omitempty"`
+	Error        string `json:"error,omitempty"`
+}
 
 // newDeviceCodeResourceHandler creates the HTTP mux for CallResource endpoints, bound to the datasource instance.
 func newDeviceCodeResourceHandler(d *Datasource) backend.CallResourceHandler {
@@ -35,7 +52,7 @@ func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Reques
 	provider, ok := d.client.Token.Provider.(*auth.DeviceCodeProvider)
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(auth.FrontendDeviceCodePollResponse{
+		if err := json.NewEncoder(w).Encode(deviceCodePollResponse{
 			Status: "error",
 			Error:  "device code flow not configured for this datasource",
 		}); err != nil {
@@ -55,8 +72,17 @@ func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Convert to frontend response that use camelCase.
+	response := deviceCodeStartResponse{
+		UserCode:        dcResp.UserCode,
+		VerificationURI: dcResp.VerificationURI,
+		ExpiresIn:       dcResp.ExpiresIn,
+		Interval:        dcResp.Interval,
+		Message:         dcResp.Message,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(dcResp)
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		log.DefaultLogger.Error("encoding device code start response", "error", err)
 		http.Error(w, fmt.Sprintf("encoding device code start: %v", err), http.StatusInternalServerError)
@@ -72,7 +98,7 @@ func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request
 	provider, ok := d.client.Token.Provider.(*auth.DeviceCodeProvider)
 	if !ok {
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(auth.FrontendDeviceCodePollResponse{
+		if err := json.NewEncoder(w).Encode(deviceCodePollResponse{
 			Status: "expired",
 			Error:  "no active device code session, please start again",
 		}); err != nil {
@@ -87,16 +113,27 @@ func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request
 	tokenResp, err := provider.PollForToken(ctx)
 	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
-		err = json.NewEncoder(w).Encode(auth.FrontendDeviceCodePollResponse{
-			Status: "error",
-			Error:  err.Error(),
-		})
+		var resp deviceCodePollResponse
+		switch {
+		case errors.Is(err, auth.ErrDeviceCodeAuthorizationPending):
+			resp = deviceCodePollResponse{Status: "pending"}
+		case errors.Is(err, auth.ErrDeviceCodeExpired):
+			resp = deviceCodePollResponse{Status: "expired", Error: "device code expired, please start again"}
+		default:
+			resp = deviceCodePollResponse{Status: "error", Error: err.Error()}
+		}
+		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
 			log.DefaultLogger.Error("failed to encode device code poll response", "error", err)
 		}
 		return
 	}
-	err = json.NewEncoder(w).Encode(tokenResp)
+	err = json.NewEncoder(w).Encode(deviceCodePollResponse{
+		Status:       "complete",
+		AccessToken:  tokenResp.AccessToken,
+		RefreshToken: tokenResp.RefreshToken,
+		Expiry:       time.Now().Add(time.Duration(tokenResp.ExpiresIn)*time.Second - 30*time.Second).Unix(),
+	})
 	if err != nil {
 		log.DefaultLogger.Error("encoding device code poll response", "error", err)
 		http.Error(w, fmt.Sprintf("encoding device code poll response: %v", err), http.StatusInternalServerError)
