@@ -79,6 +79,12 @@ jobs:
         with:
           version: latest
           args: test
+        env:
+          CDF_CLUSTER: ${{ var.CDF_CLUSTER }}
+          CDF_PROJECT: ${{ var.CDF_PROJECT }}
+          IDP_CLIENT_ID: ${{ var.IDP_CLIENT_ID }}
+          IDP_CLIENT_SECRET: ${{ secrets.IDP_CLIENT_SECRET }}
+          IDP_TENANT_ID: ${{ var.IDP_TENANT_ID }}
 
       - name: Check for E2E
         id: check-for-e2e
