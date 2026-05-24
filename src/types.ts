@@ -50,6 +50,5 @@ export interface CDFSecureLoginOptions {
   token?: string;
   clientSecret?: string;
   refreshToken?: string;
-  expiresIn?: string;
-  createdAt?: string;
+  expiry?: string;
 }
