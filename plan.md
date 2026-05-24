@@ -1,6 +1,6 @@
 # Plan
 
-1. [ ] **Understand and create unit tests backend** (Learning goal). Understand
+1. [x] **Understand and create unit tests backend** (Learning goal). Understand
    testing in golang and create unit tests (and if applicable, integration tests) for the backend.
 2. [x] **Hardening my golang understanding** (Learning goal). Refactor the auth package. There
    are a few functions and structs that can be privatized. In addition, there can be a cleaner
@@ -20,3 +20,6 @@
    time series for, for example, a wind turbine. Then have the wind turbine as a variable
    that can be used to select different turbines in the dashboard. Including selecting multiple
    turbines and showing the same measurements in the same graph for easy comparison.
+8. [ ] **Update CheckHealth to check authorization**. Check which instance and schema space
+   the user has access to and return that in the response. If the user doesn't have access to
+   any instance or schema space, return an error.
