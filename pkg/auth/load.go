@@ -88,8 +88,7 @@ func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider,
 		scopes:        scopes,
 		accessToken:   settings.Token,
 		refreshToken:  settings.RefreshToken,
-		expiresIn:     settings.ExpiresIn,
-		createdAt:     settings.CreatedAt,
+		expiry:        settings.Expiry,
 	}, nil
 }
 

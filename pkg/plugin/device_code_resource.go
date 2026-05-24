@@ -26,8 +26,7 @@ type deviceCodePollResponse struct {
 	Status       string `json:"status"` // "pending", "complete", "expired", "error"
 	AccessToken  string `json:"accessToken,omitempty"`
 	RefreshToken string `json:"refreshToken,omitempty"`
-	ExpiresIn    int    `json:"expiresIn,omitempty"`
-	CreatedAt    int64  `json:"createdAt,omitempty"`
+	Expiry       int64  `json:"expiry,omitempty"`
 	Error        string `json:"error,omitempty"`
 }
 
@@ -133,8 +132,7 @@ func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request
 		Status:       "complete",
 		AccessToken:  tokenResp.AccessToken,
 		RefreshToken: tokenResp.RefreshToken,
-		ExpiresIn:    tokenResp.ExpiresIn,
-		CreatedAt:    time.Now().Unix(),
+		Expiry:       time.Now().Add(time.Duration(tokenResp.ExpiresIn)*time.Second - 30*time.Second).Unix(),
 	})
 	if err != nil {
 		log.DefaultLogger.Error("encoding device code poll response", "error", err)

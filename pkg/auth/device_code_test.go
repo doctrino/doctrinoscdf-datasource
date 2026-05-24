@@ -85,3 +85,35 @@ func TestDeviceCodeFlow_StartPollPendingPollSuccess(t *testing.T) {
 	assert.Equal(t, "test-refresh-token", tkResp.RefreshToken)
 
 }
+
+func TestDeviceCodeFlow_Token(t *testing.T) {
+	tokenResp := IDPTokenResponse{
+		AccessToken: "test-access-token",
+		ExpiresIn:   3600,
+		TokenType:   "Bearer",
+		Scope:       "openid",
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, r.ParseForm())
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(tokenResp)
+	}))
+	defer server.Close()
+
+	provider := &DeviceCodeProvider{
+		tokenURL:     server.URL,
+		clientID:     "test-client-id",
+		accessToken:  "expired",
+		refreshToken: "test-refresh-token",
+		scopes:       []string{"openid"},
+	}
+
+	ctx := context.Background()
+
+	token, err := provider.Token(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "test-access-token", token)
+}
