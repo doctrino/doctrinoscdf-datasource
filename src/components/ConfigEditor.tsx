@@ -1,4 +1,4 @@
-import React, { ChangeEvent } from 'react';
+import React, { ChangeEvent, useEffect } from 'react';
 import { FieldSet, InlineField, Input, SecretInput, Combobox } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
 import { CDFLoginOptions, LoginFlow, LoginMode, IdpProvider, CDFSecureLoginOptions } from '../types';
@@ -27,6 +27,25 @@ const loginProviderOptions: Array<{ label: string; value: IdpProvider }> = [
 export function ConfigEditor(props: Props) {
   const { onOptionsChange, options } = props;
   const { jsonData, secureJsonFields, secureJsonData } = options;
+  const mode = jsonData.mode ?? 'guided';
+  const loginFlow = jsonData.loginFlow ?? 'deviceCode';
+  const idpProvider = jsonData.idpProvider ?? 'entra';
+
+  // Persist defaults back to Grafana if they were missing
+  useEffect(() => {
+    if (!jsonData.mode || !jsonData.loginFlow || !jsonData.idpProvider) {
+      onOptionsChange({
+        ...options,
+        jsonData: {
+          ...jsonData,
+          mode,
+          loginFlow,
+          idpProvider,
+        },
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onJsonDataChange = <K extends keyof CDFLoginOptions>(key: K, value: CDFLoginOptions[K]) => {
     onOptionsChange({
@@ -50,14 +69,16 @@ export function ConfigEditor(props: Props) {
     });
   };
 
-  const { loginFlow, mode, idpProvider } = jsonData;
   return (
     <>
       <InlineField label="Input mode" labelWidth={14}>
         <Combobox
+          id="config-editor-login-mode"
           options={loginModeOptions}
           value={mode}
-          onChange={(opt) => onJsonDataChange('mode', opt.value as LoginMode)}
+          onChange={(opt) => {
+            onJsonDataChange('mode', opt.value as LoginMode);
+          }}
           width={40}
         />
       </InlineField>
@@ -100,9 +121,12 @@ export function ConfigEditor(props: Props) {
       <FieldSet label="Authentication">
         <InlineField label="Login Flow" labelWidth={14}>
           <Combobox
+            id="config-editor-login-flow"
             options={loginFlowOptions}
             value={loginFlow}
-            onChange={(opt) => onJsonDataChange('loginFlow', opt.value as LoginFlow)}
+            onChange={(opt) => {
+              onJsonDataChange('loginFlow', opt.value as LoginFlow);
+            }}
             width={40}
           />
         </InlineField>
@@ -123,6 +147,7 @@ export function ConfigEditor(props: Props) {
         {mode === 'guided' && loginFlow !== 'token' && (
           <InlineField label="IDP Provider" labelWidth={14}>
             <Combobox
+              id="config-editor-idp-provider"
               options={loginProviderOptions}
               value={idpProvider}
               onChange={(opt) => onJsonDataChange('idpProvider', opt.value as IdpProvider)}
@@ -174,19 +199,18 @@ export function ConfigEditor(props: Props) {
             />
           </InlineField>
         )}
-        {(loginFlow === 'clientCredentials' ||
-          (loginFlow === 'deviceCode' && mode === 'manual')) && (
-            <InlineField label="Client ID" labelWidth={14}>
-              <Input
-                id="config-editor-client-id"
-                value={jsonData.clientId ?? ''}
-                placeholder="Enter your Client ID"
-                width={40}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('clientId', e.target.value)}
-                required={true}
-              />
-            </InlineField>
-          )}
+        {(loginFlow === 'clientCredentials' || (loginFlow === 'deviceCode' && mode === 'manual')) && (
+          <InlineField label="Client ID" labelWidth={14}>
+            <Input
+              id="config-editor-client-id"
+              value={jsonData.clientId ?? ''}
+              placeholder="Enter your Client ID"
+              width={40}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('clientId', e.target.value)}
+              required={true}
+            />
+          </InlineField>
+        )}
         {loginFlow === 'clientCredentials' && (
           <InlineField label="Client Secret" labelWidth={14}>
             <SecretInput
