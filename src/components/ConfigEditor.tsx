@@ -174,30 +174,19 @@ export function ConfigEditor(props: Props) {
             />
           </InlineField>
         )}
-        {loginFlow === 'clientCredentials' && (
-          <InlineField label="Client ID" labelWidth={14}>
-            <Input
-              id="config-editor-client-id"
-              value={jsonData.clientId ?? ''}
-              placeholder="Enter your Client ID"
-              width={40}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('clientId', e.target.value)}
-              required={true}
-            />
-          </InlineField>
-        )}
-        {loginFlow === 'deviceCode' && mode === 'manual' && (
-          <InlineField label="Client ID" labelWidth={14}>
-            <Input
-              id="config-editor-client-id-dc"
-              value={jsonData.clientId ?? ''}
-              placeholder="Enter your Client ID"
-              width={40}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('clientId', e.target.value)}
-              required={true}
-            />
-          </InlineField>
-        )}
+        {(loginFlow === 'clientCredentials' ||
+          (loginFlow === 'deviceCode' && mode === 'manual')) && (
+            <InlineField label="Client ID" labelWidth={14}>
+              <Input
+                id="config-editor-client-id"
+                value={jsonData.clientId ?? ''}
+                placeholder="Enter your Client ID"
+                width={40}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onJsonDataChange('clientId', e.target.value)}
+                required={true}
+              />
+            </InlineField>
+          )}
         {loginFlow === 'clientCredentials' && (
           <InlineField label="Client Secret" labelWidth={14}>
             <SecretInput
