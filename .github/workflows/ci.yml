@@ -154,6 +154,8 @@ jobs:
       - name: Resolve Grafana E2E versions
         id: resolve-versions
         uses: grafana/plugin-actions/e2e-version@e2e-version/v2.0.0
+        with:
+          skip-grafana-nightly-image: true
 
   playwright-tests:
     needs: [resolve-versions, build]
@@ -193,6 +195,13 @@ jobs:
       - name: Install dev dependencies
         run: npm ci
 
+      - name: Inject secrets into provisioning
+        run: |
+          envsubst < provisioning/datasources/datasources.yml > provisioning/datasources/datasources.yml.tmp
+          mv provisioning/datasources/datasources.yml.tmp provisioning/datasources/datasources.yml
+        env:
+          IDP_CLIENT_SECRET: ${{ secrets.IDP_CLIENT_SECRET }}
+
       - name: Start Grafana
         run: |
           docker compose pull
@@ -209,6 +218,8 @@ jobs:
       - name: Run Playwright tests
         id: run-tests
         run: npm run e2e
+        env:
+          IDP_CLIENT_SECRET: ${{ secrets.IDP_CLIENT_SECRET }}
 
       - name: Upload e2e test summary
         uses: grafana/plugin-actions/playwright-gh-pages/upload-report-artifacts@upload-report-artifacts/v1.0.1

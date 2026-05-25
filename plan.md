@@ -8,7 +8,7 @@
 3. [x] **Get more comfortable with Typescript and React** (Learning goal). Go through and refactor the
    components to make the code more understandable. There is likely some AI-slop in the code that
    can be simplified.
-4. [ ] **Understand and update end-to-end tests** (Learning goal). Get into chromium.
+4. [x] **Understand and update end-to-end tests** (Learning goal). Get into chromium.
 5. [ ] **Create a TimeSeries Search query editor**. Enable the user to search for specific
    time series in the UI. This should use the inspect endpoint to find time series views and
    then have predefined search options defined on the field type. 
