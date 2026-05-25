@@ -5,7 +5,7 @@
 2. [x] **Hardening my golang understanding** (Learning goal). Refactor the auth package. There
    are a few functions and structs that can be privatized. In addition, there can be a cleaner
    separation between the auth package and the device code resource.
-3. [ ] **Get more comfortable with Typescript and React** (Learning goal). Go through and refactor the
+3. [x] **Get more comfortable with Typescript and React** (Learning goal). Go through and refactor the
    components to make the code more understandable. There is likely some AI-slop in the code that
    can be simplified.
 4. [ ] **Understand and update end-to-end tests** (Learning goal). Get into chromium.

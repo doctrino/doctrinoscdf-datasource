@@ -11,7 +11,8 @@ datasources:
     jsonData:
       loginFlow: 'token'
       mode: 'guided'
-      cdfProject: 'test-project'
-      cdfCluster: 'westeurope-1'
+      cdfProject: 'albert'
+      cdfCluster: 'bluefield'
+      idpTenantID: '7970cd77-47e3-4778-9fb0-a6747cfbae5e'
     secureJsonData:
       token: 'test-token'
