@@ -1,5 +1,5 @@
 import React, { ChangeEvent, useEffect } from 'react';
-import { FieldSet, InlineField, Input, SecretInput, Combobox, Select } from '@grafana/ui';
+import { FieldSet, InlineField, Input, SecretInput, Select } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
 import { CDFLoginOptions, LoginFlow, LoginMode, IdpProvider, CDFSecureLoginOptions } from '../types';
 import { DeviceCodeLogin } from './DeviceCodeLogin';
