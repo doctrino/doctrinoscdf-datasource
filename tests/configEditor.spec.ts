@@ -1,5 +1,8 @@
 import { test, expect } from '@grafana/plugin-e2e';
 import { CDFLoginOptions, CDFSecureLoginOptions } from '../src/types';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 test('smoke: should render config editor', async ({ createDataSourceConfigPage, readProvisionedDataSource, page }) => {
   const ds = await readProvisionedDataSource({ fileName: 'datasources.yml' });
@@ -30,6 +33,7 @@ test('"Save & test" should be successful when configuration is valid', async ({
   await page.getByLabel('IDP Provider').fill(ds.jsonData.idpProvider ?? '');
   await page.getByLabel('Tenant ID').fill(ds.jsonData.idpProvider ?? '');
   await page.getByLabel('Client ID').fill(ds.jsonData.clientId ?? '');
+  await page.getByLabel('Client Secret').fill(process.env.CLIENT_SECRET ?? '');
 
   await expect(configPage.saveAndTest()).toBeOK();
 });
