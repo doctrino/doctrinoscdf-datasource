@@ -1,5 +1,5 @@
 import { DataSourceInstanceSettings, CoreApp, ScopedVars } from '@grafana/data';
-import { DataSourceWithBackend, getTemplateSrv, getBackendSrv } from '@grafana/runtime';
+import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
 
 import { MyQuery, CDFLoginOptions, DEFAULT_QUERY } from './types';
 
