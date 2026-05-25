@@ -1,5 +1,5 @@
 import React, { ChangeEvent, useEffect } from 'react';
-import { FieldSet, InlineField, Input, SecretInput, Combobox } from '@grafana/ui';
+import { FieldSet, InlineField, Input, SecretInput, Combobox, Select } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
 import { CDFLoginOptions, LoginFlow, LoginMode, IdpProvider, CDFSecureLoginOptions } from '../types';
 import { DeviceCodeLogin } from './DeviceCodeLogin';
@@ -48,6 +48,9 @@ export function ConfigEditor(props: Props) {
   }, []);
 
   const onJsonDataChange = <K extends keyof CDFLoginOptions>(key: K, value: CDFLoginOptions[K]) => {
+    if (jsonData[key] === value) {
+      return;
+    }
     onOptionsChange({
       ...options,
       jsonData: { ...jsonData, [key]: value },
@@ -72,7 +75,7 @@ export function ConfigEditor(props: Props) {
   return (
     <>
       <InlineField label="Input mode" labelWidth={14}>
-        <Combobox
+        <Select
           id="config-editor-login-mode"
           options={loginModeOptions}
           value={mode}
@@ -120,7 +123,7 @@ export function ConfigEditor(props: Props) {
       </FieldSet>
       <FieldSet label="Authentication">
         <InlineField label="Login Flow" labelWidth={14}>
-          <Combobox
+          <Select
             id="config-editor-login-flow"
             options={loginFlowOptions}
             value={loginFlow}
@@ -146,7 +149,7 @@ export function ConfigEditor(props: Props) {
         )}
         {mode === 'guided' && loginFlow !== 'token' && (
           <InlineField label="IDP Provider" labelWidth={14}>
-            <Combobox
+            <Select
               id="config-editor-idp-provider"
               options={loginProviderOptions}
               value={idpProvider}
