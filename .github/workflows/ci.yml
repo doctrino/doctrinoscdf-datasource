@@ -205,12 +205,12 @@ jobs:
 
       - name: Install Playwright Browsers
         run: npm exec playwright install chromium --with-deps
-        env:
-          IDP_CLIENT_SECRET: ${{ secrets.IDP_CLIENT_SECRET }}
 
       - name: Run Playwright tests
         id: run-tests
         run: npm run e2e
+        env:
+          IDP_CLIENT_SECRET: ${{ secrets.IDP_CLIENT_SECRET }}
 
       - name: Upload e2e test summary
         uses: grafana/plugin-actions/playwright-gh-pages/upload-report-artifacts@upload-report-artifacts/v1.0.1
