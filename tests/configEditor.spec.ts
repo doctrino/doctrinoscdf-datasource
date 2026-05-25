@@ -23,12 +23,13 @@ test('"Save & test" should be successful when configuration is valid', async ({
   await page.getByRole('textbox', { name: 'Project' }).fill(ds.jsonData.cdfProject ?? '');
   await page.getByRole('textbox', { name: 'CDF Cluster' }).fill(ds.jsonData.cdfCluster ?? '');
 
-  // Set login flow to token
+  // Set login flow to client credentials
   await page.getByLabel('Login Flow').click();
-  await page.getByRole('option', { name: 'Token' }).click();
+  await page.getByRole('option', { name: 'Client Credentials' }).click();
 
-  // Fill token
-  await page.getByLabel('Token').fill(ds.secureJsonData?.token ?? '');
+  await page.getByLabel('IDP Provider').fill(ds.jsonData.idpProvider ?? '');
+  await page.getByLabel('Tenant ID').fill(ds.jsonData.idpProvider ?? '');
+  await page.getByLabel('Client ID').fill(ds.jsonData.clientId ?? '');
 
   await expect(configPage.saveAndTest()).toBeOK();
 });
