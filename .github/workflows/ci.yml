@@ -193,6 +193,13 @@ jobs:
       - name: Install dev dependencies
         run: npm ci
 
+      - name: Inject secrets into provisioning
+        run: |
+          envsubst < provisioning/datasources/datasources.yml > provisioning/datasources/datasources.yml.tmp
+          mv provisioning/datasources/datasources.yml.tmp provisioning/datasources/datasources.yml
+        env:
+          IDP_CLIENT_SECRET: ${{ secrets.IDP_CLIENT_SECRET }}
+
       - name: Start Grafana
         run: |
           docker compose pull

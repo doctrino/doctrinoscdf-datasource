@@ -17,4 +17,4 @@ datasources:
       clientId: '41301a1f-f4a7-430a-b34e-43eedfdbcc4f'
       idpTenantID: '7970cd77-47e3-4778-9fb0-a6747cfbae5e'
     secureJsonData:
-      token: 'test-token'
+      clientSecret: '$IDP_CLIENT_SECRET'
