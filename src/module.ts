@@ -6,4 +6,5 @@ import { MyQuery, CDFLoginOptions } from './types';
 
 export const plugin = new DataSourcePlugin<DataSource, MyQuery, CDFLoginOptions>(DataSource)
   .setConfigEditor(ConfigEditor)
-  .setQueryEditor(QueryEditor);
+  .setQueryEditor(QueryEditor)
+;
