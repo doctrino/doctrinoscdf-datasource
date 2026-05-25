@@ -205,6 +205,8 @@ jobs:
 
       - name: Install Playwright Browsers
         run: npm exec playwright install chromium --with-deps
+        env:
+          IDP_CLIENT_SECRET: ${{ secrets.IDP_CLIENT_SECRET }}
 
       - name: Run Playwright tests
         id: run-tests

@@ -217,6 +217,7 @@ export function ConfigEditor(props: Props) {
         {loginFlow === 'clientCredentials' && (
           <InlineField label="Client Secret" labelWidth={14}>
             <SecretInput
+              aria-label="Client Secret"
               isConfigured={secureJsonFields.clientSecret ?? false}
               value={secureJsonData?.clientSecret ?? ''}
               placeholder="Enter your Client Secret"

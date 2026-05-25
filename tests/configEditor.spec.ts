@@ -33,10 +33,9 @@ test('"Save & test" should be successful when configuration is valid', async ({
   await page.locator('#config-editor-idp-provider').waitFor({ state: 'visible' });
   await page.locator('#config-editor-idp-provider').click();
   await page.getByRole('option', { name: ds.jsonData.idpProvider ?? '' }).click();
-  await page.getByLabel('Tenant ID').fill(ds.jsonData.idpProvider ?? '');
+  await page.getByLabel('Tenant ID').fill(ds.jsonData.idpTenantID ?? '');
   await page.getByLabel('Client ID').fill(ds.jsonData.clientId ?? '');
-  await page.getByLabel('Client Secret').fill(process.env.CLIENT_SECRET ?? '');
-
+  await page.getByLabel('Client Secret').fill(process.env.IDP_CLIENT_SECRET ?? '');
   await expect(configPage.saveAndTest()).toBeOK();
 });
 
