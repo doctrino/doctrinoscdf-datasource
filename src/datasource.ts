@@ -39,12 +39,4 @@ export class DataSource extends DataSourceWithBackend<MyQuery, CDFLoginOptions> 
     // if no query has been provided, prevent the query from being executed
     return !!query.queryText;
   }
-
-  async startDeviceCodeLogin(): Promise<DeviceCodeStartResponse> {
-    return getBackendSrv().post(`/api/datasources/uid/${this.uid}/resources/device-code/start`, {});
-  }
-
-  async pollDeviceCodeLogin(): Promise<DeviceCodePollResponse> {
-    return getBackendSrv().post(`/api/datasources/uid/${this.uid}/resources/device-code/poll`, {});
-  }
 }
