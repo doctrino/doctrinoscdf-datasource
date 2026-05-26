@@ -32,27 +32,28 @@ type containers struct {
 	apiClient *apiClient
 }
 
+type involvedViewsFilter struct {
+	AllVersions bool `json:"allVersions"`
+}
+
+type totalInvolvedViewCountFilter struct {
+	AllVersions             bool `json:"allVersions"`
+	IncludeUnavailableViews bool `json:"includeUnavailableViews"`
+}
+
+type inspectRequest struct {
+	Items                  []ContainerId                `json:"items"`
+	InvolvedViews          involvedViewsFilter          `json:"involvedViews"`
+	TotalInvolvedViewCount totalInvolvedViewCountFilter `json:"totalInvolvedViewCount"`
+}
+
 func (c *containers) Inspect(ctx context.Context, items []ContainerId, allVersions, includeUnavailableViews bool) (*[]ContainerInspectItem, error) {
-	reqBody := struct {
-		Items         []ContainerId `json:"items"`
-		InvolvedViews struct {
-			AllVersions bool `json:"allVersions"`
-		} `json:"involvedViews"`
-		TotalInvolvedViewCount struct {
-			AllVersions             bool `json:"allVersions"`
-			IncludeUnavailableViews bool `json:"includeUnavailableViews"`
-		}
-	}{
+	reqBody := inspectRequest{
 		Items: items,
-		InvolvedViews: struct {
-			AllVersions bool `json:"allVersions"`
-		}{
+		InvolvedViews: involvedViewsFilter{
 			AllVersions: allVersions,
 		},
-		TotalInvolvedViewCount: struct {
-			AllVersions             bool `json:"allVersions"`
-			IncludeUnavailableViews bool `json:"includeUnavailableViews"`
-		}{
+		TotalInvolvedViewCount: totalInvolvedViewCountFilter{
 			AllVersions:             allVersions,
 			IncludeUnavailableViews: includeUnavailableViews,
 		},
