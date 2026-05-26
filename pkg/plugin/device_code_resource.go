@@ -62,6 +62,7 @@ func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Reques
 			}
 			return
 		}
+		d.deviceCodeProvider = deviceCodeProvider
 	}
 
 	// Start the device code flow
