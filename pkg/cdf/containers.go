@@ -52,7 +52,12 @@ type inspectRequest struct {
 }
 
 func (c *containers) Inspect(ctx context.Context, items []ContainerId, options *InspectionOperations) (*[]ContainerInspectItem, error) {
-	reqBody := inspectRequest{Items: items, InspectionOperations: options}
+	reqBody := inspectRequest{Items: items}
+	if options != nil {
+		reqBody.InspectionOperations = options
+	} else {
+		reqBody.InspectionOperations = &InspectionOperations{}
+	}
 
 	data, err := json.Marshal(reqBody)
 	if err != nil {
