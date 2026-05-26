@@ -71,10 +71,12 @@ func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *Cognite
 	}
 
 	token := &token{apiClient: apiClient, Provider: auth}
+	containers := &containers{apiClient: apiClient}
 
 	return &CogniteClient{
 		CDFProject: project,
 		Token:      token,
+		Containers: containers,
 	}
 }
 
