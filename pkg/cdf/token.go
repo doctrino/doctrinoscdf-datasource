@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/cognite/doctrino-s-cdf-source/pkg/auth"
 )
 
 // InspectResponse is the JSON body from GET /token/inspect.
@@ -104,7 +102,6 @@ type Capability struct {
 
 type token struct {
 	apiClient *apiClient
-	Provider  auth.TokenProvider
 }
 
 func (t *token) Inspect(ctx context.Context) (*InspectResponse, error) {

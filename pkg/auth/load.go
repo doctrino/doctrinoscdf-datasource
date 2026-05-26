@@ -15,7 +15,7 @@ func NewTokenProviderFromSettings(settings *Settings) (TokenProvider, error) {
 		static := &staticTokenProvider{token: settings.Token}
 		return static, nil
 	case loginFlowDeviceCode:
-		return newDeviceCodeProviderFromSettings(settings)
+		return NewDeviceCodeProviderFromSettings(settings)
 	case loginFlowClientCredentials:
 		return newClientCredentialsFromSettings(settings)
 	}
@@ -34,7 +34,7 @@ func splitScopes(s string) []string {
 	return scopes
 }
 
-func newDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider, error) {
+func NewDeviceCodeProviderFromSettings(settings *Settings) (*DeviceCodeProvider, error) {
 	var deviceCodeURL, tokenURL, clientID string
 	var scopes []string
 

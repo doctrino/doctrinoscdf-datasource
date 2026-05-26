@@ -48,24 +48,28 @@ func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
-	provider, ok := d.client.Token.Provider.(*auth.DeviceCodeProvider)
-	if !ok {
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(deviceCodePollResponse{
-			Status: "error",
-			Error:  "device code flow not configured for this datasource",
-		}); err != nil {
-			log.DefaultLogger.Error("failed to encode device code poll response", "error", err)
+	deviceCodeProvider := d.deviceCodeProvider
+	if deviceCodeProvider == nil {
+		var err error
+		deviceCodeProvider, err = auth.NewDeviceCodeProviderFromSettings(d.settings)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(deviceCodePollResponse{
+				Status: "error",
+				Error:  fmt.Sprintf("Failed to configure device code provider: %v", err),
+			}); err != nil {
+				log.DefaultLogger.Error("failed to encode device code poll response", "error", err)
+			}
+			return
 		}
-		return
+		d.deviceCodeProvider = deviceCodeProvider
 	}
 
 	// Start the device code flow
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
-	dcResp, err := provider.StartDeviceCodeFlow(ctx)
+	dcResp, err := deviceCodeProvider.StartDeviceCodeFlow(ctx)
 	if err != nil {
 		log.DefaultLogger.Error("device code start failed", "error", err)
 		http.Error(w, fmt.Sprintf("device code start: %v", err), http.StatusBadGateway)
@@ -95,12 +99,12 @@ func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	provider, ok := d.client.Token.Provider.(*auth.DeviceCodeProvider)
-	if !ok {
+	provider := d.deviceCodeProvider
+	if provider == nil {
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(deviceCodePollResponse{
-			Status: "expired",
-			Error:  "no active device code session, please start again",
+			Status: "error",
+			Error:  fmt.Sprintf("device code provider not configured, please start the device code flow first."),
 		}); err != nil {
 			log.DefaultLogger.Error("failed to encode device code poll response", "error", err)
 		}

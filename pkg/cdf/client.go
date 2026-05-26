@@ -70,7 +70,7 @@ func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *Cognite
 		tokenProvider: auth,
 	}
 
-	token := &token{apiClient: apiClient, Provider: auth}
+	token := &token{apiClient: apiClient}
 	containers := &containers{apiClient: apiClient}
 
 	return &CogniteClient{
@@ -80,7 +80,10 @@ func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *Cognite
 	}
 }
 
-func NewCogniteClientFromSettings(settings *auth.Settings) (*CogniteClient, error) {
+func NewCogniteClientFromSettings(settings *auth.Settings, provider *auth.TokenProvider) (*CogniteClient, error) {
+	if settings == nil {
+		return nil, fmt.Errorf("settings is required")
+	}
 	// Validation
 	if settings.CdfProject == "" {
 		return nil, fmt.Errorf("cdfProject is required")
@@ -92,9 +95,12 @@ func NewCogniteClientFromSettings(settings *auth.Settings) (*CogniteClient, erro
 		}
 		baseURL = fmt.Sprintf("https://%s.cognitedata.com", settings.CdfCluster)
 	}
-	provider, err := auth.NewTokenProviderFromSettings(settings)
-	if err != nil {
-		return nil, err
+	if provider == nil {
+		newProvider, err := auth.NewTokenProviderFromSettings(settings)
+		if err != nil {
+			return nil, err
+		}
+		provider = &newProvider
 	}
-	return NewCogniteClient(baseURL, settings.CdfProject, provider), nil
+	return NewCogniteClient(baseURL, settings.CdfProject, *provider), nil
 }

@@ -32,13 +32,23 @@ func CDFDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 	if err != nil {
 		return nil, err
 	}
-	client, err := cdf.NewCogniteClientFromSettings(config)
+	provider, err := auth.NewTokenProviderFromSettings(config)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := cdf.NewCogniteClientFromSettings(config, &provider)
 	if err != nil {
 		return nil, err
 	}
 
 	d := &Datasource{client: client}
 	d.deviceCodeResourceHandler = newDeviceCodeResourceHandler(d)
+	deviceCodeProvider, ok := provider.(*auth.DeviceCodeProvider)
+	if ok {
+		d.deviceCodeProvider = deviceCodeProvider
+	}
+	d.settings = config
 	return d, nil
 }
 
@@ -47,6 +57,8 @@ func CDFDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 type Datasource struct {
 	client                    *cdf.CogniteClient
 	deviceCodeResourceHandler backend.CallResourceHandler
+	deviceCodeProvider        *auth.DeviceCodeProvider
+	settings                  *auth.Settings
 }
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
