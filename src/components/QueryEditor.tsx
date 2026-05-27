@@ -475,7 +475,7 @@ function TimeSeriesList({
         <span>
           {series.length} time series {contextLabel}
         </span>
-        <span>{selectedIds.size} in cart</span>
+        <span>{selectedIds.size} in panel</span>
       </div>
 
       <div className={styles.resultsList} role="list" aria-label="Time series results">
@@ -483,14 +483,14 @@ function TimeSeriesList({
           <p className={styles.emptyState}>{emptyMessage}</p>
         ) : (
           series.map((item) => {
-            const inCart = selectedIds.has(item.externalId);
+            const inPanel = selectedIds.has(item.externalId);
 
             return (
               <div
                 key={item.externalId}
                 className={styles.resultRow}
                 role="listitem"
-                data-in-cart={inCart}
+                data-in-panel={inPanel}
               >
                 <div className={styles.resultRowMain}>
                   <div className={styles.resultRowText}>
@@ -501,15 +501,15 @@ function TimeSeriesList({
                     </span>
                     <p className={styles.resultDescription}>{item.description}</p>
                   </div>
-                  {inCart ? (
-                    <span className={styles.inCartBadge}>In cart</span>
+                  {inPanel ? (
+                    <span className={styles.inPanelBadge}>In panel</span>
                   ) : (
                     <Button
                       size="sm"
                       variant="secondary"
                       icon="plus"
                       onClick={() => onAddSeries(item.externalId)}
-                      aria-label={`Add ${item.name} to cart`}
+                      aria-label={`Add ${item.name} to panel`}
                     >
                       Add
                     </Button>
@@ -524,30 +524,30 @@ function TimeSeriesList({
   );
 }
 
-interface CartPanelProps {
+interface SeriesPanelProps {
   selectedIds: Set<string>;
   seriesConfig: Map<string, SeriesConfig>;
   onRemoveSeries: (externalId: string) => void;
   onSeriesConfigChange: (externalId: string, patch: Partial<SeriesConfig>) => void;
 }
 
-function CartPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfigChange }: CartPanelProps) {
+function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfigChange }: SeriesPanelProps) {
   const styles = useStyles2(getStyles);
   const sortedIds = useMemo(() => [...selectedIds].sort(), [selectedIds]);
 
   return (
-    <div className={styles.cartPanel}>
-      <div className={styles.cartPanelHeader}>
-        <span className={styles.cartPanelTitle}>Cart</span>
-        <span className={styles.cartPanelCount}>
+    <div className={styles.seriesPanel}>
+      <div className={styles.seriesPanelHeader}>
+        <span className={styles.seriesPanelTitle}>Panel</span>
+        <span className={styles.seriesPanelCount}>
           {sortedIds.length === 0 ? 'Empty' : `${sortedIds.length} item${sortedIds.length === 1 ? '' : 's'}`}
         </span>
       </div>
 
       {sortedIds.length === 0 ? (
-        <p className={styles.cartEmpty}>Add time series from the list above.</p>
+        <p className={styles.seriesPanelEmpty}>Add time series from the list above.</p>
       ) : (
-        <div className={styles.cartList}>
+        <div className={styles.seriesPanelList}>
           {sortedIds.map((externalId) => {
             const series = timeSeriesById.get(externalId);
             const config = seriesConfig.get(externalId) ?? DEFAULT_SERIES_CONFIG;
@@ -556,21 +556,21 @@ function CartPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfigCh
               : externalId;
 
             return (
-              <div key={externalId} className={styles.cartRow}>
+              <div key={externalId} className={styles.seriesPanelRow}>
                 <IconButton
                   name="trash-alt"
                   variant="destructive"
                   size="md"
-                  tooltip="Remove from cart"
+                  tooltip="Remove from panel"
                   onClick={() => onRemoveSeries(externalId)}
-                  className={styles.cartRemove}
+                  className={styles.seriesPanelRemove}
                 />
-                <div className={styles.cartRowMain}>
-                  <div className={styles.cartRowInfo}>
-                    <span className={styles.cartRowLabel}>{displayLabel}</span>
-                    <span className={styles.cartRowMeta}>{externalId}</span>
+                <div className={styles.seriesPanelRowMain}>
+                  <div className={styles.seriesPanelRowInfo}>
+                    <span className={styles.seriesPanelRowLabel}>{displayLabel}</span>
+                    <span className={styles.seriesPanelRowMeta}>{externalId}</span>
                   </div>
-                  <div className={styles.cartRowControls}>
+                  <div className={styles.seriesPanelRowControls}>
                     <InlineField label="Aggregation" labelWidth={12}>
                       <Select
                         inputId={`query-editor-aggregation-${externalId}`}
@@ -827,7 +827,7 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
         <EquipmentTab selectedIds={selectedIds} onAddSeries={onAddSeries} />
       )}
 
-      <CartPanel
+      <SeriesPanel
         selectedIds={selectedIds}
         seriesConfig={seriesConfig}
         onRemoveSeries={onRemoveSeries}
@@ -886,7 +886,7 @@ const getStyles = (theme: GrafanaTheme2) => ({
     '&:last-child': {
       borderBottom: 'none',
     },
-    '&[data-in-cart="true"]': {
+    '&[data-in-panel="true"]': {
       background: theme.colors.action.hover,
     },
   }),
@@ -916,7 +916,7 @@ const getStyles = (theme: GrafanaTheme2) => ({
     fontSize: theme.typography.bodySmall.fontSize,
     margin: theme.spacing(0.25, 0, 0, 0),
   }),
-  inCartBadge: css({
+  inPanelBadge: css({
     color: theme.colors.text.secondary,
     flexShrink: 0,
     fontSize: theme.typography.bodySmall.fontSize,
@@ -928,40 +928,40 @@ const getStyles = (theme: GrafanaTheme2) => ({
     margin: theme.spacing(2),
     textAlign: 'center',
   }),
-  cartPanel: css({
+  seriesPanel: css({
     background: theme.colors.background.secondary,
     border: `1px solid ${theme.colors.border.weak}`,
     borderRadius: theme.shape.radius.default,
     marginTop: theme.spacing(0.5),
     padding: theme.spacing(1, 1.5),
   }),
-  cartPanelHeader: css({
+  seriesPanelHeader: css({
     alignItems: 'baseline',
     display: 'flex',
     gap: theme.spacing(1),
     justifyContent: 'space-between',
     marginBottom: theme.spacing(1),
   }),
-  cartPanelTitle: css({
+  seriesPanelTitle: css({
     color: theme.colors.text.primary,
     fontSize: theme.typography.body.fontSize,
     fontWeight: theme.typography.fontWeightMedium,
   }),
-  cartPanelCount: css({
+  seriesPanelCount: css({
     color: theme.colors.text.secondary,
     fontSize: theme.typography.bodySmall.fontSize,
   }),
-  cartEmpty: css({
+  seriesPanelEmpty: css({
     color: theme.colors.text.secondary,
     fontSize: theme.typography.bodySmall.fontSize,
     margin: 0,
   }),
-  cartList: css({
+  seriesPanelList: css({
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing(0.75),
   }),
-  cartRow: css({
+  seriesPanelRow: css({
     alignItems: 'flex-start',
     background: theme.colors.background.primary,
     border: `1px solid ${theme.colors.border.weak}`,
@@ -970,11 +970,11 @@ const getStyles = (theme: GrafanaTheme2) => ({
     gap: theme.spacing(0.5),
     padding: theme.spacing(0.75, 1),
   }),
-  cartRemove: css({
+  seriesPanelRemove: css({
     flexShrink: 0,
     marginTop: theme.spacing(0.25),
   }),
-  cartRowMain: css({
+  seriesPanelRowMain: css({
     display: 'flex',
     flex: 1,
     flexWrap: 'wrap',
@@ -982,22 +982,22 @@ const getStyles = (theme: GrafanaTheme2) => ({
     justifyContent: 'space-between',
     minWidth: 0,
   }),
-  cartRowInfo: css({
+  seriesPanelRowInfo: css({
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing(0.25),
     minWidth: '160px',
   }),
-  cartRowLabel: css({
+  seriesPanelRowLabel: css({
     color: theme.colors.text.primary,
     fontSize: theme.typography.body.fontSize,
     fontWeight: theme.typography.fontWeightMedium,
   }),
-  cartRowMeta: css({
+  seriesPanelRowMeta: css({
     color: theme.colors.text.secondary,
     fontSize: theme.typography.bodySmall.fontSize,
   }),
-  cartRowControls: css({
+  seriesPanelRowControls: css({
     display: 'grid',
     gap: theme.spacing(0.5, 2),
     gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
