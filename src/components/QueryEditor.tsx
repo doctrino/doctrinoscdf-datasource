@@ -1,8 +1,11 @@
 import React, { ChangeEvent, useCallback, useMemo, useState } from 'react';
 import { css } from '@emotion/css';
 import {
+  Button,
   Checkbox,
+  IconButton,
   InlineField,
+  InlineSwitch,
   Input,
   Select,
   Stack,
@@ -26,6 +29,13 @@ type AggregationMethod =
   | 'minDatapoint'
   | 'count'
   | 'sum';
+
+type LabelProperty = 'name' | 'externalId' | 'description' | 'unit';
+
+interface SeriesConfig {
+  aggregation: AggregationMethod;
+  labelProperty: LabelProperty;
+}
 
 interface PlaceholderView {
   id: string;
@@ -59,9 +69,16 @@ interface SearchFilters {
 interface SerializedQuery {
   selected: string[];
   aggregations: Record<string, AggregationMethod>;
+  series?: Record<string, SeriesConfig>;
 }
 
 const DEFAULT_AGGREGATION: AggregationMethod = 'average';
+const DEFAULT_LABEL_PROPERTY: LabelProperty = 'name';
+
+const DEFAULT_SERIES_CONFIG: SeriesConfig = {
+  aggregation: DEFAULT_AGGREGATION,
+  labelProperty: DEFAULT_LABEL_PROPERTY,
+};
 
 const PLACEHOLDER_VIEWS: PlaceholderView[] = [
   { id: 'asset_hierarchy', label: 'Asset hierarchy' },
@@ -216,6 +233,13 @@ const aggregationOptions: Array<SelectableValue<AggregationMethod>> = [
   { label: 'Sum', value: 'sum' },
 ];
 
+const labelPropertyOptions: Array<SelectableValue<LabelProperty>> = [
+  { label: 'Name', value: 'name' },
+  { label: 'External ID', value: 'externalId' },
+  { label: 'Description', value: 'description' },
+  { label: 'Unit', value: 'unit' },
+];
+
 const PLACEHOLDER_SPACES_BY_VIEW: Record<string, Array<SelectableValue<string>>> = {
   asset_hierarchy: [
     { label: 'All spaces', value: '' },
@@ -242,29 +266,42 @@ const DEFAULT_SEARCH_FILTERS: SearchFilters = {
 
 const timeSeriesById = new Map(PLACEHOLDER_TIME_SERIES.map((series) => [series.externalId, series]));
 
+function getSeriesLabel(series: PlaceholderTimeSeries, labelProperty: LabelProperty): string {
+  switch (labelProperty) {
+    case 'externalId':
+      return series.externalId;
+    case 'description':
+      return series.description;
+    case 'unit':
+      return series.unit || '—';
+    default:
+      return series.name;
+  }
+}
+
 function parseQueryState(queryText: string | undefined): {
   selectedIds: Set<string>;
-  aggregations: Map<string, AggregationMethod>;
+  seriesConfig: Map<string, SeriesConfig>;
 } {
   if (!queryText?.trim()) {
-    return { selectedIds: new Set(), aggregations: new Map() };
+    return { selectedIds: new Set(), seriesConfig: new Map() };
   }
 
   if (queryText.trim().startsWith('{')) {
     try {
       const parsed = JSON.parse(queryText) as SerializedQuery;
       const selectedIds = new Set(parsed.selected ?? []);
-      const aggregations = new Map(
-        Object.entries(parsed.aggregations ?? {}) as Array<[string, AggregationMethod]>
-      );
+      const seriesConfig = new Map<string, SeriesConfig>();
 
       for (const id of selectedIds) {
-        if (!aggregations.has(id)) {
-          aggregations.set(id, DEFAULT_AGGREGATION);
-        }
+        const fromSeries = parsed.series?.[id];
+        const aggregation = fromSeries?.aggregation ?? parsed.aggregations?.[id] ?? DEFAULT_AGGREGATION;
+        const labelProperty = fromSeries?.labelProperty ?? DEFAULT_LABEL_PROPERTY;
+
+        seriesConfig.set(id, { aggregation, labelProperty });
       }
 
-      return { selectedIds, aggregations };
+      return { selectedIds, seriesConfig };
     } catch {
       // Fall through to legacy comma-separated format.
     }
@@ -276,27 +313,27 @@ function parseQueryState(queryText: string | undefined): {
       .map((id) => id.trim())
       .filter(Boolean)
   );
-  const aggregations = new Map<string, AggregationMethod>();
+  const seriesConfig = new Map<string, SeriesConfig>();
 
   for (const id of selectedIds) {
-    aggregations.set(id, DEFAULT_AGGREGATION);
+    seriesConfig.set(id, { ...DEFAULT_SERIES_CONFIG });
   }
 
-  return { selectedIds, aggregations };
+  return { selectedIds, seriesConfig };
 }
 
-function serializeQueryState(
-  selectedIds: Set<string>,
-  aggregations: Map<string, AggregationMethod>
-): string {
+function serializeQueryState(selectedIds: Set<string>, seriesConfig: Map<string, SeriesConfig>): string {
   const selected = [...selectedIds].sort();
-  const aggregationRecord: Record<string, AggregationMethod> = {};
+  const aggregations: Record<string, AggregationMethod> = {};
+  const series: Record<string, SeriesConfig> = {};
 
   for (const id of selected) {
-    aggregationRecord[id] = aggregations.get(id) ?? DEFAULT_AGGREGATION;
+    const config = seriesConfig.get(id) ?? DEFAULT_SERIES_CONFIG;
+    aggregations[id] = config.aggregation;
+    series[id] = config;
   }
 
-  return JSON.stringify({ selected, aggregations: aggregationRecord } satisfies SerializedQuery);
+  return JSON.stringify({ selected, aggregations, series } satisfies SerializedQuery);
 }
 
 function matchesSearchFilters(series: PlaceholderTimeSeries, filters: SearchFilters): boolean {
@@ -349,6 +386,8 @@ interface SearchFiltersPanelProps {
 }
 
 function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersPanelProps) {
+  const styles = useStyles2(getStyles);
+  const [showFilters, setShowFilters] = useState(false);
   const spaceOptions = PLACEHOLDER_SPACES_BY_VIEW[viewId] ?? [{ label: 'All spaces', value: '' }];
 
   const updateFilters = (patch: Partial<SearchFilters>) => {
@@ -357,41 +396,58 @@ function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersP
 
   return (
     <Stack direction="column" gap={0.5}>
-      <InlineField label="Space" labelWidth={12}>
-        <Select
-          inputId="query-editor-filter-space"
-          options={spaceOptions}
-          value={filters.space}
-          onChange={(option) => updateFilters({ space: option.value ?? '' })}
-          width={24}
-        />
-      </InlineField>
-      <InlineField label="External ID" labelWidth={12} tooltip="Filter by external ID prefix">
-        <Input
-          id="query-editor-filter-external-id"
-          placeholder="Prefix…"
-          value={filters.externalIdPrefix}
-          onChange={(event) => updateFilters({ externalIdPrefix: event.currentTarget.value })}
-          width={24}
-        />
-      </InlineField>
-      <InlineField label="Type" labelWidth={12}>
-        <Select
-          inputId="query-editor-filter-type"
-          options={typeFilterOptions}
-          value={filters.type}
-          onChange={(option) => updateFilters({ type: option.value ?? '' })}
-          width={24}
-        />
-      </InlineField>
-      <InlineField label="Is step" labelWidth={12}>
-        <Checkbox
-          id="query-editor-filter-is-step"
-          value={filters.isStep}
-          label="Step time series only"
-          onChange={(event) => updateFilters({ isStep: event.currentTarget.checked })}
-        />
-      </InlineField>
+      <InlineSwitch
+        id="query-editor-show-filters"
+        label="Show filters"
+        showLabel
+        value={showFilters}
+        onChange={(event) => setShowFilters(event.currentTarget.checked)}
+      />
+
+      {showFilters && (
+        <div className={styles.filtersGrid}>
+          <InlineField label="Space" labelWidth={10}>
+            <Select
+              inputId="query-editor-filter-space"
+              options={spaceOptions}
+              value={filters.space}
+              onChange={(option) => updateFilters({ space: option.value ?? '' })}
+              width={18}
+            />
+          </InlineField>
+          <InlineField
+            label="External ID"
+            labelWidth={10}
+            tooltip="Filter by external ID prefix"
+            className={styles.filterField}
+          >
+            <Input
+              id="query-editor-filter-external-id"
+              placeholder="Prefix…"
+              value={filters.externalIdPrefix}
+              onChange={(event) => updateFilters({ externalIdPrefix: event.currentTarget.value })}
+              width={18}
+            />
+          </InlineField>
+          <InlineField label="Type" labelWidth={10} className={styles.filterField}>
+            <Select
+              inputId="query-editor-filter-type"
+              options={typeFilterOptions}
+              value={filters.type}
+              onChange={(option) => updateFilters({ type: option.value ?? '' })}
+              width={18}
+            />
+          </InlineField>
+          <InlineField label="Is step" labelWidth={10} className={styles.filterField}>
+            <Checkbox
+              id="query-editor-filter-is-step"
+              value={filters.isStep}
+              label="Step only"
+              onChange={(event) => updateFilters({ isStep: event.currentTarget.checked })}
+            />
+          </InlineField>
+        </div>
+      )}
     </Stack>
   );
 }
@@ -399,7 +455,7 @@ function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersP
 interface TimeSeriesListProps {
   series: PlaceholderTimeSeries[];
   selectedIds: Set<string>;
-  onToggleSeries: (externalId: string, checked: boolean) => void;
+  onAddSeries: (externalId: string) => void;
   emptyMessage: string;
   contextLabel: string;
 }
@@ -407,7 +463,7 @@ interface TimeSeriesListProps {
 function TimeSeriesList({
   series,
   selectedIds,
-  onToggleSeries,
+  onAddSeries,
   emptyMessage,
   contextLabel,
 }: TimeSeriesListProps) {
@@ -419,7 +475,7 @@ function TimeSeriesList({
         <span>
           {series.length} time series {contextLabel}
         </span>
-        <span>{selectedIds.size} selected for panel</span>
+        <span>{selectedIds.size} in cart</span>
       </div>
 
       <div className={styles.resultsList} role="list" aria-label="Time series results">
@@ -427,23 +483,38 @@ function TimeSeriesList({
           <p className={styles.emptyState}>{emptyMessage}</p>
         ) : (
           series.map((item) => {
-            const isSelected = selectedIds.has(item.externalId);
+            const inCart = selectedIds.has(item.externalId);
 
             return (
               <div
                 key={item.externalId}
                 className={styles.resultRow}
                 role="listitem"
-                data-selected={isSelected}
+                data-in-cart={inCart}
               >
-                <Checkbox
-                  id={`query-editor-ts-${item.externalId}`}
-                  value={isSelected}
-                  label={item.name}
-                  description={`${item.externalId} · ${item.unit}`}
-                  onChange={(event) => onToggleSeries(item.externalId, event.currentTarget.checked)}
-                />
-                <p className={styles.resultDescription}>{item.description}</p>
+                <div className={styles.resultRowMain}>
+                  <div className={styles.resultRowText}>
+                    <span className={styles.resultRowName}>{item.name}</span>
+                    <span className={styles.resultRowMeta}>
+                      {item.externalId}
+                      {item.unit ? ` · ${item.unit}` : ''}
+                    </span>
+                    <p className={styles.resultDescription}>{item.description}</p>
+                  </div>
+                  {inCart ? (
+                    <span className={styles.inCartBadge}>In cart</span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon="plus"
+                      onClick={() => onAddSeries(item.externalId)}
+                      aria-label={`Add ${item.name} to cart`}
+                    >
+                      Add
+                    </Button>
+                  )}
+                </div>
               </div>
             );
           })
@@ -453,65 +524,96 @@ function TimeSeriesList({
   );
 }
 
-interface SelectedTimeSeriesPanelProps {
+interface CartPanelProps {
   selectedIds: Set<string>;
-  aggregations: Map<string, AggregationMethod>;
-  onAggregationChange: (externalId: string, aggregation: AggregationMethod) => void;
+  seriesConfig: Map<string, SeriesConfig>;
+  onRemoveSeries: (externalId: string) => void;
+  onSeriesConfigChange: (externalId: string, patch: Partial<SeriesConfig>) => void;
 }
 
-function SelectedTimeSeriesPanel({
-  selectedIds,
-  aggregations,
-  onAggregationChange,
-}: SelectedTimeSeriesPanelProps) {
+function CartPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfigChange }: CartPanelProps) {
   const styles = useStyles2(getStyles);
   const sortedIds = useMemo(() => [...selectedIds].sort(), [selectedIds]);
 
-  if (sortedIds.length === 0) {
-    return null;
-  }
-
   return (
-    <div className={styles.selectedPanel}>
-      <div className={styles.selectedPanelHeader}>Selected time series</div>
-      <div className={styles.selectedList}>
-        {sortedIds.map((externalId) => {
-          const series = timeSeriesById.get(externalId);
-          const aggregation = aggregations.get(externalId) ?? DEFAULT_AGGREGATION;
-
-          return (
-            <div key={externalId} className={styles.selectedRow}>
-              <div className={styles.selectedRowInfo}>
-                <span className={styles.selectedRowName}>{series?.name ?? externalId}</span>
-                <span className={styles.selectedRowMeta}>{externalId}</span>
-              </div>
-              <InlineField label="Aggregation" labelWidth={14}>
-                <Select
-                  inputId={`query-editor-aggregation-${externalId}`}
-                  options={aggregationOptions}
-                  value={aggregation}
-                  onChange={(option) => {
-                    if (option.value) {
-                      onAggregationChange(externalId, option.value);
-                    }
-                  }}
-                  width={22}
-                />
-              </InlineField>
-            </div>
-          );
-        })}
+    <div className={styles.cartPanel}>
+      <div className={styles.cartPanelHeader}>
+        <span className={styles.cartPanelTitle}>Cart</span>
+        <span className={styles.cartPanelCount}>
+          {sortedIds.length === 0 ? 'Empty' : `${sortedIds.length} item${sortedIds.length === 1 ? '' : 's'}`}
+        </span>
       </div>
+
+      {sortedIds.length === 0 ? (
+        <p className={styles.cartEmpty}>Add time series from the list above.</p>
+      ) : (
+        <div className={styles.cartList}>
+          {sortedIds.map((externalId) => {
+            const series = timeSeriesById.get(externalId);
+            const config = seriesConfig.get(externalId) ?? DEFAULT_SERIES_CONFIG;
+            const displayLabel = series
+              ? getSeriesLabel(series, config.labelProperty)
+              : externalId;
+
+            return (
+              <div key={externalId} className={styles.cartRow}>
+                <IconButton
+                  name="trash-alt"
+                  variant="destructive"
+                  size="md"
+                  tooltip="Remove from cart"
+                  onClick={() => onRemoveSeries(externalId)}
+                  className={styles.cartRemove}
+                />
+                <div className={styles.cartRowMain}>
+                  <div className={styles.cartRowInfo}>
+                    <span className={styles.cartRowLabel}>{displayLabel}</span>
+                    <span className={styles.cartRowMeta}>{externalId}</span>
+                  </div>
+                  <div className={styles.cartRowControls}>
+                    <InlineField label="Aggregation" labelWidth={12}>
+                      <Select
+                        inputId={`query-editor-aggregation-${externalId}`}
+                        options={aggregationOptions}
+                        value={config.aggregation}
+                        onChange={(option) => {
+                          if (option.value) {
+                            onSeriesConfigChange(externalId, { aggregation: option.value });
+                          }
+                        }}
+                        width={16}
+                      />
+                    </InlineField>
+                    <InlineField label="Label" labelWidth={12}>
+                      <Select
+                        inputId={`query-editor-label-${externalId}`}
+                        options={labelPropertyOptions}
+                        value={config.labelProperty}
+                        onChange={(option) => {
+                          if (option.value) {
+                            onSeriesConfigChange(externalId, { labelProperty: option.value });
+                          }
+                        }}
+                        width={16}
+                      />
+                    </InlineField>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 interface SearchTabProps {
   selectedIds: Set<string>;
-  onToggleSeries: (externalId: string, checked: boolean) => void;
+  onAddSeries: (externalId: string) => void;
 }
 
-function SearchTab({ selectedIds, onToggleSeries }: SearchTabProps) {
+function SearchTab({ selectedIds, onAddSeries }: SearchTabProps) {
   const [viewId, setViewId] = useState(PLACEHOLDER_VIEWS[0].id);
   const [search, setSearch] = useState('');
   const [filtersByView, setFiltersByView] = useState<Record<string, SearchFilters>>({});
@@ -588,7 +690,7 @@ function SearchTab({ selectedIds, onToggleSeries }: SearchTabProps) {
       <TimeSeriesList
         series={filteredTimeSeries}
         selectedIds={selectedIds}
-        onToggleSeries={onToggleSeries}
+        onAddSeries={onAddSeries}
         emptyMessage="No time series match your search or filters."
         contextLabel={`in ${selectedView?.label ?? 'view'}`}
       />
@@ -598,10 +700,10 @@ function SearchTab({ selectedIds, onToggleSeries }: SearchTabProps) {
 
 interface EquipmentTabProps {
   selectedIds: Set<string>;
-  onToggleSeries: (externalId: string, checked: boolean) => void;
+  onAddSeries: (externalId: string) => void;
 }
 
-function EquipmentTab({ selectedIds, onToggleSeries }: EquipmentTabProps) {
+function EquipmentTab({ selectedIds, onAddSeries }: EquipmentTabProps) {
   const [equipmentId, setEquipmentId] = useState(PLACEHOLDER_EQUIPMENT[0].id);
 
   const equipmentOptions: Array<SelectableValue<string>> = PLACEHOLDER_EQUIPMENT.map((item) => ({
@@ -645,7 +747,7 @@ function EquipmentTab({ selectedIds, onToggleSeries }: EquipmentTabProps) {
       <TimeSeriesList
         series={equipmentTimeSeries}
         selectedIds={selectedIds}
-        onToggleSeries={onToggleSeries}
+        onAddSeries={onAddSeries}
         emptyMessage="No time series linked to this equipment."
         contextLabel={`for ${selectedEquipment?.name ?? 'equipment'}`}
       />
@@ -656,14 +758,14 @@ function EquipmentTab({ selectedIds, onToggleSeries }: EquipmentTabProps) {
 export function QueryEditor({ query, onChange, onRunQuery }: Props) {
   const [activeTab, setActiveTab] = useState<SelectionTab>('search');
 
-  const { selectedIds, aggregations } = useMemo(
+  const { selectedIds, seriesConfig } = useMemo(
     () => parseQueryState(query.queryText),
     [query.queryText]
   );
 
   const persistQueryState = useCallback(
-    (nextSelected: Set<string>, nextAggregations: Map<string, AggregationMethod>) => {
-      const queryText = serializeQueryState(nextSelected, nextAggregations);
+    (nextSelected: Set<string>, nextSeriesConfig: Map<string, SeriesConfig>) => {
+      const queryText = serializeQueryState(nextSelected, nextSeriesConfig);
       onChange({ ...query, queryText });
       if (queryText) {
         onRunQuery();
@@ -672,27 +774,36 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
     [onChange, onRunQuery, query]
   );
 
-  const onToggleSeries = (externalId: string, checked: boolean) => {
-    const nextSelected = new Set(selectedIds);
-    const nextAggregations = new Map(aggregations);
-
-    if (checked) {
-      nextSelected.add(externalId);
-      if (!nextAggregations.has(externalId)) {
-        nextAggregations.set(externalId, DEFAULT_AGGREGATION);
-      }
-    } else {
-      nextSelected.delete(externalId);
-      nextAggregations.delete(externalId);
+  const onAddSeries = (externalId: string) => {
+    if (selectedIds.has(externalId)) {
+      return;
     }
 
-    persistQueryState(nextSelected, nextAggregations);
+    const nextSelected = new Set(selectedIds);
+    const nextSeriesConfig = new Map(seriesConfig);
+
+    nextSelected.add(externalId);
+    nextSeriesConfig.set(externalId, { ...DEFAULT_SERIES_CONFIG });
+
+    persistQueryState(nextSelected, nextSeriesConfig);
   };
 
-  const onAggregationChange = (externalId: string, aggregation: AggregationMethod) => {
-    const nextAggregations = new Map(aggregations);
-    nextAggregations.set(externalId, aggregation);
-    persistQueryState(selectedIds, nextAggregations);
+  const onRemoveSeries = (externalId: string) => {
+    const nextSelected = new Set(selectedIds);
+    const nextSeriesConfig = new Map(seriesConfig);
+
+    nextSelected.delete(externalId);
+    nextSeriesConfig.delete(externalId);
+
+    persistQueryState(nextSelected, nextSeriesConfig);
+  };
+
+  const onSeriesConfigChange = (externalId: string, patch: Partial<SeriesConfig>) => {
+    const nextSeriesConfig = new Map(seriesConfig);
+    const current = nextSeriesConfig.get(externalId) ?? DEFAULT_SERIES_CONFIG;
+
+    nextSeriesConfig.set(externalId, { ...current, ...patch });
+    persistQueryState(selectedIds, nextSeriesConfig);
   };
 
   return (
@@ -711,15 +822,16 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
       </TabsBar>
 
       {activeTab === 'search' ? (
-        <SearchTab selectedIds={selectedIds} onToggleSeries={onToggleSeries} />
+        <SearchTab selectedIds={selectedIds} onAddSeries={onAddSeries} />
       ) : (
-        <EquipmentTab selectedIds={selectedIds} onToggleSeries={onToggleSeries} />
+        <EquipmentTab selectedIds={selectedIds} onAddSeries={onAddSeries} />
       )}
 
-      <SelectedTimeSeriesPanel
+      <CartPanel
         selectedIds={selectedIds}
-        aggregations={aggregations}
-        onAggregationChange={onAggregationChange}
+        seriesConfig={seriesConfig}
+        onRemoveSeries={onRemoveSeries}
+        onSeriesConfigChange={onSeriesConfigChange}
       />
     </Stack>
   );
@@ -746,6 +858,15 @@ const getStyles = (theme: GrafanaTheme2) => ({
     lineHeight: theme.typography.bodySmall.lineHeight,
     margin: theme.spacing(0, 0, 0.5, 0),
   }),
+  filtersGrid: css({
+    display: 'grid',
+    gap: theme.spacing(0.5, 2),
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    width: '100%',
+  }),
+  filterField: css({
+    marginBottom: 0,
+  }),
   resultsHeader: css({
     alignItems: 'center',
     color: theme.colors.text.secondary,
@@ -765,58 +886,120 @@ const getStyles = (theme: GrafanaTheme2) => ({
     '&:last-child': {
       borderBottom: 'none',
     },
-    '&[data-selected="true"]': {
-      background: theme.colors.action.selected,
+    '&[data-in-cart="true"]': {
+      background: theme.colors.action.hover,
     },
+  }),
+  resultRowMain: css({
+    alignItems: 'flex-start',
+    display: 'flex',
+    gap: theme.spacing(1),
+    justifyContent: 'space-between',
+  }),
+  resultRowText: css({
+    display: 'flex',
+    flex: 1,
+    flexDirection: 'column',
+    gap: theme.spacing(0.25),
+    minWidth: 0,
+  }),
+  resultRowName: css({
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.body.fontSize,
+  }),
+  resultRowMeta: css({
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.bodySmall.fontSize,
   }),
   resultDescription: css({
     color: theme.colors.text.secondary,
     fontSize: theme.typography.bodySmall.fontSize,
-    margin: theme.spacing(0.5, 0, 0, 3.5),
+    margin: theme.spacing(0.25, 0, 0, 0),
+  }),
+  inCartBadge: css({
+    color: theme.colors.text.secondary,
+    flexShrink: 0,
+    fontSize: theme.typography.bodySmall.fontSize,
+    fontStyle: 'italic',
+    padding: theme.spacing(0.5, 0, 0, 0),
   }),
   emptyState: css({
     color: theme.colors.text.secondary,
     margin: theme.spacing(2),
     textAlign: 'center',
   }),
-  selectedPanel: css({
-    borderTop: `1px solid ${theme.colors.border.weak}`,
+  cartPanel: css({
+    background: theme.colors.background.secondary,
+    border: `1px solid ${theme.colors.border.weak}`,
+    borderRadius: theme.shape.radius.default,
     marginTop: theme.spacing(0.5),
-    paddingTop: theme.spacing(1),
+    padding: theme.spacing(1, 1.5),
   }),
-  selectedPanelHeader: css({
+  cartPanelHeader: css({
+    alignItems: 'baseline',
+    display: 'flex',
+    gap: theme.spacing(1),
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing(1),
+  }),
+  cartPanelTitle: css({
     color: theme.colors.text.primary,
     fontSize: theme.typography.body.fontSize,
     fontWeight: theme.typography.fontWeightMedium,
-    marginBottom: theme.spacing(1),
   }),
-  selectedList: css({
+  cartPanelCount: css({
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.bodySmall.fontSize,
+  }),
+  cartEmpty: css({
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.bodySmall.fontSize,
+    margin: 0,
+  }),
+  cartList: css({
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing(1),
+    gap: theme.spacing(0.75),
   }),
-  selectedRow: css({
+  cartRow: css({
     alignItems: 'flex-start',
+    background: theme.colors.background.primary,
     border: `1px solid ${theme.colors.border.weak}`,
     borderRadius: theme.shape.radius.default,
     display: 'flex',
+    gap: theme.spacing(0.5),
+    padding: theme.spacing(0.75, 1),
+  }),
+  cartRemove: css({
+    flexShrink: 0,
+    marginTop: theme.spacing(0.25),
+  }),
+  cartRowMain: css({
+    display: 'flex',
+    flex: 1,
     flexWrap: 'wrap',
     gap: theme.spacing(1),
     justifyContent: 'space-between',
-    padding: theme.spacing(1, 1.5),
+    minWidth: 0,
   }),
-  selectedRowInfo: css({
+  cartRowInfo: css({
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing(0.25),
-    minWidth: '200px',
+    minWidth: '160px',
   }),
-  selectedRowName: css({
+  cartRowLabel: css({
     color: theme.colors.text.primary,
     fontSize: theme.typography.body.fontSize,
+    fontWeight: theme.typography.fontWeightMedium,
   }),
-  selectedRowMeta: css({
+  cartRowMeta: css({
     color: theme.colors.text.secondary,
     fontSize: theme.typography.bodySmall.fontSize,
+  }),
+  cartRowControls: css({
+    display: 'grid',
+    gap: theme.spacing(0.5, 2),
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
   }),
 });
