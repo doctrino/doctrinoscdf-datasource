@@ -34,8 +34,8 @@ type LabelProperty = 'name' | 'externalId' | 'description' | 'unit';
 
 interface SeriesConfig {
   aggregation: AggregationMethod;
-  labelProperty: LabelProperty;
-  customLabel?: string;
+  /** Property key (name, externalId, …) or custom label text. */
+  label: string;
 }
 
 interface PlaceholderView {
@@ -80,11 +80,13 @@ interface SerializedQuery {
 }
 
 const DEFAULT_AGGREGATION: AggregationMethod = 'average';
-const DEFAULT_LABEL_PROPERTY: LabelProperty = 'name';
+const DEFAULT_LABEL = 'name';
+
+const LABEL_PROPERTY_VALUES = new Set<string>(['name', 'externalId', 'description', 'unit']);
 
 const DEFAULT_SERIES_CONFIG: SeriesConfig = {
   aggregation: DEFAULT_AGGREGATION,
-  labelProperty: DEFAULT_LABEL_PROPERTY,
+  label: DEFAULT_LABEL,
 };
 
 const PLACEHOLDER_VIEWS: PlaceholderView[] = [
@@ -242,13 +244,6 @@ const aggregationOptions: Array<SelectableValue<AggregationMethod>> = [
   { label: 'Sum', value: 'sum' },
 ];
 
-const labelPropertyOptions: Array<SelectableValue<LabelProperty>> = [
-  { label: 'Name', value: 'name' },
-  { label: 'External ID', value: 'externalId' },
-  { label: 'Description', value: 'description' },
-  { label: 'Unit', value: 'unit' },
-];
-
 const PLACEHOLDER_SPACES_BY_VIEW: Record<string, Array<SelectableValue<string>>> = {
   asset_hierarchy: [
     { label: 'All spaces', value: '' },
@@ -339,12 +334,43 @@ function getSeriesLabel(series: PlaceholderTimeSeries, labelProperty: LabelPrope
   }
 }
 
-function resolveSeriesDisplayLabel(series: PlaceholderTimeSeries, config: SeriesConfig): string {
-  if (config.customLabel?.trim()) {
-    return config.customLabel.trim();
+function isLabelProperty(value: string): value is LabelProperty {
+  return LABEL_PROPERTY_VALUES.has(value);
+}
+
+function resolveSeriesDisplayLabel(series: PlaceholderTimeSeries, label: string): string {
+  if (isLabelProperty(label)) {
+    return getSeriesLabel(series, label);
   }
 
-  return getSeriesLabel(series, config.labelProperty);
+  return label;
+}
+
+function getLabelOptionsForSeries(series: PlaceholderTimeSeries): Array<SelectableValue<string>> {
+  return [
+    { label: `Name — ${series.name}`, value: 'name' },
+    { label: `External ID — ${series.externalId}`, value: 'externalId' },
+    { label: `Description — ${series.description}`, value: 'description' },
+    { label: `Unit — ${series.unit || '—'}`, value: 'unit' },
+  ];
+}
+
+function normalizeSeriesLabel(
+  fromSeries: { label?: string; labelProperty?: LabelProperty; customLabel?: string } | undefined
+): string {
+  if (!fromSeries) {
+    return DEFAULT_LABEL;
+  }
+
+  if (fromSeries.label) {
+    return fromSeries.label;
+  }
+
+  if (fromSeries.customLabel?.trim()) {
+    return fromSeries.customLabel.trim();
+  }
+
+  return fromSeries.labelProperty ?? DEFAULT_LABEL;
 }
 
 function parseOptionalNumber(value: string): number | null {
@@ -382,10 +408,9 @@ function parseQueryState(queryText: string | undefined): {
       for (const id of selectedIds) {
         const fromSeries = parsed.series?.[id];
         const aggregation = fromSeries?.aggregation ?? parsed.aggregations?.[id] ?? DEFAULT_AGGREGATION;
-        const labelProperty = fromSeries?.labelProperty ?? DEFAULT_LABEL_PROPERTY;
-        const customLabel = fromSeries?.customLabel;
+        const label = normalizeSeriesLabel(fromSeries);
 
-        seriesConfig.set(id, { aggregation, labelProperty, customLabel });
+        seriesConfig.set(id, { aggregation, label });
       }
 
       return { selectedIds, seriesConfig };
@@ -826,7 +851,8 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
           {sortedIds.map((externalId) => {
             const series = timeSeriesById.get(externalId);
             const config = seriesConfig.get(externalId) ?? DEFAULT_SERIES_CONFIG;
-            const displayLabel = series ? resolveSeriesDisplayLabel(series, config) : externalId;
+            const displayLabel = series ? resolveSeriesDisplayLabel(series, config.label) : externalId;
+            const labelOptions = series ? getLabelOptionsForSeries(series) : [];
 
             return (
               <div key={externalId} className={styles.seriesPanelRow}>
@@ -867,26 +893,19 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
                       className={styles.panelControlField}
                       grow
                     >
-                      <div className={styles.labelControls}>
-                        <Select
-                          inputId={`query-editor-label-property-${externalId}`}
-                          options={labelPropertyOptions}
-                          value={config.labelProperty}
-                          onChange={(option) => {
-                            if (option.value) {
-                              onSeriesConfigChange(externalId, { labelProperty: option.value });
-                            }
-                          }}
-                        />
-                        <Input
-                          id={`query-editor-label-custom-${externalId}`}
-                          placeholder="Custom label text"
-                          value={config.customLabel ?? ''}
-                          onChange={(event) =>
-                            onSeriesConfigChange(externalId, { customLabel: event.currentTarget.value })
+                      <Select
+                        inputId={`query-editor-label-${externalId}`}
+                        options={labelOptions}
+                        value={config.label}
+                        allowCustomValue
+                        placeholder="Select property or type custom label"
+                        onChange={(option) => {
+                          if (option.value !== undefined && option.value !== '') {
+                            onSeriesConfigChange(externalId, { label: String(option.value) });
                           }
-                        />
-                      </div>
+                        }}
+                        onCreateOption={(value) => onSeriesConfigChange(externalId, { label: value })}
+                      />
                     </InlineField>
                   </div>
                 </div>
@@ -1182,13 +1201,6 @@ const getStyles = (theme: GrafanaTheme2) => ({
   }),
   panelControlField: css({
     marginBottom: 0,
-    minWidth: 0,
-    width: '100%',
-  }),
-  labelControls: css({
-    display: 'flex',
-    flexDirection: 'column',
-    gap: theme.spacing(0.5),
     minWidth: 0,
     width: '100%',
   }),
