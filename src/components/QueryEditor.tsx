@@ -844,7 +844,12 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
                     <span className={styles.seriesPanelRowMeta}>{externalId}</span>
                   </div>
                   <div className={styles.seriesPanelRowControls}>
-                    <InlineField label="Aggregation" labelWidth={FILTER_LABEL_WIDTH} className={styles.panelControlField}>
+                    <InlineField
+                      label="Aggregation"
+                      labelWidth={FILTER_LABEL_WIDTH}
+                      className={styles.panelControlField}
+                      grow
+                    >
                       <Select
                         inputId={`query-editor-aggregation-${externalId}`}
                         options={aggregationOptions}
@@ -854,10 +859,14 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
                             onSeriesConfigChange(externalId, { aggregation: option.value });
                           }
                         }}
-                        width={16}
                       />
                     </InlineField>
-                    <InlineField label="Label" labelWidth={FILTER_LABEL_WIDTH} className={styles.panelControlField}>
+                    <InlineField
+                      label="Label"
+                      labelWidth={FILTER_LABEL_WIDTH}
+                      className={styles.panelControlField}
+                      grow
+                    >
                       <div className={styles.labelControls}>
                         <Select
                           inputId={`query-editor-label-property-${externalId}`}
@@ -868,7 +877,6 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
                               onSeriesConfigChange(externalId, { labelProperty: option.value });
                             }
                           }}
-                          width={16}
                         />
                         <Input
                           id={`query-editor-label-custom-${externalId}`}
@@ -877,7 +885,6 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
                           onChange={(event) =>
                             onSeriesConfigChange(externalId, { customLabel: event.currentTarget.value })
                           }
-                          width={22}
                         />
                       </div>
                     </InlineField>
@@ -1176,12 +1183,14 @@ const getStyles = (theme: GrafanaTheme2) => ({
   panelControlField: css({
     marginBottom: 0,
     minWidth: 0,
+    width: '100%',
   }),
   labelControls: css({
-    alignItems: 'center',
     display: 'flex',
-    flexWrap: 'wrap',
-    gap: theme.spacing(0.5, 1),
+    flexDirection: 'column',
+    gap: theme.spacing(0.5),
+    minWidth: 0,
+    width: '100%',
   }),
   resultsHeader: css({
     alignItems: 'center',
@@ -1271,6 +1280,7 @@ const getStyles = (theme: GrafanaTheme2) => ({
     border: `1px solid ${theme.colors.border.weak}`,
     borderRadius: theme.shape.radius.default,
     marginTop: theme.spacing(0.5),
+    overflow: 'hidden',
     padding: theme.spacing(1, 1.5),
   }),
   seriesPanelHeader: css({
@@ -1306,6 +1316,8 @@ const getStyles = (theme: GrafanaTheme2) => ({
     borderRadius: theme.shape.radius.default,
     display: 'flex',
     gap: theme.spacing(0.5),
+    minWidth: 0,
+    overflow: 'hidden',
     padding: theme.spacing(0.75, 1),
   }),
   seriesPanelRemove: css({
@@ -1315,10 +1327,10 @@ const getStyles = (theme: GrafanaTheme2) => ({
   seriesPanelRowMain: css({
     display: 'flex',
     flex: 1,
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     gap: theme.spacing(1),
-    justifyContent: 'space-between',
     minWidth: 0,
+    width: '100%',
   }),
   seriesPanelRowInfo: css({
     display: 'flex',
@@ -1336,8 +1348,10 @@ const getStyles = (theme: GrafanaTheme2) => ({
     fontSize: theme.typography.bodySmall.fontSize,
   }),
   seriesPanelRowControls: css({
-    display: 'grid',
-    gap: theme.spacing(0.5, 2),
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(0.5),
+    minWidth: 0,
+    width: '100%',
   }),
 });
