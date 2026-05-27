@@ -17,6 +17,15 @@ import { CDFLoginOptions, MyQuery } from '../types';
 type Props = QueryEditorProps<DataSource, MyQuery, CDFLoginOptions>;
 
 type SelectionTab = 'search' | 'equipment';
+type TimeSeriesType = 'string' | 'numeric' | 'state';
+type AggregationMethod =
+  | 'average'
+  | 'max'
+  | 'maxDatapoint'
+  | 'min'
+  | 'minDatapoint'
+  | 'count'
+  | 'sum';
 
 interface PlaceholderView {
   id: string;
@@ -29,6 +38,9 @@ interface PlaceholderTimeSeries {
   description: string;
   unit: string;
   viewId: string;
+  space: string;
+  type: TimeSeriesType;
+  isStep: boolean;
 }
 
 interface PlaceholderEquipment {
@@ -36,6 +48,20 @@ interface PlaceholderEquipment {
   name: string;
   timeSeriesIds: string[];
 }
+
+interface SearchFilters {
+  space: string;
+  externalIdPrefix: string;
+  type: TimeSeriesType | '';
+  isStep: boolean;
+}
+
+interface SerializedQuery {
+  selected: string[];
+  aggregations: Record<string, AggregationMethod>;
+}
+
+const DEFAULT_AGGREGATION: AggregationMethod = 'average';
 
 const PLACEHOLDER_VIEWS: PlaceholderView[] = [
   { id: 'asset_hierarchy', label: 'Asset hierarchy' },
@@ -50,6 +76,9 @@ const PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
     description: 'Discharge pressure on primary feed pump.',
     unit: 'bar',
     viewId: 'asset_hierarchy',
+    space: 'sp:plant-a',
+    type: 'numeric',
+    isStep: false,
   },
   {
     externalId: 'ts-pump-01-flow',
@@ -57,6 +86,9 @@ const PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
     description: 'Volumetric flow from pump 01.',
     unit: 'm³/h',
     viewId: 'asset_hierarchy',
+    space: 'sp:plant-a',
+    type: 'numeric',
+    isStep: false,
   },
   {
     externalId: 'ts-pump-02-pressure',
@@ -64,6 +96,9 @@ const PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
     description: 'Discharge pressure on standby pump.',
     unit: 'bar',
     viewId: 'asset_hierarchy',
+    space: 'sp:plant-b',
+    type: 'numeric',
+    isStep: true,
   },
   {
     externalId: 'ts-compressor-power',
@@ -71,6 +106,9 @@ const PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
     description: 'Electrical active power draw.',
     unit: 'kW',
     viewId: 'equipment',
+    space: 'sp:utilities',
+    type: 'numeric',
+    isStep: false,
   },
   {
     externalId: 'ts-compressor-vibration',
@@ -78,6 +116,9 @@ const PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
     description: 'Overall vibration level at bearing.',
     unit: 'mm/s',
     viewId: 'equipment',
+    space: 'sp:utilities',
+    type: 'numeric',
+    isStep: false,
   },
   {
     externalId: 'ts-tank-level',
@@ -85,6 +126,9 @@ const PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
     description: 'Product level in storage tank T-401.',
     unit: '%',
     viewId: 'equipment',
+    space: 'sp:storage',
+    type: 'numeric',
+    isStep: true,
   },
   {
     externalId: 'ts-motor-temp',
@@ -92,6 +136,9 @@ const PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
     description: 'Stator winding temperature.',
     unit: '°C',
     viewId: 'maintenance',
+    space: 'sp:maintenance',
+    type: 'numeric',
+    isStep: false,
   },
   {
     externalId: 'ts-filter-dp',
@@ -99,6 +146,9 @@ const PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
     description: 'Inlet/outlet differential pressure.',
     unit: 'kPa',
     viewId: 'maintenance',
+    space: 'sp:maintenance',
+    type: 'numeric',
+    isStep: false,
   },
   {
     externalId: 'ts-valve-position',
@@ -106,6 +156,19 @@ const PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
     description: 'Valve stem position feedback.',
     unit: '%',
     viewId: 'maintenance',
+    space: 'sp:maintenance',
+    type: 'state',
+    isStep: true,
+  },
+  {
+    externalId: 'ts-valve-status',
+    name: 'Control valve CV-07 – status',
+    description: 'Open/closed status string.',
+    unit: '',
+    viewId: 'maintenance',
+    space: 'sp:maintenance',
+    type: 'string',
+    isStep: false,
   },
 ];
 
@@ -136,22 +199,201 @@ const viewOptions: Array<SelectableValue<string>> = PLACEHOLDER_VIEWS.map((view)
   value: view.id,
 }));
 
+const typeFilterOptions: Array<SelectableValue<TimeSeriesType | ''>> = [
+  { label: 'Any type', value: '' },
+  { label: 'String', value: 'string' },
+  { label: 'Numeric', value: 'numeric' },
+  { label: 'State', value: 'state' },
+];
+
+const aggregationOptions: Array<SelectableValue<AggregationMethod>> = [
+  { label: 'Average', value: 'average' },
+  { label: 'Max', value: 'max' },
+  { label: 'Max datapoint', value: 'maxDatapoint' },
+  { label: 'Min', value: 'min' },
+  { label: 'Min datapoint', value: 'minDatapoint' },
+  { label: 'Count', value: 'count' },
+  { label: 'Sum', value: 'sum' },
+];
+
+const PLACEHOLDER_SPACES_BY_VIEW: Record<string, Array<SelectableValue<string>>> = {
+  asset_hierarchy: [
+    { label: 'All spaces', value: '' },
+    { label: 'sp:plant-a', value: 'sp:plant-a' },
+    { label: 'sp:plant-b', value: 'sp:plant-b' },
+  ],
+  equipment: [
+    { label: 'All spaces', value: '' },
+    { label: 'sp:utilities', value: 'sp:utilities' },
+    { label: 'sp:storage', value: 'sp:storage' },
+  ],
+  maintenance: [
+    { label: 'All spaces', value: '' },
+    { label: 'sp:maintenance', value: 'sp:maintenance' },
+  ],
+};
+
+const DEFAULT_SEARCH_FILTERS: SearchFilters = {
+  space: '',
+  externalIdPrefix: '',
+  type: '',
+  isStep: false,
+};
+
 const timeSeriesById = new Map(PLACEHOLDER_TIME_SERIES.map((series) => [series.externalId, series]));
 
-function parseSelectedIds(queryText: string | undefined): Set<string> {
+function parseQueryState(queryText: string | undefined): {
+  selectedIds: Set<string>;
+  aggregations: Map<string, AggregationMethod>;
+} {
   if (!queryText?.trim()) {
-    return new Set();
+    return { selectedIds: new Set(), aggregations: new Map() };
   }
-  return new Set(
+
+  if (queryText.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(queryText) as SerializedQuery;
+      const selectedIds = new Set(parsed.selected ?? []);
+      const aggregations = new Map(
+        Object.entries(parsed.aggregations ?? {}) as Array<[string, AggregationMethod]>
+      );
+
+      for (const id of selectedIds) {
+        if (!aggregations.has(id)) {
+          aggregations.set(id, DEFAULT_AGGREGATION);
+        }
+      }
+
+      return { selectedIds, aggregations };
+    } catch {
+      // Fall through to legacy comma-separated format.
+    }
+  }
+
+  const selectedIds = new Set(
     queryText
       .split(',')
       .map((id) => id.trim())
       .filter(Boolean)
   );
+  const aggregations = new Map<string, AggregationMethod>();
+
+  for (const id of selectedIds) {
+    aggregations.set(id, DEFAULT_AGGREGATION);
+  }
+
+  return { selectedIds, aggregations };
 }
 
-function selectedIdsToQueryText(selectedIds: Set<string>): string {
-  return [...selectedIds].sort().join(',');
+function serializeQueryState(
+  selectedIds: Set<string>,
+  aggregations: Map<string, AggregationMethod>
+): string {
+  const selected = [...selectedIds].sort();
+  const aggregationRecord: Record<string, AggregationMethod> = {};
+
+  for (const id of selected) {
+    aggregationRecord[id] = aggregations.get(id) ?? DEFAULT_AGGREGATION;
+  }
+
+  return JSON.stringify({ selected, aggregations: aggregationRecord } satisfies SerializedQuery);
+}
+
+function matchesSearchFilters(series: PlaceholderTimeSeries, filters: SearchFilters): boolean {
+  if (filters.space && series.space !== filters.space) {
+    return false;
+  }
+
+  if (filters.externalIdPrefix && !series.externalId.startsWith(filters.externalIdPrefix)) {
+    return false;
+  }
+
+  if (filters.type && series.type !== filters.type) {
+    return false;
+  }
+
+  if (filters.isStep && !series.isStep) {
+    return false;
+  }
+
+  return true;
+}
+
+function DocumentationBlock({ testId }: { testId?: string }) {
+  const styles = useStyles2(getStyles);
+  const [showDocumentation, setShowDocumentation] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        className={styles.documentationToggle}
+        onClick={() => setShowDocumentation((open) => !open)}
+        aria-expanded={showDocumentation}
+      >
+        {showDocumentation ? 'Hide documentation' : 'Documentation'}
+      </button>
+      {showDocumentation && (
+        <p className={styles.documentation} data-testid={testId}>
+          {DOCUMENTATION_TEXT}
+        </p>
+      )}
+    </>
+  );
+}
+
+interface SearchFiltersPanelProps {
+  viewId: string;
+  filters: SearchFilters;
+  onFiltersChange: (filters: SearchFilters) => void;
+}
+
+function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersPanelProps) {
+  const spaceOptions = PLACEHOLDER_SPACES_BY_VIEW[viewId] ?? [{ label: 'All spaces', value: '' }];
+
+  const updateFilters = (patch: Partial<SearchFilters>) => {
+    onFiltersChange({ ...filters, ...patch });
+  };
+
+  return (
+    <Stack direction="column" gap={0.5}>
+      <InlineField label="Space" labelWidth={12}>
+        <Select
+          inputId="query-editor-filter-space"
+          options={spaceOptions}
+          value={filters.space}
+          onChange={(option) => updateFilters({ space: option.value ?? '' })}
+          width={24}
+        />
+      </InlineField>
+      <InlineField label="External ID" labelWidth={12} tooltip="Filter by external ID prefix">
+        <Input
+          id="query-editor-filter-external-id"
+          placeholder="Prefix…"
+          value={filters.externalIdPrefix}
+          onChange={(event) => updateFilters({ externalIdPrefix: event.currentTarget.value })}
+          width={24}
+        />
+      </InlineField>
+      <InlineField label="Type" labelWidth={12}>
+        <Select
+          inputId="query-editor-filter-type"
+          options={typeFilterOptions}
+          value={filters.type}
+          onChange={(option) => updateFilters({ type: option.value ?? '' })}
+          width={24}
+        />
+      </InlineField>
+      <InlineField label="Is step" labelWidth={12}>
+        <Checkbox
+          id="query-editor-filter-is-step"
+          value={filters.isStep}
+          label="Step time series only"
+          onChange={(event) => updateFilters({ isStep: event.currentTarget.checked })}
+        />
+      </InlineField>
+    </Stack>
+  );
 }
 
 interface TimeSeriesListProps {
@@ -211,16 +453,70 @@ function TimeSeriesList({
   );
 }
 
+interface SelectedTimeSeriesPanelProps {
+  selectedIds: Set<string>;
+  aggregations: Map<string, AggregationMethod>;
+  onAggregationChange: (externalId: string, aggregation: AggregationMethod) => void;
+}
+
+function SelectedTimeSeriesPanel({
+  selectedIds,
+  aggregations,
+  onAggregationChange,
+}: SelectedTimeSeriesPanelProps) {
+  const styles = useStyles2(getStyles);
+  const sortedIds = useMemo(() => [...selectedIds].sort(), [selectedIds]);
+
+  if (sortedIds.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className={styles.selectedPanel}>
+      <div className={styles.selectedPanelHeader}>Selected time series</div>
+      <div className={styles.selectedList}>
+        {sortedIds.map((externalId) => {
+          const series = timeSeriesById.get(externalId);
+          const aggregation = aggregations.get(externalId) ?? DEFAULT_AGGREGATION;
+
+          return (
+            <div key={externalId} className={styles.selectedRow}>
+              <div className={styles.selectedRowInfo}>
+                <span className={styles.selectedRowName}>{series?.name ?? externalId}</span>
+                <span className={styles.selectedRowMeta}>{externalId}</span>
+              </div>
+              <InlineField label="Aggregation" labelWidth={14}>
+                <Select
+                  inputId={`query-editor-aggregation-${externalId}`}
+                  options={aggregationOptions}
+                  value={aggregation}
+                  onChange={(option) => {
+                    if (option.value) {
+                      onAggregationChange(externalId, option.value);
+                    }
+                  }}
+                  width={22}
+                />
+              </InlineField>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 interface SearchTabProps {
   selectedIds: Set<string>;
   onToggleSeries: (externalId: string, checked: boolean) => void;
 }
 
 function SearchTab({ selectedIds, onToggleSeries }: SearchTabProps) {
-  const styles = useStyles2(getStyles);
   const [viewId, setViewId] = useState(PLACEHOLDER_VIEWS[0].id);
   const [search, setSearch] = useState('');
-  const [showDocumentation, setShowDocumentation] = useState(false);
+  const [filtersByView, setFiltersByView] = useState<Record<string, SearchFilters>>({});
+
+  const filters = filtersByView[viewId] ?? DEFAULT_SEARCH_FILTERS;
 
   const filteredTimeSeries = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -229,6 +525,11 @@ function SearchTab({ selectedIds, onToggleSeries }: SearchTabProps) {
       if (series.viewId !== viewId) {
         return false;
       }
+
+      if (!matchesSearchFilters(series, filters)) {
+        return false;
+      }
+
       if (!normalizedSearch) {
         return true;
       }
@@ -239,7 +540,7 @@ function SearchTab({ selectedIds, onToggleSeries }: SearchTabProps) {
 
       return haystack.includes(normalizedSearch);
     });
-  }, [search, viewId]);
+  }, [filters, search, viewId]);
 
   const selectedView = PLACEHOLDER_VIEWS.find((view) => view.id === viewId);
 
@@ -253,33 +554,23 @@ function SearchTab({ selectedIds, onToggleSeries }: SearchTabProps) {
     setSearch(event.target.value);
   };
 
+  const onFiltersChange = (nextFilters: SearchFilters) => {
+    setFiltersByView((current) => ({ ...current, [viewId]: nextFilters }));
+  };
+
   return (
     <Stack direction="column" gap={1}>
-      <div className={styles.searchToolbar}>
-        <InlineField label="View" labelWidth={12}>
-          <Select
-            inputId="query-editor-view"
-            options={viewOptions}
-            value={viewId}
-            onChange={onViewChange}
-            width={28}
-          />
-        </InlineField>
-        <button
-          type="button"
-          className={styles.documentationToggle}
-          onClick={() => setShowDocumentation((open) => !open)}
-          aria-expanded={showDocumentation}
-        >
-          {showDocumentation ? 'Hide documentation' : 'Documentation'}
-        </button>
-      </div>
+      <DocumentationBlock testId="query-editor-documentation" />
 
-      {showDocumentation && (
-        <p className={styles.documentation} data-testid="query-editor-documentation">
-          {DOCUMENTATION_TEXT}
-        </p>
-      )}
+      <InlineField label="View" labelWidth={12}>
+        <Select
+          inputId="query-editor-view"
+          options={viewOptions}
+          value={viewId}
+          onChange={onViewChange}
+          width={28}
+        />
+      </InlineField>
 
       <InlineField label="Search" labelWidth={12}>
         <Input
@@ -292,11 +583,13 @@ function SearchTab({ selectedIds, onToggleSeries }: SearchTabProps) {
         />
       </InlineField>
 
+      <SearchFiltersPanel viewId={viewId} filters={filters} onFiltersChange={onFiltersChange} />
+
       <TimeSeriesList
         series={filteredTimeSeries}
         selectedIds={selectedIds}
         onToggleSeries={onToggleSeries}
-        emptyMessage="No time series match your search."
+        emptyMessage="No time series match your search or filters."
         contextLabel={`in ${selectedView?.label ?? 'view'}`}
       />
     </Stack>
@@ -337,6 +630,8 @@ function EquipmentTab({ selectedIds, onToggleSeries }: EquipmentTabProps) {
 
   return (
     <Stack direction="column" gap={1}>
+      <DocumentationBlock testId="query-editor-equipment-documentation" />
+
       <InlineField label="Equipment" labelWidth={12}>
         <Select
           inputId="query-editor-equipment"
@@ -361,11 +656,14 @@ function EquipmentTab({ selectedIds, onToggleSeries }: EquipmentTabProps) {
 export function QueryEditor({ query, onChange, onRunQuery }: Props) {
   const [activeTab, setActiveTab] = useState<SelectionTab>('search');
 
-  const selectedIds = useMemo(() => parseSelectedIds(query.queryText), [query.queryText]);
+  const { selectedIds, aggregations } = useMemo(
+    () => parseQueryState(query.queryText),
+    [query.queryText]
+  );
 
-  const updateSelection = useCallback(
-    (nextSelected: Set<string>) => {
-      const queryText = selectedIdsToQueryText(nextSelected);
+  const persistQueryState = useCallback(
+    (nextSelected: Set<string>, nextAggregations: Map<string, AggregationMethod>) => {
+      const queryText = serializeQueryState(nextSelected, nextAggregations);
       onChange({ ...query, queryText });
       if (queryText) {
         onRunQuery();
@@ -376,12 +674,25 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
 
   const onToggleSeries = (externalId: string, checked: boolean) => {
     const nextSelected = new Set(selectedIds);
+    const nextAggregations = new Map(aggregations);
+
     if (checked) {
       nextSelected.add(externalId);
+      if (!nextAggregations.has(externalId)) {
+        nextAggregations.set(externalId, DEFAULT_AGGREGATION);
+      }
     } else {
       nextSelected.delete(externalId);
+      nextAggregations.delete(externalId);
     }
-    updateSelection(nextSelected);
+
+    persistQueryState(nextSelected, nextAggregations);
+  };
+
+  const onAggregationChange = (externalId: string, aggregation: AggregationMethod) => {
+    const nextAggregations = new Map(aggregations);
+    nextAggregations.set(externalId, aggregation);
+    persistQueryState(selectedIds, nextAggregations);
   };
 
   return (
@@ -404,26 +715,25 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
       ) : (
         <EquipmentTab selectedIds={selectedIds} onToggleSeries={onToggleSeries} />
       )}
+
+      <SelectedTimeSeriesPanel
+        selectedIds={selectedIds}
+        aggregations={aggregations}
+        onAggregationChange={onAggregationChange}
+      />
     </Stack>
   );
 }
 
 const getStyles = (theme: GrafanaTheme2) => ({
-  searchToolbar: css({
-    alignItems: 'flex-end',
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: theme.spacing(1),
-    justifyContent: 'space-between',
-  }),
   documentationToggle: css({
     background: 'none',
     border: 'none',
     color: theme.colors.text.secondary,
     cursor: 'pointer',
     fontSize: theme.typography.bodySmall.fontSize,
-    margin: theme.spacing(0, 0, 1.25, 0),
     padding: 0,
+    textAlign: 'left',
     textDecoration: 'underline',
     textUnderlineOffset: '2px',
     '&:hover': {
@@ -434,7 +744,7 @@ const getStyles = (theme: GrafanaTheme2) => ({
     color: theme.colors.text.disabled,
     fontSize: theme.typography.bodySmall.fontSize,
     lineHeight: theme.typography.bodySmall.lineHeight,
-    margin: 0,
+    margin: theme.spacing(0, 0, 0.5, 0),
   }),
   resultsHeader: css({
     alignItems: 'center',
@@ -468,5 +778,45 @@ const getStyles = (theme: GrafanaTheme2) => ({
     color: theme.colors.text.secondary,
     margin: theme.spacing(2),
     textAlign: 'center',
+  }),
+  selectedPanel: css({
+    borderTop: `1px solid ${theme.colors.border.weak}`,
+    marginTop: theme.spacing(0.5),
+    paddingTop: theme.spacing(1),
+  }),
+  selectedPanelHeader: css({
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.body.fontSize,
+    fontWeight: theme.typography.fontWeightMedium,
+    marginBottom: theme.spacing(1),
+  }),
+  selectedList: css({
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(1),
+  }),
+  selectedRow: css({
+    alignItems: 'flex-start',
+    border: `1px solid ${theme.colors.border.weak}`,
+    borderRadius: theme.shape.radius.default,
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: theme.spacing(1),
+    justifyContent: 'space-between',
+    padding: theme.spacing(1, 1.5),
+  }),
+  selectedRowInfo: css({
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(0.25),
+    minWidth: '200px',
+  }),
+  selectedRowName: css({
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.body.fontSize,
+  }),
+  selectedRowMeta: css({
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.bodySmall.fontSize,
   }),
 });
