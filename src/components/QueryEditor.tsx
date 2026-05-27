@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useCallback, useMemo, useState } from 'react';
+import React, { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { css } from '@emotion/css';
 import {
   Button,
@@ -86,7 +86,9 @@ const PLACEHOLDER_VIEWS: PlaceholderView[] = [
   { id: 'maintenance', label: 'Maintenance' },
 ];
 
-const PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
+const PLACEHOLDER_CATALOG_SIZE = 1000;
+
+const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
   {
     externalId: 'ts-pump-01-pressure',
     name: 'Pump 01 – discharge pressure',
@@ -263,6 +265,44 @@ const DEFAULT_SEARCH_FILTERS: SearchFilters = {
   type: '',
   isStep: false,
 };
+
+function buildPlaceholderCatalog(): PlaceholderTimeSeries[] {
+  const catalog = [...HANDCRAFTED_PLACEHOLDER_TIME_SERIES];
+  const viewIds = PLACEHOLDER_VIEWS.map((view) => view.id);
+  const units = ['bar', 'kW', '%', '°C', 'm³/h', 'kPa', 'mm/s'];
+  const types: TimeSeriesType[] = ['numeric', 'numeric', 'state', 'string'];
+
+  for (let i = catalog.length; i < PLACEHOLDER_CATALOG_SIZE; i++) {
+    const viewId = viewIds[i % viewIds.length];
+    const spaceOptions =
+      PLACEHOLDER_SPACES_BY_VIEW[viewId]?.filter((option) => option.value).map((option) => option.value as string) ??
+      [];
+    const space = spaceOptions[i % spaceOptions.length] ?? '';
+    const type = types[i % types.length];
+    const index = String(i).padStart(4, '0');
+
+    catalog.push({
+      externalId: `ts-gen-${index}`,
+      name: `Sensor ${i} – measurement`,
+      description: `Generated placeholder time series ${i}.`,
+      unit: units[i % units.length],
+      viewId,
+      space,
+      type,
+      isStep: i % 7 === 0,
+    });
+  }
+
+  return catalog;
+}
+
+const PLACEHOLDER_TIME_SERIES = buildPlaceholderCatalog();
+
+const PAGE_SIZE_OPTIONS: Array<SelectableValue<number>> = [
+  { label: '25', value: 25 },
+  { label: '50', value: 50 },
+  { label: '100', value: 100 },
+];
 
 const timeSeriesById = new Map(PLACEHOLDER_TIME_SERIES.map((series) => [series.externalId, series]));
 
@@ -452,12 +492,98 @@ function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersP
   );
 }
 
+interface ResultsPaginationProps {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+}
+
+function ResultsPagination({
+  page,
+  pageSize,
+  totalItems,
+  onPageChange,
+  onPageSizeChange,
+}: ResultsPaginationProps) {
+  const styles = useStyles2(getStyles);
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const rangeStart = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = Math.min(page * pageSize, totalItems);
+
+  const onPageInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextPage = Number.parseInt(event.currentTarget.value, 10);
+    if (!Number.isNaN(nextPage)) {
+      onPageChange(Math.min(totalPages, Math.max(1, nextPage)));
+    }
+  };
+
+  return (
+    <div className={styles.paginationBar}>
+      <span className={styles.paginationRange}>
+        {totalItems === 0 ? 'No results' : `Showing ${rangeStart}–${rangeEnd} of ${totalItems.toLocaleString()}`}
+      </span>
+      <div className={styles.paginationControls}>
+        <InlineField label="Per page" labelWidth={8}>
+          <Select
+            inputId="query-editor-page-size"
+            options={PAGE_SIZE_OPTIONS}
+            value={pageSize}
+            onChange={(option) => {
+              if (option.value) {
+                onPageSizeChange(option.value);
+              }
+            }}
+            width={10}
+          />
+        </InlineField>
+        <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => onPageChange(1)}>
+          First
+        </Button>
+        <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+          Previous
+        </Button>
+        <InlineField label="Page" labelWidth={6}>
+          <Input
+            id="query-editor-page"
+            type="number"
+            min={1}
+            max={totalPages}
+            value={String(page)}
+            onChange={onPageInputChange}
+            width={8}
+          />
+        </InlineField>
+        <span className={styles.paginationTotalPages}>of {totalPages.toLocaleString()}</span>
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Next
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(totalPages)}
+        >
+          Last
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 interface TimeSeriesListProps {
   series: PlaceholderTimeSeries[];
   selectedIds: Set<string>;
   onAddSeries: (externalId: string) => void;
   emptyMessage: string;
   contextLabel: string;
+  listResetKey: string;
 }
 
 function TimeSeriesList({
@@ -466,23 +592,59 @@ function TimeSeriesList({
   onAddSeries,
   emptyMessage,
   contextLabel,
+  listResetKey,
 }: TimeSeriesListProps) {
   const styles = useStyles2(getStyles);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  const totalPages = Math.max(1, Math.ceil(series.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+
+  const paginatedSeries = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return series.slice(start, start + pageSize);
+  }, [currentPage, pageSize, series]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [listResetKey]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const onPageSizeChange = (nextPageSize: number) => {
+    setPageSize(nextPageSize);
+    setPage(1);
+  };
 
   return (
     <>
       <div className={styles.resultsHeader}>
         <span>
-          {series.length} time series {contextLabel}
+          {series.length.toLocaleString()} time series {contextLabel}
         </span>
         <span>{selectedIds.size} in panel</span>
       </div>
+
+      {series.length > 0 && (
+        <ResultsPagination
+          page={currentPage}
+          pageSize={pageSize}
+          totalItems={series.length}
+          onPageChange={setPage}
+          onPageSizeChange={onPageSizeChange}
+        />
+      )}
 
       <div className={styles.resultsList} role="list" aria-label="Time series results">
         {series.length === 0 ? (
           <p className={styles.emptyState}>{emptyMessage}</p>
         ) : (
-          series.map((item) => {
+          paginatedSeries.map((item) => {
             const inPanel = selectedIds.has(item.externalId);
 
             return (
@@ -693,6 +855,7 @@ function SearchTab({ selectedIds, onAddSeries }: SearchTabProps) {
         onAddSeries={onAddSeries}
         emptyMessage="No time series match your search or filters."
         contextLabel={`in ${selectedView?.label ?? 'view'}`}
+        listResetKey={`${viewId}|${search}|${filters.space}|${filters.externalIdPrefix}|${filters.type}|${filters.isStep}`}
       />
     </Stack>
   );
@@ -750,6 +913,7 @@ function EquipmentTab({ selectedIds, onAddSeries }: EquipmentTabProps) {
         onAddSeries={onAddSeries}
         emptyMessage="No time series linked to this equipment."
         contextLabel={`for ${selectedEquipment?.name ?? 'equipment'}`}
+        listResetKey={equipmentId}
       />
     </Stack>
   );
@@ -873,6 +1037,28 @@ const getStyles = (theme: GrafanaTheme2) => ({
     display: 'flex',
     fontSize: theme.typography.bodySmall.fontSize,
     justifyContent: 'space-between',
+  }),
+  paginationBar: css({
+    alignItems: 'center',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: theme.spacing(1),
+    justifyContent: 'space-between',
+  }),
+  paginationRange: css({
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.bodySmall.fontSize,
+  }),
+  paginationControls: css({
+    alignItems: 'center',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: theme.spacing(0.5),
+  }),
+  paginationTotalPages: css({
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.bodySmall.fontSize,
+    marginRight: theme.spacing(0.5),
   }),
   resultsList: css({
     border: `1px solid ${theme.colors.border.weak}`,
