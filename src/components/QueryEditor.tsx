@@ -35,6 +35,7 @@ type LabelProperty = 'name' | 'externalId' | 'description' | 'unit';
 interface SeriesConfig {
   aggregation: AggregationMethod;
   labelProperty: LabelProperty;
+  customLabel?: string;
 }
 
 interface PlaceholderView {
@@ -51,6 +52,8 @@ interface PlaceholderTimeSeries {
   space: string;
   type: TimeSeriesType;
   isStep: boolean;
+  height: number;
+  createdTime: string;
 }
 
 interface PlaceholderEquipment {
@@ -64,6 +67,10 @@ interface SearchFilters {
   externalIdPrefix: string;
   type: TimeSeriesType | '';
   isStep: boolean;
+  heightMin: string;
+  heightMax: string;
+  createdTimeMin: string;
+  createdTimeMax: string;
 }
 
 interface SerializedQuery {
@@ -88,7 +95,7 @@ const PLACEHOLDER_VIEWS: PlaceholderView[] = [
 
 const PLACEHOLDER_CATALOG_SIZE = 1000;
 
-const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: PlaceholderTimeSeries[] = [
+const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: Array<Omit<PlaceholderTimeSeries, 'height' | 'createdTime'>> = [
   {
     externalId: 'ts-pump-01-pressure',
     name: 'Pump 01 – discharge pressure',
@@ -259,15 +266,26 @@ const PLACEHOLDER_SPACES_BY_VIEW: Record<string, Array<SelectableValue<string>>>
   ],
 };
 
+const FILTER_LABEL_WIDTH = 16;
+const PAGINATION_LABEL_WIDTH = 14;
+
 const DEFAULT_SEARCH_FILTERS: SearchFilters = {
   space: '',
   externalIdPrefix: '',
   type: '',
   isStep: false,
+  heightMin: '',
+  heightMax: '',
+  createdTimeMin: '',
+  createdTimeMax: '',
 };
 
 function buildPlaceholderCatalog(): PlaceholderTimeSeries[] {
-  const catalog = [...HANDCRAFTED_PLACEHOLDER_TIME_SERIES];
+  const catalog: PlaceholderTimeSeries[] = HANDCRAFTED_PLACEHOLDER_TIME_SERIES.map((series, index) => ({
+    ...series,
+    height: 1.2 + index * 0.45,
+    createdTime: new Date(Date.UTC(2022, index % 12, ((index * 2) % 28) + 1, 9, 0, 0)).toISOString(),
+  }));
   const viewIds = PLACEHOLDER_VIEWS.map((view) => view.id);
   const units = ['bar', 'kW', '%', '°C', 'm³/h', 'kPa', 'mm/s'];
   const types: TimeSeriesType[] = ['numeric', 'numeric', 'state', 'string'];
@@ -290,6 +308,8 @@ function buildPlaceholderCatalog(): PlaceholderTimeSeries[] {
       space,
       type,
       isStep: i % 7 === 0,
+      height: 0.5 + (i % 200) * 0.1,
+      createdTime: new Date(Date.UTC(2020, 0, 1) + i * 36 * 60 * 60 * 1000).toISOString(),
     });
   }
 
@@ -319,6 +339,32 @@ function getSeriesLabel(series: PlaceholderTimeSeries, labelProperty: LabelPrope
   }
 }
 
+function resolveSeriesDisplayLabel(series: PlaceholderTimeSeries, config: SeriesConfig): string {
+  if (config.customLabel?.trim()) {
+    return config.customLabel.trim();
+  }
+
+  return getSeriesLabel(series, config.labelProperty);
+}
+
+function parseOptionalNumber(value: string): number | null {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsed = Number.parseFloat(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function parseOptionalDate(value: string): Date | null {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function parseQueryState(queryText: string | undefined): {
   selectedIds: Set<string>;
   seriesConfig: Map<string, SeriesConfig>;
@@ -337,8 +383,9 @@ function parseQueryState(queryText: string | undefined): {
         const fromSeries = parsed.series?.[id];
         const aggregation = fromSeries?.aggregation ?? parsed.aggregations?.[id] ?? DEFAULT_AGGREGATION;
         const labelProperty = fromSeries?.labelProperty ?? DEFAULT_LABEL_PROPERTY;
+        const customLabel = fromSeries?.customLabel;
 
-        seriesConfig.set(id, { aggregation, labelProperty });
+        seriesConfig.set(id, { aggregation, labelProperty, customLabel });
       }
 
       return { selectedIds, seriesConfig };
@@ -390,6 +437,26 @@ function matchesSearchFilters(series: PlaceholderTimeSeries, filters: SearchFilt
   }
 
   if (filters.isStep && !series.isStep) {
+    return false;
+  }
+
+  const heightMin = parseOptionalNumber(filters.heightMin);
+  if (heightMin !== null && series.height < heightMin) {
+    return false;
+  }
+
+  const heightMax = parseOptionalNumber(filters.heightMax);
+  if (heightMax !== null && series.height > heightMax) {
+    return false;
+  }
+
+  const createdTimeMin = parseOptionalDate(filters.createdTimeMin);
+  if (createdTimeMin !== null && new Date(series.createdTime) < createdTimeMin) {
+    return false;
+  }
+
+  const createdTimeMax = parseOptionalDate(filters.createdTimeMax);
+  if (createdTimeMax !== null && new Date(series.createdTime) > createdTimeMax) {
     return false;
   }
 
@@ -446,18 +513,18 @@ function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersP
 
       {showFilters && (
         <div className={styles.filtersGrid}>
-          <InlineField label="Space" labelWidth={10}>
+          <InlineField label="Space" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
             <Select
               inputId="query-editor-filter-space"
               options={spaceOptions}
               value={filters.space}
               onChange={(option) => updateFilters({ space: option.value ?? '' })}
-              width={18}
+              width={20}
             />
           </InlineField>
           <InlineField
             label="External ID"
-            labelWidth={10}
+            labelWidth={FILTER_LABEL_WIDTH}
             tooltip="Filter by external ID prefix"
             className={styles.filterField}
           >
@@ -466,25 +533,71 @@ function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersP
               placeholder="Prefix…"
               value={filters.externalIdPrefix}
               onChange={(event) => updateFilters({ externalIdPrefix: event.currentTarget.value })}
-              width={18}
+              width={20}
             />
           </InlineField>
-          <InlineField label="Type" labelWidth={10} className={styles.filterField}>
+          <InlineField label="Type" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
             <Select
               inputId="query-editor-filter-type"
               options={typeFilterOptions}
               value={filters.type}
               onChange={(option) => updateFilters({ type: option.value ?? '' })}
-              width={18}
+              width={20}
             />
           </InlineField>
-          <InlineField label="Is step" labelWidth={10} className={styles.filterField}>
+          <InlineField label="Is step" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
             <Checkbox
               id="query-editor-filter-is-step"
               value={filters.isStep}
               label="Step only"
               onChange={(event) => updateFilters({ isStep: event.currentTarget.checked })}
             />
+          </InlineField>
+          <InlineField label="Height" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>
+            <div className={styles.rangeInputs}>
+              <Input
+                id="query-editor-filter-height-min"
+                type="number"
+                step="any"
+                placeholder="Min"
+                aria-label="Minimum height"
+                value={filters.heightMin}
+                onChange={(event) => updateFilters({ heightMin: event.currentTarget.value })}
+                width={12}
+              />
+              <span className={styles.rangeSeparator}>to</span>
+              <Input
+                id="query-editor-filter-height-max"
+                type="number"
+                step="any"
+                placeholder="Max"
+                aria-label="Maximum height"
+                value={filters.heightMax}
+                onChange={(event) => updateFilters({ heightMax: event.currentTarget.value })}
+                width={12}
+              />
+            </div>
+          </InlineField>
+          <InlineField label="Created" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>
+            <div className={styles.rangeInputs}>
+              <Input
+                id="query-editor-filter-created-min"
+                type="datetime-local"
+                aria-label="Created after"
+                value={filters.createdTimeMin}
+                onChange={(event) => updateFilters({ createdTimeMin: event.currentTarget.value })}
+                width={22}
+              />
+              <span className={styles.rangeSeparator}>to</span>
+              <Input
+                id="query-editor-filter-created-max"
+                type="datetime-local"
+                aria-label="Created before"
+                value={filters.createdTimeMax}
+                onChange={(event) => updateFilters({ createdTimeMax: event.currentTarget.value })}
+                width={22}
+              />
+            </div>
           </InlineField>
         </div>
       )}
@@ -525,7 +638,7 @@ function ResultsPagination({
         {totalItems === 0 ? 'No results' : `Showing ${rangeStart}–${rangeEnd} of ${totalItems.toLocaleString()}`}
       </span>
       <div className={styles.paginationControls}>
-        <InlineField label="Per page" labelWidth={8}>
+        <InlineField label="Per page" labelWidth={PAGINATION_LABEL_WIDTH} className={styles.paginationField}>
           <Select
             inputId="query-editor-page-size"
             options={PAGE_SIZE_OPTIONS}
@@ -535,7 +648,7 @@ function ResultsPagination({
                 onPageSizeChange(option.value);
               }
             }}
-            width={10}
+            width={12}
           />
         </InlineField>
         <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => onPageChange(1)}>
@@ -544,7 +657,7 @@ function ResultsPagination({
         <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
           Previous
         </Button>
-        <InlineField label="Page" labelWidth={6}>
+        <InlineField label="Page" labelWidth={PAGINATION_LABEL_WIDTH} className={styles.paginationField}>
           <Input
             id="query-editor-page"
             type="number"
@@ -552,7 +665,7 @@ function ResultsPagination({
             max={totalPages}
             value={String(page)}
             onChange={onPageInputChange}
-            width={8}
+            width={10}
           />
         </InlineField>
         <span className={styles.paginationTotalPages}>of {totalPages.toLocaleString()}</span>
@@ -713,9 +826,7 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
           {sortedIds.map((externalId) => {
             const series = timeSeriesById.get(externalId);
             const config = seriesConfig.get(externalId) ?? DEFAULT_SERIES_CONFIG;
-            const displayLabel = series
-              ? getSeriesLabel(series, config.labelProperty)
-              : externalId;
+            const displayLabel = series ? resolveSeriesDisplayLabel(series, config) : externalId;
 
             return (
               <div key={externalId} className={styles.seriesPanelRow}>
@@ -733,7 +844,7 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
                     <span className={styles.seriesPanelRowMeta}>{externalId}</span>
                   </div>
                   <div className={styles.seriesPanelRowControls}>
-                    <InlineField label="Aggregation" labelWidth={12}>
+                    <InlineField label="Aggregation" labelWidth={FILTER_LABEL_WIDTH} className={styles.panelControlField}>
                       <Select
                         inputId={`query-editor-aggregation-${externalId}`}
                         options={aggregationOptions}
@@ -746,18 +857,29 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
                         width={16}
                       />
                     </InlineField>
-                    <InlineField label="Label" labelWidth={12}>
-                      <Select
-                        inputId={`query-editor-label-${externalId}`}
-                        options={labelPropertyOptions}
-                        value={config.labelProperty}
-                        onChange={(option) => {
-                          if (option.value) {
-                            onSeriesConfigChange(externalId, { labelProperty: option.value });
+                    <InlineField label="Label" labelWidth={FILTER_LABEL_WIDTH} className={styles.panelControlField}>
+                      <div className={styles.labelControls}>
+                        <Select
+                          inputId={`query-editor-label-property-${externalId}`}
+                          options={labelPropertyOptions}
+                          value={config.labelProperty}
+                          onChange={(option) => {
+                            if (option.value) {
+                              onSeriesConfigChange(externalId, { labelProperty: option.value });
+                            }
+                          }}
+                          width={16}
+                        />
+                        <Input
+                          id={`query-editor-label-custom-${externalId}`}
+                          placeholder="Custom label text"
+                          value={config.customLabel ?? ''}
+                          onChange={(event) =>
+                            onSeriesConfigChange(externalId, { customLabel: event.currentTarget.value })
                           }
-                        }}
-                        width={16}
-                      />
+                          width={22}
+                        />
+                      </div>
                     </InlineField>
                   </div>
                 </div>
@@ -855,7 +977,7 @@ function SearchTab({ selectedIds, onAddSeries }: SearchTabProps) {
         onAddSeries={onAddSeries}
         emptyMessage="No time series match your search or filters."
         contextLabel={`in ${selectedView?.label ?? 'view'}`}
-        listResetKey={`${viewId}|${search}|${filters.space}|${filters.externalIdPrefix}|${filters.type}|${filters.isStep}`}
+        listResetKey={`${viewId}|${search}|${filters.space}|${filters.externalIdPrefix}|${filters.type}|${filters.isStep}|${filters.heightMin}|${filters.heightMax}|${filters.createdTimeMin}|${filters.createdTimeMax}`}
       />
     </Stack>
   );
@@ -1025,11 +1147,41 @@ const getStyles = (theme: GrafanaTheme2) => ({
   filtersGrid: css({
     display: 'grid',
     gap: theme.spacing(0.5, 2),
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
     width: '100%',
   }),
   filterField: css({
     marginBottom: 0,
+    minWidth: 0,
+  }),
+  filterFieldWide: css({
+    gridColumn: '1 / -1',
+    marginBottom: 0,
+    minWidth: 0,
+  }),
+  rangeInputs: css({
+    alignItems: 'center',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: theme.spacing(0.5, 1),
+  }),
+  rangeSeparator: css({
+    color: theme.colors.text.secondary,
+    fontSize: theme.typography.bodySmall.fontSize,
+  }),
+  paginationField: css({
+    flexShrink: 0,
+    marginBottom: 0,
+  }),
+  panelControlField: css({
+    marginBottom: 0,
+    minWidth: 0,
+  }),
+  labelControls: css({
+    alignItems: 'center',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: theme.spacing(0.5, 1),
   }),
   resultsHeader: css({
     alignItems: 'center',
