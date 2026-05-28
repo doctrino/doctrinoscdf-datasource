@@ -773,6 +773,12 @@ function TimeSeriesList({
   const styles = useStyles2(getStyles);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [prevResetKey, setPrevResetKey] = useState(listResetKey);
+
+  if (prevResetKey !== listResetKey) {
+    setPrevResetKey(listResetKey);
+    setPage(1);
+  }
 
   const totalPages = Math.max(1, Math.ceil(series.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -781,16 +787,6 @@ function TimeSeriesList({
     const start = (currentPage - 1) * pageSize;
     return series.slice(start, start + pageSize);
   }, [currentPage, pageSize, series]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [listResetKey]);
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
 
   const onPageSizeChange = (nextPageSize: number) => {
     setPageSize(nextPageSize);
