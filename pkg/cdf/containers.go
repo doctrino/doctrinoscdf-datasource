@@ -69,7 +69,7 @@ func (c *containers) Inspect(ctx context.Context, items []ContainerId, options *
 	}
 	var resp ContainerInspectResponse
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("cdf: token inspect: %w", err)
+		return nil, fmt.Errorf("cdf /models/containers/inspect: %w", err)
 	}
 	return &resp.Items, nil
 }
