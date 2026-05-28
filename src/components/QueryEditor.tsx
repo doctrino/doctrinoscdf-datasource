@@ -30,7 +30,16 @@ type AggregationMethod =
   | 'count'
   | 'sum';
 
-type LabelProperty = 'name' | 'externalId' | 'description' | 'unit';
+type LabelProperty =
+  | 'name'
+  | 'externalId'
+  | 'description'
+  | 'unit'
+  | 'space'
+  | 'type'
+  | 'nameWithUnit'
+  | 'externalIdWithName'
+  | 'nameWithSpace';
 
 interface SeriesConfig {
   aggregation: AggregationMethod;
@@ -82,7 +91,17 @@ interface SerializedQuery {
 const DEFAULT_AGGREGATION: AggregationMethod = 'average';
 const DEFAULT_LABEL = 'name';
 
-const LABEL_PROPERTY_VALUES = new Set<string>(['name', 'externalId', 'description', 'unit']);
+const LABEL_PROPERTY_VALUES = new Set<string>([
+  'name',
+  'externalId',
+  'description',
+  'unit',
+  'space',
+  'type',
+  'nameWithUnit',
+  'externalIdWithName',
+  'nameWithSpace',
+]);
 
 const DEFAULT_SERIES_CONFIG: SeriesConfig = {
   aggregation: DEFAULT_AGGREGATION,
@@ -329,6 +348,16 @@ function getSeriesLabel(series: PlaceholderTimeSeries, labelProperty: LabelPrope
       return series.description;
     case 'unit':
       return series.unit || '—';
+    case 'space':
+      return series.space;
+    case 'type':
+      return series.type;
+    case 'nameWithUnit':
+      return series.unit ? `${series.name} (${series.unit})` : series.name;
+    case 'externalIdWithName':
+      return `${series.externalId} — ${series.name}`;
+    case 'nameWithSpace':
+      return `${series.name} · ${series.space}`;
     default:
       return series.name;
   }
@@ -347,11 +376,20 @@ function resolveSeriesDisplayLabel(series: PlaceholderTimeSeries, label: string)
 }
 
 function getLabelOptionsForSeries(series: PlaceholderTimeSeries): Array<SelectableValue<string>> {
+  const nameWithUnit = series.unit ? `${series.name} (${series.unit})` : series.name;
+  const externalIdWithName = `${series.externalId} — ${series.name}`;
+  const nameWithSpace = `${series.name} · ${series.space}`;
+
   return [
     { label: `Name — ${series.name}`, value: 'name' },
     { label: `External ID — ${series.externalId}`, value: 'externalId' },
     { label: `Description — ${series.description}`, value: 'description' },
     { label: `Unit — ${series.unit || '—'}`, value: 'unit' },
+    { label: `Space — ${series.space}`, value: 'space' },
+    { label: `Type — ${series.type}`, value: 'type' },
+    { label: `Name + unit — ${nameWithUnit}`, value: 'nameWithUnit' },
+    { label: `ID + name — ${externalIdWithName}`, value: 'externalIdWithName' },
+    { label: `Name + space — ${nameWithSpace}`, value: 'nameWithSpace' },
   ];
 }
 
