@@ -85,7 +85,7 @@ func (i *instances) Search(ctx context.Context, request InstanceSearchRequest) (
 }
 
 type InstanceAggregateRequest struct {
-	View       ViewId           `json:"viewId"`
+	View       ViewId           `json:"view"`
 	Aggregates []AggregateItem  `json:"aggregates,omitempty"`
 	Query      string           `json:"query,omitempty"`
 	Properties []string         `json:"properties,omitempty"`
