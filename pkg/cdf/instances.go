@@ -14,15 +14,15 @@ type InstanceId struct {
 }
 
 type InstanceResponse struct {
-	InstanceType    string           `json:"instanceType"`
-	Version         string           `json:"version"`
-	Space           string           `json:"space"`
-	ExternalId      string           `json:"externalId"`
-	Type            *InstanceId      `json:"type"`
-	CreatedTime     int64            `json:"createdTime"`
-	LastUpdatedTime int64            `json:"lastUpdatedTime"`
-	DeletedTime     *int64           `json:"deletedTime"`
-	Properties      []map[string]any `json:"properties"`
+	InstanceType    string         `json:"instanceType"`
+	Version         int            `json:"version"`
+	Space           string         `json:"space"`
+	ExternalId      string         `json:"externalId"`
+	Type            *InstanceId    `json:"type"`
+	CreatedTime     int64          `json:"createdTime"`
+	LastUpdatedTime int64          `json:"lastUpdatedTime"`
+	DeletedTime     *int64         `json:"deletedTime"`
+	Properties      map[string]any `json:"properties"`
 }
 
 type InstanceItemResponse struct {
@@ -49,19 +49,19 @@ type instances struct {
 }
 
 type AggregateProperty struct {
-	Property string `json:"property"`
+	Property string `json:"property,omitempty"`
 }
 
 type AggregateItem struct {
-	Avg   AggregateProperty `json:"avg"`
-	Count AggregateProperty `json:"count,omitempty"`
-	Max   AggregateProperty `json:"max,omitempty"`
-	Min   AggregateProperty `json:"min,omitempty"`
-	Sum   AggregateProperty `json:"sum,omitempty"`
+	Avg   *AggregateProperty `json:"avg,omitempty"`
+	Count *AggregateProperty `json:"count,omitempty"`
+	Max   *AggregateProperty `json:"max,omitempty"`
+	Min   *AggregateProperty `json:"min,omitempty"`
+	Sum   *AggregateProperty `json:"sum,omitempty"`
 }
 
 type InstanceSearchRequest struct {
-	View       ViewId           `json:"viewId"`
+	View       ViewId           `json:"view"`
 	Query      string           `json:"query,omitempty"`
 	Properties []string         `json:"properties,omitempty"`
 	Filter     []map[string]any `json:"filter,omitempty"`
