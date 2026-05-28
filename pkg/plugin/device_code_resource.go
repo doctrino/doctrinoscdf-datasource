@@ -104,7 +104,7 @@ func (d *Datasource) handleDeviceCodePoll(w http.ResponseWriter, r *http.Request
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(deviceCodePollResponse{
 			Status: "error",
-			Error:  fmt.Sprintf("device code provider not configured, please start the device code flow first."),
+			Error:  "device code provider not configured, please start the device code flow first.",
 		}); err != nil {
 			log.DefaultLogger.Error("failed to encode device code poll response", "error", err)
 		}

@@ -47,7 +47,7 @@ func TestMain(m *testing.M) {
 		IdpTenantID:  os.Getenv("IDP_TENANT_ID"),
 		Mode:         "guided",
 	}
-	client, err := NewCogniteClientFromSettings(settings)
+	client, err := NewCogniteClientFromSettings(settings, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -55,4 +55,3 @@ func TestMain(m *testing.M) {
 
 	os.Exit(m.Run())
 }
-
