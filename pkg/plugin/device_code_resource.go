@@ -11,7 +11,6 @@ import (
 	"github.com/cognite/doctrino-s-cdf-source/pkg/auth"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
 )
 
 type deviceCodeStartResponse struct {
@@ -30,17 +29,9 @@ type deviceCodePollResponse struct {
 	Error        string `json:"error,omitempty"`
 }
 
-// newDeviceCodeResourceHandler creates the HTTP mux for CallResource endpoints, bound to the datasource instance.
-func newDeviceCodeResourceHandler(d *Datasource) backend.CallResourceHandler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/device-code/start", d.handleDeviceCodeStart)
-	mux.HandleFunc("/device-code/poll", d.handleDeviceCodePoll)
-	return httpadapter.New(mux)
-}
-
 // CallResource delegates to the per-instance resource handler mux.
 func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
-	return d.deviceCodeResourceHandler.CallResource(ctx, req, sender)
+	return d.resourceHandler.CallResource(ctx, req, sender)
 }
 
 func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Request) {
