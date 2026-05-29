@@ -34,6 +34,8 @@ func newResourceHandler(d *Datasource) backend.CallResourceHandler {
 	mux.HandleFunc("/device-code/start", d.handleDeviceCodeStart)
 	mux.HandleFunc("/device-code/poll", d.handleDeviceCodePoll)
 	mux.HandleFunc("/container/inspect", d.handleContainerInspect)
+	mux.HandleFunc("/instances/search", d.handleInstancesSearch)
+	mux.HandleFunc("/instances/aggregate", d.handleInstancesAggregate)
 	return httpadapter.New(mux)
 }
 

@@ -39,6 +39,7 @@ func (d *Datasource) handleContainerInspect(w http.ResponseWriter, r *http.Reque
 		http.Error(w, fmt.Sprintf("Containers inspect: %v", err), http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(data)
 	if err != nil {
 		log.DefaultLogger.Error("Write response", "error", err)
