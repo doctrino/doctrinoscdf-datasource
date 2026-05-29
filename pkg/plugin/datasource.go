@@ -33,6 +33,7 @@ func newResourceHandler(d *Datasource) backend.CallResourceHandler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/device-code/start", d.handleDeviceCodeStart)
 	mux.HandleFunc("/device-code/poll", d.handleDeviceCodePoll)
+	mux.HandleFunc("/container/inspect", d.handleContainerInspect)
 	return httpadapter.New(mux)
 }
 
@@ -69,6 +70,11 @@ type Datasource struct {
 	resourceHandler    backend.CallResourceHandler
 	deviceCodeProvider *auth.DeviceCodeProvider
 	settings           *auth.Settings
+}
+
+// CallResource delegates to the per-instance resource handler mux.
+func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
+	return d.resourceHandler.CallResource(ctx, req, sender)
 }
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/cognite/doctrino-s-cdf-source/pkg/auth"
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 )
 
@@ -27,11 +26,6 @@ type deviceCodePollResponse struct {
 	RefreshToken string `json:"refreshToken,omitempty"`
 	Expiry       int64  `json:"expiry,omitempty"`
 	Error        string `json:"error,omitempty"`
-}
-
-// CallResource delegates to the per-instance resource handler mux.
-func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
-	return d.resourceHandler.CallResource(ctx, req, sender)
 }
 
 func (d *Datasource) handleDeviceCodeStart(w http.ResponseWriter, r *http.Request) {

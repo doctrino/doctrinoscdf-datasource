@@ -10,7 +10,8 @@ import (
 func TestContainers_InspectNoArgs(t *testing.T) {
 	ctx := context.Background()
 	containerId := ContainerId{"cdf_cdm", "CogniteTimeSeries"}
-	resp, err := testClient.Containers.Inspect(ctx, []ContainerId{containerId}, nil)
+	request := ContainersInspectRequest{[]ContainerId{containerId}, nil}
+	resp, err := testClient.Containers.Inspect(ctx, request)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }
@@ -18,11 +19,11 @@ func TestContainers_InspectNoArgs(t *testing.T) {
 func TestContainers_InspectWithArgs(t *testing.T) {
 	ctx := context.Background()
 	containerId := ContainerId{"cdf_cdm", "CogniteTimeSeries"}
-	resp, err := testClient.Containers.Inspect(ctx, []ContainerId{containerId}, &InspectionOperations{
+	request := ContainersInspectRequest{[]ContainerId{containerId}, &InspectionOperations{
 		InvolvedViews:          InvolvedViewsFilter{true},
 		TotalInvolvedViewCount: TotalInvolvedViewCountFilter{true, false},
-	},
-	)
+	}}
+	resp, err := testClient.Containers.Inspect(ctx, request)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 }
