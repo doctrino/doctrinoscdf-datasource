@@ -60,6 +60,7 @@ type CogniteClient struct {
 	CDFProject string
 	Token      *token
 	Containers *containers
+	Instances  *instances
 }
 
 func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *CogniteClient {
@@ -72,11 +73,13 @@ func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *Cognite
 
 	token := &token{apiClient: apiClient}
 	containers := &containers{apiClient: apiClient}
+	instances := &instances{apiClient: apiClient}
 
 	return &CogniteClient{
 		CDFProject: project,
 		Token:      token,
 		Containers: containers,
+		Instances:  instances,
 	}
 }
 

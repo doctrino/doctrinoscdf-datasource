@@ -46,20 +46,16 @@ type InspectionOperations struct {
 	TotalInvolvedViewCount TotalInvolvedViewCountFilter `json:"totalInvolvedViewCount"`
 }
 
-type inspectRequest struct {
+type ContainersInspectRequest struct {
 	Items                []ContainerId         `json:"items"`
 	InspectionOperations *InspectionOperations `json:"inspectionOperations"`
 }
 
-func (c *containers) Inspect(ctx context.Context, items []ContainerId, options *InspectionOperations) (*[]ContainerInspectItem, error) {
-	reqBody := inspectRequest{Items: items}
-	if options != nil {
-		reqBody.InspectionOperations = options
-	} else {
-		reqBody.InspectionOperations = &InspectionOperations{}
+func (c *containers) Inspect(ctx context.Context, request ContainersInspectRequest) ([]ContainerInspectItem, error) {
+	if request.InspectionOperations == nil {
+		request.InspectionOperations = &InspectionOperations{}
 	}
-
-	data, err := json.Marshal(reqBody)
+	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +65,7 @@ func (c *containers) Inspect(ctx context.Context, items []ContainerId, options *
 	}
 	var resp ContainerInspectResponse
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("cdf: token inspect: %w", err)
+		return nil, fmt.Errorf("cdf /models/containers/inspect: %w", err)
 	}
-	return &resp.Items, nil
+	return resp.Items, nil
 }

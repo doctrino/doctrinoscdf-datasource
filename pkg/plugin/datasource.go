@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"time"
 
 	"github.com/cognite/doctrino-s-cdf-source/pkg/auth"
 	"github.com/cognite/doctrino-s-cdf-source/pkg/cdf"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
@@ -25,6 +27,17 @@ var (
 	_ backend.CallResourceHandler   = (*Datasource)(nil)
 	_ instancemgmt.InstanceDisposer = (*Datasource)(nil)
 )
+
+// newResourceHandler creates the HTTP mux for CallResource endpoints, bound to the datasource instance.
+func newResourceHandler(d *Datasource) backend.CallResourceHandler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/device-code/start", d.handleDeviceCodeStart)
+	mux.HandleFunc("/device-code/poll", d.handleDeviceCodePoll)
+	mux.HandleFunc("/container/inspect", resourceHandler("Containers inspect", d.client.Containers.Inspect))
+	mux.HandleFunc("/instances/search", resourceHandler("Instances search", d.client.Instances.Search))
+	mux.HandleFunc("/instances/aggregate", resourceHandler("Instances aggregate", d.client.Instances.Aggregate))
+	return httpadapter.New(mux)
+}
 
 // CDFDatasource creates a new datasource instance.
 func CDFDatasource(_ context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
@@ -43,7 +56,7 @@ func CDFDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 	}
 
 	d := &Datasource{client: client}
-	d.deviceCodeResourceHandler = newDeviceCodeResourceHandler(d)
+	d.resourceHandler = newResourceHandler(d)
 	deviceCodeProvider, ok := provider.(*auth.DeviceCodeProvider)
 	if ok {
 		d.deviceCodeProvider = deviceCodeProvider
@@ -55,10 +68,15 @@ func CDFDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 // Datasource is an example datasource which can respond to data queries, reports
 // its health and has streaming skills.
 type Datasource struct {
-	client                    *cdf.CogniteClient
-	deviceCodeResourceHandler backend.CallResourceHandler
-	deviceCodeProvider        *auth.DeviceCodeProvider
-	settings                  *auth.Settings
+	client             *cdf.CogniteClient
+	resourceHandler    backend.CallResourceHandler
+	deviceCodeProvider *auth.DeviceCodeProvider
+	settings           *auth.Settings
+}
+
+// CallResource delegates to the per-instance resource handler mux.
+func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
+	return d.resourceHandler.CallResource(ctx, req, sender)
 }
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
