@@ -51,7 +51,10 @@ type ContainersInspectRequest struct {
 	InspectionOperations *InspectionOperations `json:"inspectionOperations"`
 }
 
-func (c *containers) Inspect(ctx context.Context, request ContainersInspectRequest) (*[]ContainerInspectItem, error) {
+func (c *containers) Inspect(ctx context.Context, request ContainersInspectRequest) ([]ContainerInspectItem, error) {
+	if request.InspectionOperations == nil {
+		request.InspectionOperations = &InspectionOperations{}
+	}
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -64,5 +67,5 @@ func (c *containers) Inspect(ctx context.Context, request ContainersInspectReque
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("cdf /models/containers/inspect: %w", err)
 	}
-	return &resp.Items, nil
+	return resp.Items, nil
 }

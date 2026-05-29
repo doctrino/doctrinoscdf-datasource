@@ -19,6 +19,8 @@ func (d *Datasource) handleContainerInspect(w http.ResponseWriter, r *http.Reque
 
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
+
+	w.Header().Set("Content-Type", "application/json")
 	var request cdf.ContainersInspectRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
@@ -32,10 +34,14 @@ func (d *Datasource) handleContainerInspect(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(response)
+	data, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Containers inspect: %v", err), http.StatusInternalServerError)
+		return
+	}
+	_, err = w.Write(data)
+	if err != nil {
+		log.DefaultLogger.Error("Write response", "error", err)
 		return
 	}
 }
