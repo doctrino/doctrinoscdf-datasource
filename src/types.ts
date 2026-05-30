@@ -52,3 +52,21 @@ export interface CDFSecureLoginOptions {
   refreshToken?: string;
   expiry?: string;
 }
+
+export interface ViewId {
+  space: string;
+  externalId: string;
+  version: string;
+}
+
+export interface InspectionResult {
+  involvedViewCount: number;
+  involvedViews: ViewId[];
+}
+
+export interface ContainerInspectResult {
+  space: string;
+  externalId: string;
+  inspectionResults: InspectionResult;
+}
+

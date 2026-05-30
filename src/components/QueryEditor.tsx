@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useCallback, useMemo, useState } from 'react';
+import React, { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { css } from '@emotion/css';
 import {
   Button,
@@ -15,7 +15,7 @@ import {
 } from '@grafana/ui';
 import { GrafanaTheme2, QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from '../datasource';
-import { CDFLoginOptions, MyQuery } from '../types';
+import { CDFLoginOptions, MyQuery, ViewId } from '../types';
 
 type Props = QueryEditorProps<DataSource, MyQuery, CDFLoginOptions>;
 
@@ -550,7 +550,7 @@ function DocumentationBlock({ testId }: { testId?: string }) {
 }
 
 interface SearchFiltersPanelProps {
-  viewId: string;
+  viewId: ViewId;
   filters: SearchFilters;
   onFiltersChange: (filters: SearchFilters) => void;
 }
@@ -953,14 +953,20 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
 }
 
 interface SearchTabProps {
+  datasource: DataSource;
   selectedIds: Set<string>;
   onAddSeries: (externalId: string) => void;
 }
 
-function SearchTab({ selectedIds, onAddSeries }: SearchTabProps) {
-  const [viewId, setViewId] = useState(PLACEHOLDER_VIEWS[0].id);
+function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
+  const [viewOptions, setViewOptions] = useState<Array<SelectableValue<ViewId>>>([]);
+  const [isViewsLoading, setIsViewsLoading] = useState(true);
+  const [viewsError, setViewsError] = useState<string | null>(null);
+  const cogniteTimeSeries = { space: 'cdf_cdm', externalId: 'CogniteTimeSeries', version: 'v1' };
+  const [viewId, setViewId] = useState<ViewId>(cogniteTimeSeries);
+
   const [search, setSearch] = useState('');
-  const [filtersByView, setFiltersByView] = useState<Record<string, SearchFilters>>({});
+  const [filtersByView, setFiltersByView] = useState<Record<ViewId, SearchFilters>>({});
 
   const filters = filtersByView[viewId] ?? DEFAULT_SEARCH_FILTERS;
 
@@ -990,7 +996,30 @@ function SearchTab({ selectedIds, onAddSeries }: SearchTabProps) {
 
   const selectedView = PLACEHOLDER_VIEWS.find((view) => view.id === viewId);
 
-  const onViewChange = (option: SelectableValue<string>) => {
+  useEffect(() => {
+    let cancelled = false;
+    const loadViews = async () => {
+    setIsViewsLoading(true);
+    setViewsError(null);
+    try {
+      const views = await datasource.getTimeSeriesViews();
+      if (cancelled) {return;}
+
+      const options = views.map((view) => ({label: `${view.space}:${view.externalId}(${view.version})`, value: view}))
+      setViewOptions(options);
+    } catch (err) {
+      setViewsError(err instanceof Error ?err.message : String(err))
+    } finally {
+      if (!cancelled) {setIsViewsLoading(false);}
+    }
+  }
+  void loadViews();
+    return () => {
+      cancelled = true;
+    }
+  }, [datasource])
+
+  const onViewChange = (option: SelectableValue<ViewId>) => {
     if (option.value) {
       setViewId(option.value);
     }
@@ -1008,12 +1037,19 @@ function SearchTab({ selectedIds, onAddSeries }: SearchTabProps) {
     <Stack direction="column" gap={1}>
       <DocumentationBlock testId="query-editor-documentation" />
 
+      {viewsError && (
+        <Alert severity="error" title="Failed to load views">
+          {viewsError}
+        </Alert>
+      )}
       <InlineField label="View" labelWidth={12}>
         <Select
           inputId="query-editor-view"
           options={viewOptions}
           value={viewId}
           onChange={onViewChange}
+          isLoading={isViewsLoading}
+          disabled={isViewsLoading || viewOptions.length === 0}
           width={28}
         />
       </InlineField>
@@ -1101,13 +1137,10 @@ function EquipmentTab({ selectedIds, onAddSeries }: EquipmentTabProps) {
   );
 }
 
-export function QueryEditor({ query, onChange, onRunQuery }: Props) {
+export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) {
   const [activeTab, setActiveTab] = useState<SelectionTab>('search');
 
-  const { selectedIds, seriesConfig } = useMemo(
-    () => parseQueryState(query.queryText),
-    [query.queryText]
-  );
+  const { selectedIds, seriesConfig } = useMemo(() => parseQueryState(query.queryText), [query.queryText]);
 
   const persistQueryState = useCallback(
     (nextSelected: Set<string>, nextSeriesConfig: Map<string, SeriesConfig>) => {
@@ -1155,20 +1188,12 @@ export function QueryEditor({ query, onChange, onRunQuery }: Props) {
   return (
     <Stack direction="column" gap={1}>
       <TabsBar>
-        <Tab
-          label="Search"
-          active={activeTab === 'search'}
-          onChangeTab={() => setActiveTab('search')}
-        />
-        <Tab
-          label="Equipment"
-          active={activeTab === 'equipment'}
-          onChangeTab={() => setActiveTab('equipment')}
-        />
+        <Tab label="Search" active={activeTab === 'search'} onChangeTab={() => setActiveTab('search')} />
+        <Tab label="Equipment" active={activeTab === 'equipment'} onChangeTab={() => setActiveTab('equipment')} />
       </TabsBar>
 
       {activeTab === 'search' ? (
-        <SearchTab selectedIds={selectedIds} onAddSeries={onAddSeries} />
+        <SearchTab datasource={datasource} selectedIds={selectedIds} onAddSeries={onAddSeries} />
       ) : (
         <EquipmentTab selectedIds={selectedIds} onAddSeries={onAddSeries} />
       )}

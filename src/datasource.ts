@@ -1,7 +1,7 @@
 import { DataSourceInstanceSettings, CoreApp, ScopedVars } from '@grafana/data';
 import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
 
-import { MyQuery, CDFLoginOptions, DEFAULT_QUERY } from './types';
+import { MyQuery, CDFLoginOptions, DEFAULT_QUERY, ViewId, ContainerInspectResult } from './types';
 
 export interface DeviceCodeStartResponse {
   userCode: string;
@@ -38,5 +38,17 @@ export class DataSource extends DataSourceWithBackend<MyQuery, CDFLoginOptions> 
   filterQuery(query: MyQuery): boolean {
     // if no query has been provided, prevent the query from being executed
     return !!query.queryText;
+  }
+
+  async getTimeSeriesViews(): Promise<ViewId[]> {
+    const response: ContainerInspectResult = await this.postResource('/containers/inspect', {
+      items: [
+        {
+          space: 'cdf_cdm',
+          externalId: 'CogniteTimeSeries',
+        },
+      ],
+    });
+    return response.inspectionResults.involvedViews;
   }
 }
