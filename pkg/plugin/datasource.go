@@ -33,7 +33,7 @@ func newResourceHandler(d *Datasource) backend.CallResourceHandler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/device-code/start", d.handleDeviceCodeStart)
 	mux.HandleFunc("/device-code/poll", d.handleDeviceCodePoll)
-	mux.HandleFunc("/container/inspect", resourceHandler("Containers inspect", d.client.Containers.Inspect))
+	mux.HandleFunc("/containers/inspect", resourceHandler("Containers inspect", d.client.Containers.Inspect))
 	mux.HandleFunc("/instances/search", resourceHandler("Instances search", d.client.Instances.Search))
 	mux.HandleFunc("/instances/aggregate", resourceHandler("Instances aggregate", d.client.Instances.Aggregate))
 	return httpadapter.New(mux)

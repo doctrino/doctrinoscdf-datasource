@@ -41,7 +41,7 @@ export class DataSource extends DataSourceWithBackend<MyQuery, CDFLoginOptions> 
   }
 
   async getTimeSeriesViews(): Promise<ViewId[]> {
-    const response: ContainerInspectResult = await this.postResource('/containers/inspect', {
+    const response: ContainerInspectResult[] = await this.postResource('containers/inspect', {
       items: [
         {
           space: 'cdf_cdm',
@@ -49,6 +49,6 @@ export class DataSource extends DataSourceWithBackend<MyQuery, CDFLoginOptions> 
         },
       ],
     });
-    return response.inspectionResults.involvedViews;
+    return response[0].inspectionResults.involvedViews
   }
 }

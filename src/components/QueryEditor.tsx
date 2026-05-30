@@ -1,6 +1,7 @@
 import React, { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { css } from '@emotion/css';
 import {
+  Alert,
   Button,
   Checkbox,
   IconButton,
@@ -241,10 +242,6 @@ const DOCUMENTATION_TEXT =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ' +
   'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.';
 
-const viewOptions: Array<SelectableValue<string>> = PLACEHOLDER_VIEWS.map((view) => ({
-  label: view.label,
-  value: view.id,
-}));
 
 const typeFilterOptions: Array<SelectableValue<TimeSeriesType | ''>> = [
   { label: 'Any type', value: '' },
@@ -550,7 +547,7 @@ function DocumentationBlock({ testId }: { testId?: string }) {
 }
 
 interface SearchFiltersPanelProps {
-  viewId: ViewId;
+  viewId: string;
   filters: SearchFilters;
   onFiltersChange: (filters: SearchFilters) => void;
 }
@@ -959,14 +956,17 @@ interface SearchTabProps {
 }
 
 function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
-  const [viewOptions, setViewOptions] = useState<Array<SelectableValue<ViewId>>>([]);
+  const viewIdAsString = (view: ViewId)=> {
+    return `${view.space}:${view.externalId}(${view.version})`
+  }
+  const [viewOptions, setViewOptions] = useState<Array<SelectableValue<string>>>([]);
   const [isViewsLoading, setIsViewsLoading] = useState(true);
   const [viewsError, setViewsError] = useState<string | null>(null);
   const cogniteTimeSeries = { space: 'cdf_cdm', externalId: 'CogniteTimeSeries', version: 'v1' };
-  const [viewId, setViewId] = useState<ViewId>(cogniteTimeSeries);
+  const [viewId, setViewId] = useState<string>(viewIdAsString(cogniteTimeSeries));
 
   const [search, setSearch] = useState('');
-  const [filtersByView, setFiltersByView] = useState<Record<ViewId, SearchFilters>>({});
+  const [filtersByView, setFiltersByView] = useState<Record<string, SearchFilters>>({});
 
   const filters = filtersByView[viewId] ?? DEFAULT_SEARCH_FILTERS;
 
@@ -1005,10 +1005,10 @@ function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
       const views = await datasource.getTimeSeriesViews();
       if (cancelled) {return;}
 
-      const options = views.map((view) => ({label: `${view.space}:${view.externalId}(${view.version})`, value: view}))
+      const options = views.map((view) => ({label: viewIdAsString(view), value: viewIdAsString(view)}))
       setViewOptions(options);
     } catch (err) {
-      setViewsError(err instanceof Error ?err.message : String(err))
+      setViewsError(err instanceof Error ? err.message : JSON.stringify(err, null, 2));
     } finally {
       if (!cancelled) {setIsViewsLoading(false);}
     }
@@ -1019,7 +1019,7 @@ function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
     }
   }, [datasource])
 
-  const onViewChange = (option: SelectableValue<ViewId>) => {
+  const onViewChange = (option: SelectableValue<string>) => {
     if (option.value) {
       setViewId(option.value);
     }
