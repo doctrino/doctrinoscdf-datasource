@@ -14,7 +14,14 @@ import {
 } from '@grafana/ui';
 import { GrafanaTheme2, QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from '../datasource';
-import { CDFLoginOptions, SelectedTimeSeriesQuery, TimeSeries, ViewId } from '../types';
+import {
+  CDFLoginOptions,
+  InstanceId,
+  SelectedTimeSeriesItem,
+  SelectedTimeSeriesQuery,
+  TimeSeries,
+  ViewId,
+} from '../types';
 
 type Props = QueryEditorProps<DataSource, SelectedTimeSeriesQuery, CDFLoginOptions>;
 
@@ -82,11 +89,6 @@ interface PlaceholderEquipment {
 //   createdTimeMax: string;
 // }
 
-interface SerializedQuery {
-  selected: string[];
-  aggregations: Record<string, AggregationMethod>;
-  series?: Record<string, SeriesConfig>;
-}
 
 const DEFAULT_AGGREGATION: AggregationMethod = 'average';
 const DEFAULT_LABEL = 'name';
@@ -389,24 +391,6 @@ function getLabelOptionsForSeries(series: PlaceholderTimeSeries): Array<Selectab
   ];
 }
 
-function normalizeSeriesLabel(
-  fromSeries: { label?: string; labelProperty?: LabelProperty; customLabel?: string } | undefined
-): string {
-  if (!fromSeries) {
-    return DEFAULT_LABEL;
-  }
-
-  if (fromSeries.label) {
-    return fromSeries.label;
-  }
-
-  if (fromSeries.customLabel?.trim()) {
-    return fromSeries.customLabel.trim();
-  }
-
-  return fromSeries.labelProperty ?? DEFAULT_LABEL;
-}
-
 // function parseOptionalNumber(value: string): number | null {
 //   if (!value.trim()) {
 //     return null;
@@ -425,61 +409,42 @@ function normalizeSeriesLabel(
 //   return Number.isNaN(parsed.getTime()) ? null : parsed;
 // }
 
-function parseQueryState(queryText: string | undefined): {
+function parseQueryState(items: SelectedTimeSeriesItem[]): {
   selectedIds: Set<string>;
   seriesConfig: Map<string, SeriesConfig>;
 } {
-  if (!queryText?.trim()) {
+  if (!items) {
     return { selectedIds: new Set(), seriesConfig: new Map() };
   }
-
-  if (queryText.trim().startsWith('{')) {
-    try {
-      const parsed = JSON.parse(queryText) as SerializedQuery;
-      const selectedIds = new Set(parsed.selected ?? []);
-      const seriesConfig = new Map<string, SeriesConfig>();
-
-      for (const id of selectedIds) {
-        const fromSeries = parsed.series?.[id];
-        const aggregation = fromSeries?.aggregation ?? parsed.aggregations?.[id] ?? DEFAULT_AGGREGATION;
-        const label = normalizeSeriesLabel(fromSeries);
-
-        seriesConfig.set(id, { aggregation, label });
-      }
-
-      return { selectedIds, seriesConfig };
-    } catch {
-      // Fall through to legacy comma-separated format.
+  const selectedIds = new Set(items.map((item) => instanceIdAsString(item.space, item.externalId)));
+  const seriesConfig = new Map<string, SeriesConfig>(items.map((item) => {
+    const id = instanceIdAsString(item.space, item.externalId);
+    const config = { aggregation: item.aggregation as AggregationMethod, label: item.label ?? DEFAULT_LABEL };
+    return [id, config]
     }
-  }
+  ))
 
-  const selectedIds = new Set(
-    queryText
-      .split(',')
-      .map((id) => id.trim())
-      .filter(Boolean)
-  );
-  const seriesConfig = new Map<string, SeriesConfig>();
-
-  for (const id of selectedIds) {
-    seriesConfig.set(id, { ...DEFAULT_SERIES_CONFIG });
-  }
 
   return { selectedIds, seriesConfig };
 }
 
-function serializeQueryState(selectedIds: Set<string>, seriesConfig: Map<string, SeriesConfig>): string {
+function serializeQueryState(selectedIds: Set<string>, seriesConfig: Map<string, SeriesConfig>): SelectedTimeSeriesItem[] {
   const selected = [...selectedIds].sort();
-  const aggregations: Record<string, AggregationMethod> = {};
-  const series: Record<string, SeriesConfig> = {};
+  const selectedTimeSeriesItems: SelectedTimeSeriesItem[] = [];
+
 
   for (const id of selected) {
     const config = seriesConfig.get(id) ?? DEFAULT_SERIES_CONFIG;
-    aggregations[id] = config.aggregation;
-    series[id] = config;
+    const instanceId = instanceStringAsId(id);
+    selectedTimeSeriesItems.push({
+      space: instanceId.space,
+      externalId: instanceId.externalId,
+      aggregation: config.aggregation as AggregationMethod,
+      label: config.label ?? DEFAULT_LABEL,
+    })
   }
 
-  return JSON.stringify({ selected, aggregations, series } satisfies SerializedQuery);
+  return selectedTimeSeriesItems;
 }
 
 // function matchesSearchFilters(series: PlaceholderTimeSeries, filters: SearchFilters): boolean {
@@ -760,6 +725,13 @@ interface TimeSeriesListProps {
 
 function instanceIdAsString(space: string, externalId: string) {
   return `${space}:${externalId}`;
+}
+
+function instanceStringAsId(instanceId: string): InstanceId {
+  const index = instanceId.indexOf(":")
+  const space = instanceId.slice(0, index);
+  const externalId = instanceId.slice(index + 1);
+  return {space:space, externalId:externalId};
 }
 
 function TimeSeriesList({
@@ -1157,13 +1129,13 @@ function EquipmentTab({ selectedIds, onAddSeries }: EquipmentTabProps) {
 export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) {
   const [activeTab, setActiveTab] = useState<SelectionTab>('search');
 
-  const { selectedIds, seriesConfig } = useMemo(() => parseQueryState(query.queryText), [query.queryText]);
+  const { selectedIds, seriesConfig } = useMemo(() => parseQueryState(query.items), [query.items]);
 
   const persistQueryState = useCallback(
     (nextSelected: Set<string>, nextSeriesConfig: Map<string, SeriesConfig>) => {
-      const queryText = serializeQueryState(nextSelected, nextSeriesConfig);
-      onChange({ ...query, queryText });
-      if (queryText) {
+      const timeSeriesItems = serializeQueryState(nextSelected, nextSeriesConfig);
+      onChange({ ...query, items: timeSeriesItems });
+      if (timeSeriesItems) {
         onRunQuery();
       }
     },
