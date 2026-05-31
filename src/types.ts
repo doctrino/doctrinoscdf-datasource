@@ -70,3 +70,28 @@ export interface ContainerInspectResult {
   inspectionResults: InspectionResult;
 }
 
+export interface InstanceId {
+  space: string;
+  externalId: string;
+}
+
+export interface InstanceResponse {
+  instanceType: string;
+  version: number;
+  space: string;
+  externalId: string;
+  type?: InstanceId;
+  createdTime: number;
+  lastUpdateTime: number;
+  deletedTime?: number;
+  properties: Map<string, Map<string, any>>
+}
+
+
+export interface TimeSeries {
+  space: string;
+  externalId: string;
+  name?: string;
+  description?: string;
+  unit?: string;
+}

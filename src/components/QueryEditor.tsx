@@ -53,13 +53,14 @@ interface PlaceholderView {
   label: string;
 }
 
+
 interface PlaceholderTimeSeries {
+  space: string;
   externalId: string;
   name: string;
   description: string;
   unit: string;
   viewId: string;
-  space: string;
   type: TimeSeriesType;
   isStep: boolean;
   height: number;
@@ -751,7 +752,7 @@ function ResultsPagination({
 }
 
 interface TimeSeriesListProps {
-  series: PlaceholderTimeSeries[];
+  series: TimeSeries[];
   selectedIds: Set<string>;
   onAddSeries: (externalId: string) => void;
   emptyMessage: string;
@@ -956,9 +957,9 @@ interface SearchTabProps {
 }
 
 function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
-  const viewIdAsString = (view: ViewId)=> {
-    return `${view.space}:${view.externalId}(${view.version})`
-  }
+  const viewIdAsString = (view: ViewId) => {
+    return `${view.space}:${view.externalId}(${view.version})`;
+  };
   const [viewOptions, setViewOptions] = useState<Array<SelectableValue<string>>>([]);
   const [isViewsLoading, setIsViewsLoading] = useState(true);
   const [viewsError, setViewsError] = useState<string | null>(null);
@@ -1042,6 +1043,7 @@ function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
           {viewsError}
         </Alert>
       )}
+      {!viewsError && (
       <InlineField label="View" labelWidth={12}>
         <Select
           inputId="query-editor-view"
@@ -1052,13 +1054,13 @@ function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
           disabled={isViewsLoading || viewOptions.length === 0}
           width={28}
         />
-      </InlineField>
+      </InlineField>)}
 
       <InlineField label="Search" labelWidth={12}>
         <Input
           id="query-editor-search"
           aria-label="Search time series"
-          placeholder="Search by name, ID, or description…"
+          placeholder="Search any text property..."
           value={search}
           onChange={onSearchChange}
           width={40}
