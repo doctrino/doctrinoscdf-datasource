@@ -1,13 +1,23 @@
 import { DataSourceJsonData } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
 
-export interface MyQuery extends DataQuery {
-  queryText?: string;
-  constant: number;
+
+export interface SelectedTimeSeriesItem {
+  space: string
+  externalId: string
+  aggregation: string
+  label?: string
 }
 
-export const DEFAULT_QUERY: Partial<MyQuery> = {
+export interface SelectedTimeSeriesQuery extends DataQuery {
+  queryText?: string;
+  constant: number;
+  items: SelectedTimeSeriesItem[];
+}
+
+export const DEFAULT_QUERY: Partial<SelectedTimeSeriesQuery> = {
   constant: 6.5,
+  items: []
 };
 
 export interface DataPoint {
@@ -74,6 +84,7 @@ export interface InstanceId {
   space: string;
   externalId: string;
 }
+
 
 export interface InstanceResponse {
   instanceType: string;

@@ -14,9 +14,9 @@ import {
 } from '@grafana/ui';
 import { GrafanaTheme2, QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from '../datasource';
-import { CDFLoginOptions, MyQuery, TimeSeries, ViewId } from '../types';
+import { CDFLoginOptions, SelectedTimeSeriesQuery, TimeSeries, ViewId } from '../types';
 
-type Props = QueryEditorProps<DataSource, MyQuery, CDFLoginOptions>;
+type Props = QueryEditorProps<DataSource, SelectedTimeSeriesQuery, CDFLoginOptions>;
 
 type SelectionTab = 'search' | 'equipment';
 type TimeSeriesType = 'string' | 'numeric' | 'state';

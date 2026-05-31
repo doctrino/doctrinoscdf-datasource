@@ -7,7 +7,7 @@ import {
   DEFAULT_QUERY,
   InstanceId,
   InstanceResponse,
-  MyQuery,
+  SelectedTimeSeriesQuery,
   TimeSeries,
   ViewId,
 } from './types';
@@ -28,23 +28,23 @@ export interface DeviceCodePollResponse {
   error?: string;
 }
 
-export class DataSource extends DataSourceWithBackend<MyQuery, CDFLoginOptions> {
+export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, CDFLoginOptions> {
   constructor(instanceSettings: DataSourceInstanceSettings<CDFLoginOptions>) {
     super(instanceSettings);
   }
 
-  getDefaultQuery(_: CoreApp): Partial<MyQuery> {
+  getDefaultQuery(_: CoreApp): Partial<SelectedTimeSeriesQuery> {
     return DEFAULT_QUERY;
   }
 
-  applyTemplateVariables(query: MyQuery, scopedVars: ScopedVars) {
+  applyTemplateVariables(query: SelectedTimeSeriesQuery, scopedVars: ScopedVars) {
     return {
       ...query,
       queryText: getTemplateSrv().replace(query.queryText, scopedVars),
     };
   }
 
-  filterQuery(query: MyQuery): boolean {
+  filterQuery(query: SelectedTimeSeriesQuery): boolean {
     // if no query has been provided, prevent the query from being executed
     return !!query.queryText;
   }
@@ -86,6 +86,5 @@ export class DataSource extends DataSourceWithBackend<MyQuery, CDFLoginOptions> 
         ...(unit && typeof unit.externalId === 'string' && { unit: unit.externalId }),
       };
     });
-
   }
 }
