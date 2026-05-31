@@ -1,8 +1,15 @@
 package cdf
 
 import (
+	"bytes"
 	"context"
-	"errors"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+
+	pb "github.com/cognite/doctrino-s-cdf-source/pkg/cdf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 type datapoints struct {
@@ -18,34 +25,32 @@ type DataPointsRetrieveRequest struct {
 	Items []DataPointQueryItem
 }
 
-type NumericDatapoint struct {
-	Timestamp int64   `json:"timestamp"`
-	Value     float64 `json:"value"`
-}
+func (d *datapoints) retrieve(ctx context.Context, request DataPointsRetrieveRequest) (*pb.DataPointListResponse, error) {
+	body, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
 
-type StringDatapoint struct {
-	Timestamp int64  `json:"timestamp"`
-	Value     string `json:"value"`
-}
+	resp, err := d.apiClient.do(ctx, http.MethodPost, "/timeseries/data/list", bytes.NewReader(body), "accept/protobuf")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close() //nolint:errcheck
 
-type AggregateDatapoint struct {
-	Timestamp int64    `json:"timestamp"`
-	Average   *float64 `json:"average,omitempty"`
-	Max       *float64 `json:"max,omitempty"`
-	Min       *float64 `json:"min,omitempty"`
-	Count     *float64 `json:"count,omitempty"`
-	Sum       *float64 `json:"sum,omitempty"`
-}
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("datapoints list: status %d: %s", resp.StatusCode, respBody)
+	}
 
-type DatapointItem struct {
-	Id                  int64                 `json:"id"`
-	ExternalId          *string               `json:"externalId,omitempty"`
-	IsString            bool                  `json:"isString"`
-	NumericDatapoints   *[]NumericDatapoint   `json:"datapoints,omitempty"`
-	StringDatapoints    *[]StringDatapoint    `json:"datapoints,omitempty"`
-	AggregateDatapoints *[]AggregateDatapoint `json:"datapoints,omitempty"`
-}
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response: %w", err)
+	}
 
-func (d *datapoints) retrieve(ctx context.Context, request DataPointsRetrieveRequest) ([]DatapointItem, error) {
-	return nil, errors.New("Endpoint /timeseries/data/list Not yet implemented")
+	var result pb.DataPointListResponse
+	if err := proto.Unmarshal(respBody, &result); err != nil {
+		return nil, fmt.Errorf("unmarshal protobuf: %w", err)
+	}
+
+	return &result, nil
 }

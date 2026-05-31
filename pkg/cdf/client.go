@@ -19,7 +19,7 @@ type apiClient struct {
 	tokenProvider auth.TokenProvider
 }
 
-func (a *apiClient) do(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
+func (a *apiClient) do(ctx context.Context, method, path string, body io.Reader, accept string) (*http.Response, error) {
 	var url string
 	if strings.HasPrefix(path, "/api") {
 		url = fmt.Sprintf("%s%s", a.baseURL, path)
@@ -36,11 +36,12 @@ func (a *apiClient) do(ctx context.Context, method, path string, body io.Reader)
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", accept)
 	return a.httpClient.Do(req)
 }
 
 func (a *apiClient) doBody(ctx context.Context, method, path string, body io.Reader) ([]byte, error) {
-	resp, err := a.do(ctx, method, path, body)
+	resp, err := a.do(ctx, method, path, body, "application/json")
 	if err != nil {
 		return nil, err
 	}
