@@ -62,7 +62,10 @@ export class DataSource extends DataSourceWithBackend<MyQuery, CDFLoginOptions> 
   }
 
   async searchTimeSeries(view: ViewId, query?: string, limit?: number): Promise<TimeSeries[]> {
-    const body: Record<string, unknown> = { view: view };
+    const body: Record<string, unknown> = { view: {
+      type: 'view',
+      ...view
+      } };
     if (query !== undefined && query !== null) {
       body['query'] = query;
     }
@@ -75,17 +78,14 @@ export class DataSource extends DataSourceWithBackend<MyQuery, CDFLoginOptions> 
       const spaceProperties = Object.values(instance.properties)[0] as Record<string, any>;
       const properties: Record<string, any> = Object.values(spaceProperties)[0];
       const unit = properties['unit'] as InstanceId | undefined;
-      const timeseries: TimeSeries = {
+      return {
         space: instance.space,
         externalId: instance.externalId,
         ...(typeof properties['name'] === 'string' && { name: properties['name'] }),
         ...(typeof properties['description'] === 'string' && { description: properties['description'] }),
         ...(unit && typeof unit.externalId === 'string' && { unit: unit.externalId }),
       };
-
-      return timeseries
-
-    })
+    });
 
   }
 }

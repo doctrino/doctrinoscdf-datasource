@@ -3,10 +3,8 @@ import { css } from '@emotion/css';
 import {
   Alert,
   Button,
-  Checkbox,
   IconButton,
   InlineField,
-  InlineSwitch,
   Input,
   Select,
   Stack,
@@ -16,7 +14,7 @@ import {
 } from '@grafana/ui';
 import { GrafanaTheme2, QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from '../datasource';
-import { CDFLoginOptions, MyQuery, ViewId } from '../types';
+import { CDFLoginOptions, MyQuery, TimeSeries, ViewId } from '../types';
 
 type Props = QueryEditorProps<DataSource, MyQuery, CDFLoginOptions>;
 
@@ -72,17 +70,17 @@ interface PlaceholderEquipment {
   name: string;
   timeSeriesIds: string[];
 }
-
-interface SearchFilters {
-  space: string;
-  externalIdPrefix: string;
-  type: TimeSeriesType | '';
-  isStep: boolean;
-  heightMin: string;
-  heightMax: string;
-  createdTimeMin: string;
-  createdTimeMax: string;
-}
+//
+// interface SearchFilters {
+//   space: string;
+//   externalIdPrefix: string;
+//   type: TimeSeriesType | '';
+//   isStep: boolean;
+//   heightMin: string;
+//   heightMax: string;
+//   createdTimeMin: string;
+//   createdTimeMax: string;
+// }
 
 interface SerializedQuery {
   selected: string[];
@@ -244,12 +242,12 @@ const DOCUMENTATION_TEXT =
   'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.';
 
 
-const typeFilterOptions: Array<SelectableValue<TimeSeriesType | ''>> = [
-  { label: 'Any type', value: '' },
-  { label: 'String', value: 'string' },
-  { label: 'Numeric', value: 'numeric' },
-  { label: 'State', value: 'state' },
-];
+// const typeFilterOptions: Array<SelectableValue<TimeSeriesType | ''>> = [
+//   { label: 'Any type', value: '' },
+//   { label: 'String', value: 'string' },
+//   { label: 'Numeric', value: 'numeric' },
+//   { label: 'State', value: 'state' },
+// ];
 
 const aggregationOptions: Array<SelectableValue<AggregationMethod>> = [
   { label: 'Average', value: 'average' },
@@ -281,16 +279,16 @@ const PLACEHOLDER_SPACES_BY_VIEW: Record<string, Array<SelectableValue<string>>>
 const FILTER_LABEL_WIDTH = 16;
 const PAGINATION_LABEL_WIDTH = 14;
 
-const DEFAULT_SEARCH_FILTERS: SearchFilters = {
-  space: '',
-  externalIdPrefix: '',
-  type: '',
-  isStep: false,
-  heightMin: '',
-  heightMax: '',
-  createdTimeMin: '',
-  createdTimeMax: '',
-};
+// const DEFAULT_SEARCH_FILTERS: SearchFilters = {
+//   space: '',
+//   externalIdPrefix: '',
+//   type: '',
+//   isStep: false,
+//   heightMin: '',
+//   heightMax: '',
+//   createdTimeMin: '',
+//   createdTimeMax: '',
+// };
 
 function buildPlaceholderCatalog(): PlaceholderTimeSeries[] {
   const catalog: PlaceholderTimeSeries[] = HANDCRAFTED_PLACEHOLDER_TIME_SERIES.map((series, index) => ({
@@ -409,23 +407,23 @@ function normalizeSeriesLabel(
   return fromSeries.labelProperty ?? DEFAULT_LABEL;
 }
 
-function parseOptionalNumber(value: string): number | null {
-  if (!value.trim()) {
-    return null;
-  }
+// function parseOptionalNumber(value: string): number | null {
+//   if (!value.trim()) {
+//     return null;
+//   }
+//
+//   const parsed = Number.parseFloat(value);
+//   return Number.isNaN(parsed) ? null : parsed;
+// }
 
-  const parsed = Number.parseFloat(value);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
-function parseOptionalDate(value: string): Date | null {
-  if (!value.trim()) {
-    return null;
-  }
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
+// function parseOptionalDate(value: string): Date | null {
+//   if (!value.trim()) {
+//     return null;
+//   }
+//
+//   const parsed = new Date(value);
+//   return Number.isNaN(parsed.getTime()) ? null : parsed;
+// }
 
 function parseQueryState(queryText: string | undefined): {
   selectedIds: Set<string>;
@@ -484,45 +482,45 @@ function serializeQueryState(selectedIds: Set<string>, seriesConfig: Map<string,
   return JSON.stringify({ selected, aggregations, series } satisfies SerializedQuery);
 }
 
-function matchesSearchFilters(series: PlaceholderTimeSeries, filters: SearchFilters): boolean {
-  if (filters.space && series.space !== filters.space) {
-    return false;
-  }
-
-  if (filters.externalIdPrefix && !series.externalId.startsWith(filters.externalIdPrefix)) {
-    return false;
-  }
-
-  if (filters.type && series.type !== filters.type) {
-    return false;
-  }
-
-  if (filters.isStep && !series.isStep) {
-    return false;
-  }
-
-  const heightMin = parseOptionalNumber(filters.heightMin);
-  if (heightMin !== null && series.height < heightMin) {
-    return false;
-  }
-
-  const heightMax = parseOptionalNumber(filters.heightMax);
-  if (heightMax !== null && series.height > heightMax) {
-    return false;
-  }
-
-  const createdTimeMin = parseOptionalDate(filters.createdTimeMin);
-  if (createdTimeMin !== null && new Date(series.createdTime) < createdTimeMin) {
-    return false;
-  }
-
-  const createdTimeMax = parseOptionalDate(filters.createdTimeMax);
-  if (createdTimeMax !== null && new Date(series.createdTime) > createdTimeMax) {
-    return false;
-  }
-
-  return true;
-}
+// function matchesSearchFilters(series: PlaceholderTimeSeries, filters: SearchFilters): boolean {
+//   if (filters.space && series.space !== filters.space) {
+//     return false;
+//   }
+//
+//   if (filters.externalIdPrefix && !series.externalId.startsWith(filters.externalIdPrefix)) {
+//     return false;
+//   }
+//
+//   if (filters.type && series.type !== filters.type) {
+//     return false;
+//   }
+//
+//   if (filters.isStep && !series.isStep) {
+//     return false;
+//   }
+//
+//   const heightMin = parseOptionalNumber(filters.heightMin);
+//   if (heightMin !== null && series.height < heightMin) {
+//     return false;
+//   }
+//
+//   const heightMax = parseOptionalNumber(filters.heightMax);
+//   if (heightMax !== null && series.height > heightMax) {
+//     return false;
+//   }
+//
+//   const createdTimeMin = parseOptionalDate(filters.createdTimeMin);
+//   if (createdTimeMin !== null && new Date(series.createdTime) < createdTimeMin) {
+//     return false;
+//   }
+//
+//   const createdTimeMax = parseOptionalDate(filters.createdTimeMax);
+//   if (createdTimeMax !== null && new Date(series.createdTime) > createdTimeMax) {
+//     return false;
+//   }
+//
+//   return true;
+// }
 
 function DocumentationBlock({ testId }: { testId?: string }) {
   const styles = useStyles2(getStyles);
@@ -547,124 +545,124 @@ function DocumentationBlock({ testId }: { testId?: string }) {
   );
 }
 
-interface SearchFiltersPanelProps {
-  viewId: string;
-  filters: SearchFilters;
-  onFiltersChange: (filters: SearchFilters) => void;
-}
+// interface SearchFiltersPanelProps {
+//   viewId: string;
+//   filters: SearchFilters;
+//   onFiltersChange: (filters: SearchFilters) => void;
+// }
 
-function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersPanelProps) {
-  const styles = useStyles2(getStyles);
-  const [showFilters, setShowFilters] = useState(false);
-  const spaceOptions = PLACEHOLDER_SPACES_BY_VIEW[viewId] ?? [{ label: 'All spaces', value: '' }];
-
-  const updateFilters = (patch: Partial<SearchFilters>) => {
-    onFiltersChange({ ...filters, ...patch });
-  };
-
-  return (
-    <Stack direction="column" gap={0.5}>
-      <InlineSwitch
-        id="query-editor-show-filters"
-        label="Show filters"
-        showLabel
-        value={showFilters}
-        onChange={(event) => setShowFilters(event.currentTarget.checked)}
-      />
-
-      {showFilters && (
-        <div className={styles.filtersGrid}>
-          <InlineField label="Space" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
-            <Select
-              inputId="query-editor-filter-space"
-              options={spaceOptions}
-              value={filters.space}
-              onChange={(option) => updateFilters({ space: option.value ?? '' })}
-              width={20}
-            />
-          </InlineField>
-          <InlineField
-            label="External ID"
-            labelWidth={FILTER_LABEL_WIDTH}
-            tooltip="Filter by external ID prefix"
-            className={styles.filterField}
-          >
-            <Input
-              id="query-editor-filter-external-id"
-              placeholder="Prefix…"
-              value={filters.externalIdPrefix}
-              onChange={(event) => updateFilters({ externalIdPrefix: event.currentTarget.value })}
-              width={20}
-            />
-          </InlineField>
-          <InlineField label="Type" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
-            <Select
-              inputId="query-editor-filter-type"
-              options={typeFilterOptions}
-              value={filters.type}
-              onChange={(option) => updateFilters({ type: option.value ?? '' })}
-              width={20}
-            />
-          </InlineField>
-          <InlineField label="Is step" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
-            <Checkbox
-              id="query-editor-filter-is-step"
-              value={filters.isStep}
-              label="Step only"
-              onChange={(event) => updateFilters({ isStep: event.currentTarget.checked })}
-            />
-          </InlineField>
-          <InlineField label="Height" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>
-            <div className={styles.rangeInputs}>
-              <Input
-                id="query-editor-filter-height-min"
-                type="number"
-                step="any"
-                placeholder="Min"
-                aria-label="Minimum height"
-                value={filters.heightMin}
-                onChange={(event) => updateFilters({ heightMin: event.currentTarget.value })}
-                width={12}
-              />
-              <span className={styles.rangeSeparator}>to</span>
-              <Input
-                id="query-editor-filter-height-max"
-                type="number"
-                step="any"
-                placeholder="Max"
-                aria-label="Maximum height"
-                value={filters.heightMax}
-                onChange={(event) => updateFilters({ heightMax: event.currentTarget.value })}
-                width={12}
-              />
-            </div>
-          </InlineField>
-          <InlineField label="Created" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>
-            <div className={styles.rangeInputs}>
-              <Input
-                id="query-editor-filter-created-min"
-                type="datetime-local"
-                aria-label="Created after"
-                value={filters.createdTimeMin}
-                onChange={(event) => updateFilters({ createdTimeMin: event.currentTarget.value })}
-                width={22}
-              />
-              <span className={styles.rangeSeparator}>to</span>
-              <Input
-                id="query-editor-filter-created-max"
-                type="datetime-local"
-                aria-label="Created before"
-                value={filters.createdTimeMax}
-                onChange={(event) => updateFilters({ createdTimeMax: event.currentTarget.value })}
-                width={22}
-              />
-            </div>
-          </InlineField>
-        </div>
-      )}
-    </Stack>
-  );
-}
+// function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersPanelProps) {
+//   const styles = useStyles2(getStyles);
+//   const [showFilters, setShowFilters] = useState(false);
+//   const spaceOptions = PLACEHOLDER_SPACES_BY_VIEW[viewId] ?? [{ label: 'All spaces', value: '' }];
+//
+//   const updateFilters = (patch: Partial<SearchFilters>) => {
+//     onFiltersChange({ ...filters, ...patch });
+//   };
+//
+//   return (
+//     <Stack direction="column" gap={0.5}>
+//       <InlineSwitch
+//         id="query-editor-show-filters"
+//         label="Show filters"
+//         showLabel
+//         value={showFilters}
+//         onChange={(event) => setShowFilters(event.currentTarget.checked)}
+//       />
+//
+//       {showFilters && (
+//         <div className={styles.filtersGrid}>
+//           <InlineField label="Space" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
+//             <Select
+//               inputId="query-editor-filter-space"
+//               options={spaceOptions}
+//               value={filters.space}
+//               onChange={(option) => updateFilters({ space: option.value ?? '' })}
+//               width={20}
+//             />
+//           </InlineField>
+//           <InlineField
+//             label="External ID"
+//             labelWidth={FILTER_LABEL_WIDTH}
+//             tooltip="Filter by external ID prefix"
+//             className={styles.filterField}
+//           >
+//             <Input
+//               id="query-editor-filter-external-id"
+//               placeholder="Prefix…"
+//               value={filters.externalIdPrefix}
+//               onChange={(event) => updateFilters({ externalIdPrefix: event.currentTarget.value })}
+//               width={20}
+//             />
+//           </InlineField>
+//           <InlineField label="Type" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
+//             <Select
+//               inputId="query-editor-filter-type"
+//               options={typeFilterOptions}
+//               value={filters.type}
+//               onChange={(option) => updateFilters({ type: option.value ?? '' })}
+//               width={20}
+//             />
+//           </InlineField>
+//           <InlineField label="Is step" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
+//             <Checkbox
+//               id="query-editor-filter-is-step"
+//               value={filters.isStep}
+//               label="Step only"
+//               onChange={(event) => updateFilters({ isStep: event.currentTarget.checked })}
+//             />
+//           </InlineField>
+//           <InlineField label="Height" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>
+//             <div className={styles.rangeInputs}>
+//               <Input
+//                 id="query-editor-filter-height-min"
+//                 type="number"
+//                 step="any"
+//                 placeholder="Min"
+//                 aria-label="Minimum height"
+//                 value={filters.heightMin}
+//                 onChange={(event) => updateFilters({ heightMin: event.currentTarget.value })}
+//                 width={12}
+//               />
+//               <span className={styles.rangeSeparator}>to</span>
+//               <Input
+//                 id="query-editor-filter-height-max"
+//                 type="number"
+//                 step="any"
+//                 placeholder="Max"
+//                 aria-label="Maximum height"
+//                 value={filters.heightMax}
+//                 onChange={(event) => updateFilters({ heightMax: event.currentTarget.value })}
+//                 width={12}
+//               />
+//             </div>
+//           </InlineField>
+//           <InlineField label="Created" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>
+//             <div className={styles.rangeInputs}>
+//               <Input
+//                 id="query-editor-filter-created-min"
+//                 type="datetime-local"
+//                 aria-label="Created after"
+//                 value={filters.createdTimeMin}
+//                 onChange={(event) => updateFilters({ createdTimeMin: event.currentTarget.value })}
+//                 width={22}
+//               />
+//               <span className={styles.rangeSeparator}>to</span>
+//               <Input
+//                 id="query-editor-filter-created-max"
+//                 type="datetime-local"
+//                 aria-label="Created before"
+//                 value={filters.createdTimeMax}
+//                 onChange={(event) => updateFilters({ createdTimeMax: event.currentTarget.value })}
+//                 width={22}
+//               />
+//             </div>
+//           </InlineField>
+//         </div>
+//       )}
+//     </Stack>
+//   );
+// }
 
 interface ResultsPaginationProps {
   page: number;
@@ -958,67 +956,77 @@ interface SearchTabProps {
 
 function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
   const viewIdAsString = (view: ViewId) => {
-    return `${view.space}:${view.externalId}(${view.version})`;
+    return `${view.space}:${view.externalId}(version=${view.version})`;
   };
+  const viewStringAsId = (viewString: string): ViewId => {
+    const colonIndex = viewString.indexOf(':');
+    const space = viewString.slice(0, colonIndex);
+    const rest = viewString.slice(colonIndex + 1);
+    const parenIndex = rest.indexOf('(version=');
+    const externalId = rest.slice(0, parenIndex);
+    const versionWithParen = rest.slice(parenIndex + '(version='.length);
+    const version = versionWithParen.endsWith(')') ? versionWithParen.slice(0, -1) : versionWithParen;
+    return { space, externalId, version };
+  }
+
   const [viewOptions, setViewOptions] = useState<Array<SelectableValue<string>>>([]);
   const [isViewsLoading, setIsViewsLoading] = useState(true);
   const [viewsError, setViewsError] = useState<string | null>(null);
-  const cogniteTimeSeries = { space: 'cdf_cdm', externalId: 'CogniteTimeSeries', version: 'v1' };
+  const cogniteTimeSeries: ViewId = { space: 'cdf_cdm', externalId: 'CogniteTimeSeries', version: 'v1' };
   const [viewId, setViewId] = useState<string>(viewIdAsString(cogniteTimeSeries));
 
-  const [search, setSearch] = useState('');
-  const [filtersByView, setFiltersByView] = useState<Record<string, SearchFilters>>({});
+  const [searchQuery, setSearchQuery] = useState<string | undefined>('');
+  // const [filtersByView, setFiltersByView] = useState<Record<string, SearchFilters>>({});
 
-  const filters = filtersByView[viewId] ?? DEFAULT_SEARCH_FILTERS;
+  const [searchResults, setSearchResults] = useState<TimeSeries[]>([]);
 
-  const filteredTimeSeries = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-
-    return PLACEHOLDER_TIME_SERIES.filter((series) => {
-      if (series.viewId !== viewId) {
-        return false;
-      }
-
-      if (!matchesSearchFilters(series, filters)) {
-        return false;
-      }
-
-      if (!normalizedSearch) {
-        return true;
-      }
-
-      const haystack = [series.name, series.externalId, series.description, series.unit]
-        .join(' ')
-        .toLowerCase();
-
-      return haystack.includes(normalizedSearch);
-    });
-  }, [filters, search, viewId]);
-
-  const selectedView = PLACEHOLDER_VIEWS.find((view) => view.id === viewId);
+  // const filters = filtersByView[viewId] ?? DEFAULT_SEARCH_FILTERS;
 
   useEffect(() => {
     let cancelled = false;
     const loadViews = async () => {
-    setIsViewsLoading(true);
-    setViewsError(null);
-    try {
-      const views = await datasource.getTimeSeriesViews();
-      if (cancelled) {return;}
+      setIsViewsLoading(true);
+      setViewsError(null);
+      try {
+        const views = await datasource.getTimeSeriesViews();
+        if (cancelled) {
+          return;
+        }
 
-      const options = views.map((view) => ({label: viewIdAsString(view), value: viewIdAsString(view)}))
-      setViewOptions(options);
-    } catch (err) {
-      setViewsError(err instanceof Error ? err.message : JSON.stringify(err, null, 2));
-    } finally {
-      if (!cancelled) {setIsViewsLoading(false);}
-    }
-  }
-  void loadViews();
+        const options = views.map((view) => ({ label: viewIdAsString(view), value: viewIdAsString(view) }));
+        setViewOptions(options);
+      } catch (err) {
+        setViewsError(err instanceof Error ? err.message : JSON.stringify(err, null, 2));
+      } finally {
+        if (!cancelled) {
+          setIsViewsLoading(false);
+        }
+      }
+    };
+    void loadViews();
     return () => {
       cancelled = true;
+    };
+  }, [datasource]);
+
+  useEffect(() => {
+    let cancelled = false
+
+    const searchTimeSeries = async () => {
+      try {
+        console.log("viewStringAsId" + viewStringAsId(viewId));
+        const searchResults = await datasource.searchTimeSeries(viewStringAsId(viewId), searchQuery, 1000);
+        if (cancelled) {return;}
+        setSearchResults(searchResults)
+      } catch (err) {
+        if (!cancelled) {setSearchResults([]);}
+      }
     }
-  }, [datasource])
+    void searchTimeSeries();
+    return () => {cancelled = true;};
+  }, [viewId, searchQuery, datasource]);
+
+  // const selectedView = PLACEHOLDER_VIEWS.find((view) => view.id === viewId);
 
   const onViewChange = (option: SelectableValue<string>) => {
     if (option.value) {
@@ -1027,12 +1035,12 @@ function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
   };
 
   const onSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setSearch(event.target.value);
+    setSearchQuery(event.target.value);
   };
 
-  const onFiltersChange = (nextFilters: SearchFilters) => {
-    setFiltersByView((current) => ({ ...current, [viewId]: nextFilters }));
-  };
+  // const onFiltersChange = (nextFilters: SearchFilters) => {
+  //   setFiltersByView((current) => ({ ...current, [viewId]: nextFilters }));
+  // };
 
   return (
     <Stack direction="column" gap={1}>
@@ -1049,6 +1057,7 @@ function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
           inputId="query-editor-view"
           options={viewOptions}
           value={viewId}
+
           onChange={onViewChange}
           isLoading={isViewsLoading}
           disabled={isViewsLoading || viewOptions.length === 0}
@@ -1061,21 +1070,22 @@ function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
           id="query-editor-search"
           aria-label="Search time series"
           placeholder="Search any text property..."
-          value={search}
+          value={searchQuery}
           onChange={onSearchChange}
           width={40}
         />
       </InlineField>
 
-      <SearchFiltersPanel viewId={viewId} filters={filters} onFiltersChange={onFiltersChange} />
+      {/*<SearchFiltersPanel viewId={viewId} filters={filters} onFiltersChange={onFiltersChange} />*/}
 
       <TimeSeriesList
-        series={filteredTimeSeries}
+        series={searchResults}
         selectedIds={selectedIds}
         onAddSeries={onAddSeries}
         emptyMessage="No time series match your search or filters."
-        contextLabel={`in ${selectedView?.label ?? 'view'}`}
-        listResetKey={`${viewId}|${search}|${filters.space}|${filters.externalIdPrefix}|${filters.type}|${filters.isStep}|${filters.heightMin}|${filters.heightMax}|${filters.createdTimeMin}|${filters.createdTimeMax}`}
+        contextLabel={`in ${viewId ?? 'view'}`}
+        listResetKey={`${viewId}|${searchQuery}`}
+        // listResetKey={`${viewId}|${searchQuery}|${filters.space}|${filters.externalIdPrefix}|${filters.type}|${filters.isStep}|${filters.heightMin}|${filters.heightMax}|${filters.createdTimeMin}|${filters.createdTimeMax}`}
       />
     </Stack>
   );
