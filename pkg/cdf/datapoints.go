@@ -17,8 +17,16 @@ type datapoints struct {
 }
 
 type DataPointQueryItem struct {
-	InstanceId InstanceId `json:"instanceId"`
-	Cursor     *string    `json:",omitempty"`
+	InstanceId       InstanceId `json:"instanceId"`
+	Start            *int64     `json:"start,omitempty"`
+	End              *int64     `json:"end,omitempty"`
+	Limit            *int64     `json:"limit,omitempty"`
+	Aggregates       *string    `json:"aggregates,omitempty"`
+	Granularity      *string    `json:"granularity,omitempty"`
+	TargetUnit       *string    `json:"targetUnit,omitempty"`
+	TargetUnitSystem *string    `json:"targetUnitSystem,omitempty"`
+	// For now, omitting the includeOutsidePoints and the status options for now.
+	Cursor *string `json:",omitempty"`
 }
 
 type DataPointsRetrieveRequest struct {
