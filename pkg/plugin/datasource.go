@@ -33,7 +33,7 @@ func newResourceHandler(d *Datasource) backend.CallResourceHandler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/device-code/start", d.handleDeviceCodeStart)
 	mux.HandleFunc("/device-code/poll", d.handleDeviceCodePoll)
-	mux.HandleFunc("/container/inspect", resourceHandler("Containers inspect", d.client.Containers.Inspect))
+	mux.HandleFunc("/containers/inspect", resourceHandler("Containers inspect", d.client.Containers.Inspect))
 	mux.HandleFunc("/instances/search", resourceHandler("Instances search", d.client.Instances.Search))
 	mux.HandleFunc("/instances/aggregate", resourceHandler("Instances aggregate", d.client.Instances.Aggregate))
 	return httpadapter.New(mux)
@@ -107,9 +107,18 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 }
 
 // queryModel mirrors the panel query JSON from MyQuery (src/types.ts); field names must match Grafana's camelCase keys.
+
+type selectedTimeSeries struct {
+	Space       string `json:"space"`
+	ExternalId  string `json:"externalId"`
+	Aggregation string `json:"aggregation"`
+	Label       string `json:"label"`
+}
+
 type queryModel struct {
-	QueryText string  `json:"queryText"`
-	Constant  float64 `json:"constant"`
+	QueryText string               `json:"queryText"`
+	Constant  float64              `json:"constant"`
+	Items     []selectedTimeSeries `json:"items"`
 }
 
 func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {

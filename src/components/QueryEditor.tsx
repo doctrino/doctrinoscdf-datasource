@@ -1,11 +1,10 @@
-import React, { ChangeEvent, useCallback, useMemo, useState } from 'react';
+import React, { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { css } from '@emotion/css';
 import {
+  Alert,
   Button,
-  Checkbox,
   IconButton,
   InlineField,
-  InlineSwitch,
   Input,
   Select,
   Stack,
@@ -15,9 +14,16 @@ import {
 } from '@grafana/ui';
 import { GrafanaTheme2, QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from '../datasource';
-import { CDFLoginOptions, MyQuery } from '../types';
+import {
+  CDFLoginOptions,
+  InstanceId,
+  SelectedTimeSeriesItem,
+  SelectedTimeSeriesQuery,
+  TimeSeries,
+  ViewId,
+} from '../types';
 
-type Props = QueryEditorProps<DataSource, MyQuery, CDFLoginOptions>;
+type Props = QueryEditorProps<DataSource, SelectedTimeSeriesQuery, CDFLoginOptions>;
 
 type SelectionTab = 'search' | 'equipment';
 type TimeSeriesType = 'string' | 'numeric' | 'state';
@@ -52,13 +58,14 @@ interface PlaceholderView {
   label: string;
 }
 
+
 interface PlaceholderTimeSeries {
+  space: string;
   externalId: string;
   name: string;
   description: string;
   unit: string;
   viewId: string;
-  space: string;
   type: TimeSeriesType;
   isStep: boolean;
   height: number;
@@ -70,23 +77,18 @@ interface PlaceholderEquipment {
   name: string;
   timeSeriesIds: string[];
 }
+//
+// interface SearchFilters {
+//   space: string;
+//   externalIdPrefix: string;
+//   type: TimeSeriesType | '';
+//   isStep: boolean;
+//   heightMin: string;
+//   heightMax: string;
+//   createdTimeMin: string;
+//   createdTimeMax: string;
+// }
 
-interface SearchFilters {
-  space: string;
-  externalIdPrefix: string;
-  type: TimeSeriesType | '';
-  isStep: boolean;
-  heightMin: string;
-  heightMax: string;
-  createdTimeMin: string;
-  createdTimeMax: string;
-}
-
-interface SerializedQuery {
-  selected: string[];
-  aggregations: Record<string, AggregationMethod>;
-  series?: Record<string, SeriesConfig>;
-}
 
 const DEFAULT_AGGREGATION: AggregationMethod = 'average';
 const DEFAULT_LABEL = 'name';
@@ -241,17 +243,13 @@ const DOCUMENTATION_TEXT =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ' +
   'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.';
 
-const viewOptions: Array<SelectableValue<string>> = PLACEHOLDER_VIEWS.map((view) => ({
-  label: view.label,
-  value: view.id,
-}));
 
-const typeFilterOptions: Array<SelectableValue<TimeSeriesType | ''>> = [
-  { label: 'Any type', value: '' },
-  { label: 'String', value: 'string' },
-  { label: 'Numeric', value: 'numeric' },
-  { label: 'State', value: 'state' },
-];
+// const typeFilterOptions: Array<SelectableValue<TimeSeriesType | ''>> = [
+//   { label: 'Any type', value: '' },
+//   { label: 'String', value: 'string' },
+//   { label: 'Numeric', value: 'numeric' },
+//   { label: 'State', value: 'state' },
+// ];
 
 const aggregationOptions: Array<SelectableValue<AggregationMethod>> = [
   { label: 'Average', value: 'average' },
@@ -283,16 +281,16 @@ const PLACEHOLDER_SPACES_BY_VIEW: Record<string, Array<SelectableValue<string>>>
 const FILTER_LABEL_WIDTH = 16;
 const PAGINATION_LABEL_WIDTH = 14;
 
-const DEFAULT_SEARCH_FILTERS: SearchFilters = {
-  space: '',
-  externalIdPrefix: '',
-  type: '',
-  isStep: false,
-  heightMin: '',
-  heightMax: '',
-  createdTimeMin: '',
-  createdTimeMax: '',
-};
+// const DEFAULT_SEARCH_FILTERS: SearchFilters = {
+//   space: '',
+//   externalIdPrefix: '',
+//   type: '',
+//   isStep: false,
+//   heightMin: '',
+//   heightMax: '',
+//   createdTimeMin: '',
+//   createdTimeMax: '',
+// };
 
 function buildPlaceholderCatalog(): PlaceholderTimeSeries[] {
   const catalog: PlaceholderTimeSeries[] = HANDCRAFTED_PLACEHOLDER_TIME_SERIES.map((series, index) => ({
@@ -393,138 +391,101 @@ function getLabelOptionsForSeries(series: PlaceholderTimeSeries): Array<Selectab
   ];
 }
 
-function normalizeSeriesLabel(
-  fromSeries: { label?: string; labelProperty?: LabelProperty; customLabel?: string } | undefined
-): string {
-  if (!fromSeries) {
-    return DEFAULT_LABEL;
-  }
+// function parseOptionalNumber(value: string): number | null {
+//   if (!value.trim()) {
+//     return null;
+//   }
+//
+//   const parsed = Number.parseFloat(value);
+//   return Number.isNaN(parsed) ? null : parsed;
+// }
 
-  if (fromSeries.label) {
-    return fromSeries.label;
-  }
+// function parseOptionalDate(value: string): Date | null {
+//   if (!value.trim()) {
+//     return null;
+//   }
+//
+//   const parsed = new Date(value);
+//   return Number.isNaN(parsed.getTime()) ? null : parsed;
+// }
 
-  if (fromSeries.customLabel?.trim()) {
-    return fromSeries.customLabel.trim();
-  }
-
-  return fromSeries.labelProperty ?? DEFAULT_LABEL;
-}
-
-function parseOptionalNumber(value: string): number | null {
-  if (!value.trim()) {
-    return null;
-  }
-
-  const parsed = Number.parseFloat(value);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
-function parseOptionalDate(value: string): Date | null {
-  if (!value.trim()) {
-    return null;
-  }
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function parseQueryState(queryText: string | undefined): {
+function parseQueryState(items: SelectedTimeSeriesItem[]): {
   selectedIds: Set<string>;
   seriesConfig: Map<string, SeriesConfig>;
 } {
-  if (!queryText?.trim()) {
+  if (!items) {
     return { selectedIds: new Set(), seriesConfig: new Map() };
   }
-
-  if (queryText.trim().startsWith('{')) {
-    try {
-      const parsed = JSON.parse(queryText) as SerializedQuery;
-      const selectedIds = new Set(parsed.selected ?? []);
-      const seriesConfig = new Map<string, SeriesConfig>();
-
-      for (const id of selectedIds) {
-        const fromSeries = parsed.series?.[id];
-        const aggregation = fromSeries?.aggregation ?? parsed.aggregations?.[id] ?? DEFAULT_AGGREGATION;
-        const label = normalizeSeriesLabel(fromSeries);
-
-        seriesConfig.set(id, { aggregation, label });
-      }
-
-      return { selectedIds, seriesConfig };
-    } catch {
-      // Fall through to legacy comma-separated format.
+  const selectedIds = new Set(items.map((item) => instanceIdAsString(item.space, item.externalId)));
+  const seriesConfig = new Map<string, SeriesConfig>(items.map((item) => {
+    const id = instanceIdAsString(item.space, item.externalId);
+    const config = { aggregation: item.aggregation as AggregationMethod, label: item.label ?? DEFAULT_LABEL };
+    return [id, config]
     }
-  }
+  ))
 
-  const selectedIds = new Set(
-    queryText
-      .split(',')
-      .map((id) => id.trim())
-      .filter(Boolean)
-  );
-  const seriesConfig = new Map<string, SeriesConfig>();
-
-  for (const id of selectedIds) {
-    seriesConfig.set(id, { ...DEFAULT_SERIES_CONFIG });
-  }
 
   return { selectedIds, seriesConfig };
 }
 
-function serializeQueryState(selectedIds: Set<string>, seriesConfig: Map<string, SeriesConfig>): string {
+function serializeQueryState(selectedIds: Set<string>, seriesConfig: Map<string, SeriesConfig>): SelectedTimeSeriesItem[] {
   const selected = [...selectedIds].sort();
-  const aggregations: Record<string, AggregationMethod> = {};
-  const series: Record<string, SeriesConfig> = {};
+  const selectedTimeSeriesItems: SelectedTimeSeriesItem[] = [];
+
 
   for (const id of selected) {
     const config = seriesConfig.get(id) ?? DEFAULT_SERIES_CONFIG;
-    aggregations[id] = config.aggregation;
-    series[id] = config;
+    const instanceId = instanceStringAsId(id);
+    selectedTimeSeriesItems.push({
+      space: instanceId.space,
+      externalId: instanceId.externalId,
+      aggregation: config.aggregation as AggregationMethod,
+      label: config.label ?? DEFAULT_LABEL,
+    })
   }
 
-  return JSON.stringify({ selected, aggregations, series } satisfies SerializedQuery);
+  return selectedTimeSeriesItems;
 }
 
-function matchesSearchFilters(series: PlaceholderTimeSeries, filters: SearchFilters): boolean {
-  if (filters.space && series.space !== filters.space) {
-    return false;
-  }
-
-  if (filters.externalIdPrefix && !series.externalId.startsWith(filters.externalIdPrefix)) {
-    return false;
-  }
-
-  if (filters.type && series.type !== filters.type) {
-    return false;
-  }
-
-  if (filters.isStep && !series.isStep) {
-    return false;
-  }
-
-  const heightMin = parseOptionalNumber(filters.heightMin);
-  if (heightMin !== null && series.height < heightMin) {
-    return false;
-  }
-
-  const heightMax = parseOptionalNumber(filters.heightMax);
-  if (heightMax !== null && series.height > heightMax) {
-    return false;
-  }
-
-  const createdTimeMin = parseOptionalDate(filters.createdTimeMin);
-  if (createdTimeMin !== null && new Date(series.createdTime) < createdTimeMin) {
-    return false;
-  }
-
-  const createdTimeMax = parseOptionalDate(filters.createdTimeMax);
-  if (createdTimeMax !== null && new Date(series.createdTime) > createdTimeMax) {
-    return false;
-  }
-
-  return true;
-}
+// function matchesSearchFilters(series: PlaceholderTimeSeries, filters: SearchFilters): boolean {
+//   if (filters.space && series.space !== filters.space) {
+//     return false;
+//   }
+//
+//   if (filters.externalIdPrefix && !series.externalId.startsWith(filters.externalIdPrefix)) {
+//     return false;
+//   }
+//
+//   if (filters.type && series.type !== filters.type) {
+//     return false;
+//   }
+//
+//   if (filters.isStep && !series.isStep) {
+//     return false;
+//   }
+//
+//   const heightMin = parseOptionalNumber(filters.heightMin);
+//   if (heightMin !== null && series.height < heightMin) {
+//     return false;
+//   }
+//
+//   const heightMax = parseOptionalNumber(filters.heightMax);
+//   if (heightMax !== null && series.height > heightMax) {
+//     return false;
+//   }
+//
+//   const createdTimeMin = parseOptionalDate(filters.createdTimeMin);
+//   if (createdTimeMin !== null && new Date(series.createdTime) < createdTimeMin) {
+//     return false;
+//   }
+//
+//   const createdTimeMax = parseOptionalDate(filters.createdTimeMax);
+//   if (createdTimeMax !== null && new Date(series.createdTime) > createdTimeMax) {
+//     return false;
+//   }
+//
+//   return true;
+// }
 
 function DocumentationBlock({ testId }: { testId?: string }) {
   const styles = useStyles2(getStyles);
@@ -549,124 +510,124 @@ function DocumentationBlock({ testId }: { testId?: string }) {
   );
 }
 
-interface SearchFiltersPanelProps {
-  viewId: string;
-  filters: SearchFilters;
-  onFiltersChange: (filters: SearchFilters) => void;
-}
+// interface SearchFiltersPanelProps {
+//   viewId: string;
+//   filters: SearchFilters;
+//   onFiltersChange: (filters: SearchFilters) => void;
+// }
 
-function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersPanelProps) {
-  const styles = useStyles2(getStyles);
-  const [showFilters, setShowFilters] = useState(false);
-  const spaceOptions = PLACEHOLDER_SPACES_BY_VIEW[viewId] ?? [{ label: 'All spaces', value: '' }];
-
-  const updateFilters = (patch: Partial<SearchFilters>) => {
-    onFiltersChange({ ...filters, ...patch });
-  };
-
-  return (
-    <Stack direction="column" gap={0.5}>
-      <InlineSwitch
-        id="query-editor-show-filters"
-        label="Show filters"
-        showLabel
-        value={showFilters}
-        onChange={(event) => setShowFilters(event.currentTarget.checked)}
-      />
-
-      {showFilters && (
-        <div className={styles.filtersGrid}>
-          <InlineField label="Space" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
-            <Select
-              inputId="query-editor-filter-space"
-              options={spaceOptions}
-              value={filters.space}
-              onChange={(option) => updateFilters({ space: option.value ?? '' })}
-              width={20}
-            />
-          </InlineField>
-          <InlineField
-            label="External ID"
-            labelWidth={FILTER_LABEL_WIDTH}
-            tooltip="Filter by external ID prefix"
-            className={styles.filterField}
-          >
-            <Input
-              id="query-editor-filter-external-id"
-              placeholder="Prefix…"
-              value={filters.externalIdPrefix}
-              onChange={(event) => updateFilters({ externalIdPrefix: event.currentTarget.value })}
-              width={20}
-            />
-          </InlineField>
-          <InlineField label="Type" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
-            <Select
-              inputId="query-editor-filter-type"
-              options={typeFilterOptions}
-              value={filters.type}
-              onChange={(option) => updateFilters({ type: option.value ?? '' })}
-              width={20}
-            />
-          </InlineField>
-          <InlineField label="Is step" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
-            <Checkbox
-              id="query-editor-filter-is-step"
-              value={filters.isStep}
-              label="Step only"
-              onChange={(event) => updateFilters({ isStep: event.currentTarget.checked })}
-            />
-          </InlineField>
-          <InlineField label="Height" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>
-            <div className={styles.rangeInputs}>
-              <Input
-                id="query-editor-filter-height-min"
-                type="number"
-                step="any"
-                placeholder="Min"
-                aria-label="Minimum height"
-                value={filters.heightMin}
-                onChange={(event) => updateFilters({ heightMin: event.currentTarget.value })}
-                width={12}
-              />
-              <span className={styles.rangeSeparator}>to</span>
-              <Input
-                id="query-editor-filter-height-max"
-                type="number"
-                step="any"
-                placeholder="Max"
-                aria-label="Maximum height"
-                value={filters.heightMax}
-                onChange={(event) => updateFilters({ heightMax: event.currentTarget.value })}
-                width={12}
-              />
-            </div>
-          </InlineField>
-          <InlineField label="Created" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>
-            <div className={styles.rangeInputs}>
-              <Input
-                id="query-editor-filter-created-min"
-                type="datetime-local"
-                aria-label="Created after"
-                value={filters.createdTimeMin}
-                onChange={(event) => updateFilters({ createdTimeMin: event.currentTarget.value })}
-                width={22}
-              />
-              <span className={styles.rangeSeparator}>to</span>
-              <Input
-                id="query-editor-filter-created-max"
-                type="datetime-local"
-                aria-label="Created before"
-                value={filters.createdTimeMax}
-                onChange={(event) => updateFilters({ createdTimeMax: event.currentTarget.value })}
-                width={22}
-              />
-            </div>
-          </InlineField>
-        </div>
-      )}
-    </Stack>
-  );
-}
+// function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersPanelProps) {
+//   const styles = useStyles2(getStyles);
+//   const [showFilters, setShowFilters] = useState(false);
+//   const spaceOptions = PLACEHOLDER_SPACES_BY_VIEW[viewId] ?? [{ label: 'All spaces', value: '' }];
+//
+//   const updateFilters = (patch: Partial<SearchFilters>) => {
+//     onFiltersChange({ ...filters, ...patch });
+//   };
+//
+//   return (
+//     <Stack direction="column" gap={0.5}>
+//       <InlineSwitch
+//         id="query-editor-show-filters"
+//         label="Show filters"
+//         showLabel
+//         value={showFilters}
+//         onChange={(event) => setShowFilters(event.currentTarget.checked)}
+//       />
+//
+//       {showFilters && (
+//         <div className={styles.filtersGrid}>
+//           <InlineField label="Space" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
+//             <Select
+//               inputId="query-editor-filter-space"
+//               options={spaceOptions}
+//               value={filters.space}
+//               onChange={(option) => updateFilters({ space: option.value ?? '' })}
+//               width={20}
+//             />
+//           </InlineField>
+//           <InlineField
+//             label="External ID"
+//             labelWidth={FILTER_LABEL_WIDTH}
+//             tooltip="Filter by external ID prefix"
+//             className={styles.filterField}
+//           >
+//             <Input
+//               id="query-editor-filter-external-id"
+//               placeholder="Prefix…"
+//               value={filters.externalIdPrefix}
+//               onChange={(event) => updateFilters({ externalIdPrefix: event.currentTarget.value })}
+//               width={20}
+//             />
+//           </InlineField>
+//           <InlineField label="Type" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
+//             <Select
+//               inputId="query-editor-filter-type"
+//               options={typeFilterOptions}
+//               value={filters.type}
+//               onChange={(option) => updateFilters({ type: option.value ?? '' })}
+//               width={20}
+//             />
+//           </InlineField>
+//           <InlineField label="Is step" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>
+//             <Checkbox
+//               id="query-editor-filter-is-step"
+//               value={filters.isStep}
+//               label="Step only"
+//               onChange={(event) => updateFilters({ isStep: event.currentTarget.checked })}
+//             />
+//           </InlineField>
+//           <InlineField label="Height" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>
+//             <div className={styles.rangeInputs}>
+//               <Input
+//                 id="query-editor-filter-height-min"
+//                 type="number"
+//                 step="any"
+//                 placeholder="Min"
+//                 aria-label="Minimum height"
+//                 value={filters.heightMin}
+//                 onChange={(event) => updateFilters({ heightMin: event.currentTarget.value })}
+//                 width={12}
+//               />
+//               <span className={styles.rangeSeparator}>to</span>
+//               <Input
+//                 id="query-editor-filter-height-max"
+//                 type="number"
+//                 step="any"
+//                 placeholder="Max"
+//                 aria-label="Maximum height"
+//                 value={filters.heightMax}
+//                 onChange={(event) => updateFilters({ heightMax: event.currentTarget.value })}
+//                 width={12}
+//               />
+//             </div>
+//           </InlineField>
+//           <InlineField label="Created" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>
+//             <div className={styles.rangeInputs}>
+//               <Input
+//                 id="query-editor-filter-created-min"
+//                 type="datetime-local"
+//                 aria-label="Created after"
+//                 value={filters.createdTimeMin}
+//                 onChange={(event) => updateFilters({ createdTimeMin: event.currentTarget.value })}
+//                 width={22}
+//               />
+//               <span className={styles.rangeSeparator}>to</span>
+//               <Input
+//                 id="query-editor-filter-created-max"
+//                 type="datetime-local"
+//                 aria-label="Created before"
+//                 value={filters.createdTimeMax}
+//                 onChange={(event) => updateFilters({ createdTimeMax: event.currentTarget.value })}
+//                 width={22}
+//               />
+//             </div>
+//           </InlineField>
+//         </div>
+//       )}
+//     </Stack>
+//   );
+// }
 
 interface ResultsPaginationProps {
   page: number;
@@ -754,12 +715,23 @@ function ResultsPagination({
 }
 
 interface TimeSeriesListProps {
-  series: PlaceholderTimeSeries[];
+  series: TimeSeries[];
   selectedIds: Set<string>;
   onAddSeries: (externalId: string) => void;
   emptyMessage: string;
   contextLabel: string;
   listResetKey: string;
+}
+
+function instanceIdAsString(space: string, externalId: string) {
+  return `${space}:${externalId}`;
+}
+
+function instanceStringAsId(instanceId: string): InstanceId {
+  const index = instanceId.indexOf(":")
+  const space = instanceId.slice(0, index);
+  const externalId = instanceId.slice(index + 1);
+  return {space:space, externalId:externalId};
 }
 
 function TimeSeriesList({
@@ -817,20 +789,16 @@ function TimeSeriesList({
           <p className={styles.emptyState}>{emptyMessage}</p>
         ) : (
           paginatedSeries.map((item) => {
-            const inPanel = selectedIds.has(item.externalId);
-
+            const identifier = instanceIdAsString(item.space, item.externalId)
+            const inPanel = selectedIds.has(identifier);
+            const displayName = item.name ?? item.externalId
             return (
-              <div
-                key={item.externalId}
-                className={styles.resultRow}
-                role="listitem"
-                data-in-panel={inPanel}
-              >
+              <div key={identifier} className={styles.resultRow} role="listitem" data-in-panel={inPanel}>
                 <div className={styles.resultRowMain}>
                   <div className={styles.resultRowText}>
-                    <span className={styles.resultRowName}>{item.name}</span>
+                    <span className={styles.resultRowName}>{displayName}</span>
                     <span className={styles.resultRowMeta}>
-                      {item.externalId}
+                      {item.space} · {item.externalId}
                       {item.unit ? ` · ${item.unit}` : ''}
                     </span>
                     <p className={styles.resultDescription}>{item.description}</p>
@@ -842,8 +810,8 @@ function TimeSeriesList({
                       size="sm"
                       variant="secondary"
                       icon="plus"
-                      onClick={() => onAddSeries(item.externalId)}
-                      aria-label={`Add ${item.name} to panel`}
+                      onClick={() => onAddSeries(identifier)}
+                      aria-label={`Add ${displayName} to panel`}
                     >
                       Add
                     </Button>
@@ -874,7 +842,7 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
       <div className={styles.seriesPanelHeader}>
         <span className={styles.seriesPanelTitle}>Panel</span>
         <span className={styles.seriesPanelCount}>
-          {sortedIds.length === 0 ? 'Empty' : `${sortedIds.length} item${sortedIds.length === 1 ? '' : 's'}`}
+          {sortedIds.length === 0 ? 'Empty' : `${sortedIds.length} timeseries`}
         </span>
       </div>
 
@@ -882,26 +850,26 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
         <p className={styles.seriesPanelEmpty}>Add time series from the list above.</p>
       ) : (
         <div className={styles.seriesPanelList}>
-          {sortedIds.map((externalId) => {
-            const series = timeSeriesById.get(externalId);
-            const config = seriesConfig.get(externalId) ?? DEFAULT_SERIES_CONFIG;
-            const displayLabel = series ? resolveSeriesDisplayLabel(series, config.label) : externalId;
+          {sortedIds.map((identifier) => {
+            const series = timeSeriesById.get(identifier);
+            const config = seriesConfig.get(identifier) ?? DEFAULT_SERIES_CONFIG;
+            const displayLabel = series ? resolveSeriesDisplayLabel(series, config.label) : identifier;
             const labelOptions = series ? getLabelOptionsForSeries(series) : [];
 
             return (
-              <div key={externalId} className={styles.seriesPanelRow}>
+              <div key={identifier} className={styles.seriesPanelRow}>
                 <IconButton
                   name="trash-alt"
                   variant="destructive"
                   size="md"
                   tooltip="Remove from panel"
-                  onClick={() => onRemoveSeries(externalId)}
+                  onClick={() => onRemoveSeries(identifier)}
                   className={styles.seriesPanelRemove}
                 />
                 <div className={styles.seriesPanelRowMain}>
                   <div className={styles.seriesPanelRowInfo}>
                     <span className={styles.seriesPanelRowLabel}>{displayLabel}</span>
-                    <span className={styles.seriesPanelRowMeta}>{externalId}</span>
+                    <span className={styles.seriesPanelRowMeta}>{identifier}</span>
                   </div>
                   <div className={styles.seriesPanelRowControls}>
                     <InlineField
@@ -911,12 +879,12 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
                       grow
                     >
                       <Select
-                        inputId={`query-editor-aggregation-${externalId}`}
+                        inputId={`query-editor-aggregation-${identifier}`}
                         options={aggregationOptions}
                         value={config.aggregation}
                         onChange={(option) => {
                           if (option.value) {
-                            onSeriesConfigChange(externalId, { aggregation: option.value });
+                            onSeriesConfigChange(identifier, { aggregation: option.value });
                           }
                         }}
                       />
@@ -928,17 +896,17 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
                       grow
                     >
                       <Select
-                        inputId={`query-editor-label-${externalId}`}
+                        inputId={`query-editor-label-${identifier}`}
                         options={labelOptions}
                         value={config.label}
                         allowCustomValue
                         placeholder="Select property or type custom label"
                         onChange={(option) => {
                           if (option.value !== undefined && option.value !== '') {
-                            onSeriesConfigChange(externalId, { label: String(option.value) });
+                            onSeriesConfigChange(identifier, { label: String(option.value) });
                           }
                         }}
-                        onCreateOption={(value) => onSeriesConfigChange(externalId, { label: value })}
+                        onCreateOption={(value) => onSeriesConfigChange(identifier, { label: value })}
                       />
                     </InlineField>
                   </div>
@@ -953,42 +921,89 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
 }
 
 interface SearchTabProps {
+  datasource: DataSource;
   selectedIds: Set<string>;
   onAddSeries: (externalId: string) => void;
 }
 
-function SearchTab({ selectedIds, onAddSeries }: SearchTabProps) {
-  const [viewId, setViewId] = useState(PLACEHOLDER_VIEWS[0].id);
-  const [search, setSearch] = useState('');
-  const [filtersByView, setFiltersByView] = useState<Record<string, SearchFilters>>({});
 
-  const filters = filtersByView[viewId] ?? DEFAULT_SEARCH_FILTERS;
+function viewIdAsString (view: ViewId) {
+  return `${view.space}:${view.externalId}(version=${view.version})`;
+}
+function viewStringAsId (viewString: string): ViewId {
+  const colonIndex = viewString.indexOf(':');
+  const space = viewString.slice(0, colonIndex);
+  const rest = viewString.slice(colonIndex + 1);
+  const parenIndex = rest.indexOf('(version=');
+  const externalId = rest.slice(0, parenIndex);
+  const versionWithParen = rest.slice(parenIndex + '(version='.length);
+  const version = versionWithParen.endsWith(')') ? versionWithParen.slice(0, -1) : versionWithParen;
+  return { space, externalId, version };
+}
 
-  const filteredTimeSeries = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
+function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
 
-    return PLACEHOLDER_TIME_SERIES.filter((series) => {
-      if (series.viewId !== viewId) {
-        return false;
+
+  const [viewOptions, setViewOptions] = useState<Array<SelectableValue<string>>>([]);
+  const [isViewsLoading, setIsViewsLoading] = useState(true);
+  const [viewsError, setViewsError] = useState<string | null>(null);
+  const cogniteTimeSeries: ViewId = { space: 'cdf_cdm', externalId: 'CogniteTimeSeries', version: 'v1' };
+  const [viewId, setViewId] = useState<string>(viewIdAsString(cogniteTimeSeries));
+
+  const [searchQuery, setSearchQuery] = useState<string | undefined>('');
+  // const [filtersByView, setFiltersByView] = useState<Record<string, SearchFilters>>({});
+
+  const [searchResults, setSearchResults] = useState<TimeSeries[]>([]);
+
+  // const filters = filtersByView[viewId] ?? DEFAULT_SEARCH_FILTERS;
+
+  // Load view options
+  useEffect(() => {
+    let cancelled = false;
+    const loadViews = async () => {
+      setIsViewsLoading(true);
+      setViewsError(null);
+      try {
+        const views = await datasource.getTimeSeriesViews();
+        if (cancelled) {
+          return;
+        }
+
+        const options = views.map((view) => ({ label: viewIdAsString(view), value: viewIdAsString(view) }));
+        setViewOptions(options);
+      } catch (err) {
+        setViewsError(err instanceof Error ? err.message : JSON.stringify(err, null, 2));
+      } finally {
+        if (!cancelled) {
+          setIsViewsLoading(false);
+        }
       }
+    };
+    void loadViews();
+    return () => {
+      cancelled = true;
+    };
+  }, [datasource]);
 
-      if (!matchesSearchFilters(series, filters)) {
-        return false;
+  // Search time series
+  useEffect(() => {
+    let cancelled = false
+
+    const searchTimeSeries = async () => {
+      try {
+        console.log("viewStringAsId" + viewStringAsId(viewId));
+        const searchResults = await datasource.searchTimeSeries(viewStringAsId(viewId), searchQuery, 1000);
+        if (cancelled) {return;}
+        setSearchResults(searchResults)
+      } catch (err) {
+        if (!cancelled) {setSearchResults([]);}
       }
+    }
+    void searchTimeSeries();
+    return () => {cancelled = true;};
+  }, [viewId, searchQuery, datasource]);
 
-      if (!normalizedSearch) {
-        return true;
-      }
-
-      const haystack = [series.name, series.externalId, series.description, series.unit]
-        .join(' ')
-        .toLowerCase();
-
-      return haystack.includes(normalizedSearch);
-    });
-  }, [filters, search, viewId]);
-
-  const selectedView = PLACEHOLDER_VIEWS.find((view) => view.id === viewId);
+  // const selectedView = PLACEHOLDER_VIEWS.find((view) => view.id === viewId);
 
   const onViewChange = (option: SelectableValue<string>) => {
     if (option.value) {
@@ -997,47 +1012,57 @@ function SearchTab({ selectedIds, onAddSeries }: SearchTabProps) {
   };
 
   const onSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setSearch(event.target.value);
+    setSearchQuery(event.target.value);
   };
 
-  const onFiltersChange = (nextFilters: SearchFilters) => {
-    setFiltersByView((current) => ({ ...current, [viewId]: nextFilters }));
-  };
+  // const onFiltersChange = (nextFilters: SearchFilters) => {
+  //   setFiltersByView((current) => ({ ...current, [viewId]: nextFilters }));
+  // };
 
   return (
     <Stack direction="column" gap={1}>
       <DocumentationBlock testId="query-editor-documentation" />
 
+      {viewsError && (
+        <Alert severity="error" title="Failed to load views">
+          {viewsError}
+        </Alert>
+      )}
+      {!viewsError && (
       <InlineField label="View" labelWidth={12}>
         <Select
           inputId="query-editor-view"
           options={viewOptions}
           value={viewId}
+
           onChange={onViewChange}
+          isLoading={isViewsLoading}
+          disabled={isViewsLoading || viewOptions.length === 0}
           width={28}
         />
-      </InlineField>
+      </InlineField>)}
 
       <InlineField label="Search" labelWidth={12}>
         <Input
           id="query-editor-search"
           aria-label="Search time series"
-          placeholder="Search by name, ID, or description…"
-          value={search}
+          placeholder="Search any text property..."
+          value={searchQuery}
           onChange={onSearchChange}
           width={40}
         />
       </InlineField>
 
-      <SearchFiltersPanel viewId={viewId} filters={filters} onFiltersChange={onFiltersChange} />
+      {/*<SearchFiltersPanel viewId={viewId} filters={filters} onFiltersChange={onFiltersChange} />*/}
 
       <TimeSeriesList
-        series={filteredTimeSeries}
+        series={searchResults}
         selectedIds={selectedIds}
         onAddSeries={onAddSeries}
         emptyMessage="No time series match your search or filters."
-        contextLabel={`in ${selectedView?.label ?? 'view'}`}
-        listResetKey={`${viewId}|${search}|${filters.space}|${filters.externalIdPrefix}|${filters.type}|${filters.isStep}|${filters.heightMin}|${filters.heightMax}|${filters.createdTimeMin}|${filters.createdTimeMax}`}
+        contextLabel={`in ${viewId ?? 'view'}`}
+        listResetKey={`${viewId}|${searchQuery}`}
+        // listResetKey={`${viewId}|${searchQuery}|${filters.space}|${filters.externalIdPrefix}|${filters.type}|${filters.isStep}|${filters.heightMin}|${filters.heightMax}|${filters.createdTimeMin}|${filters.createdTimeMax}`}
       />
     </Stack>
   );
@@ -1101,74 +1126,63 @@ function EquipmentTab({ selectedIds, onAddSeries }: EquipmentTabProps) {
   );
 }
 
-export function QueryEditor({ query, onChange, onRunQuery }: Props) {
+export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) {
   const [activeTab, setActiveTab] = useState<SelectionTab>('search');
 
-  const { selectedIds, seriesConfig } = useMemo(
-    () => parseQueryState(query.queryText),
-    [query.queryText]
-  );
+  const { selectedIds, seriesConfig } = useMemo(() => parseQueryState(query.items), [query.items]);
 
   const persistQueryState = useCallback(
     (nextSelected: Set<string>, nextSeriesConfig: Map<string, SeriesConfig>) => {
-      const queryText = serializeQueryState(nextSelected, nextSeriesConfig);
-      onChange({ ...query, queryText });
-      if (queryText) {
+      const timeSeriesItems = serializeQueryState(nextSelected, nextSeriesConfig);
+      onChange({ ...query, items: timeSeriesItems });
+      if (timeSeriesItems) {
         onRunQuery();
       }
     },
     [onChange, onRunQuery, query]
   );
 
-  const onAddSeries = (externalId: string) => {
-    if (selectedIds.has(externalId)) {
+  const onAddSeries = (identifier: string) => {
+    if (selectedIds.has(identifier)) {
       return;
     }
 
     const nextSelected = new Set(selectedIds);
     const nextSeriesConfig = new Map(seriesConfig);
 
-    nextSelected.add(externalId);
-    nextSeriesConfig.set(externalId, { ...DEFAULT_SERIES_CONFIG });
+    nextSelected.add(identifier);
+    nextSeriesConfig.set(identifier, { ...DEFAULT_SERIES_CONFIG });
 
     persistQueryState(nextSelected, nextSeriesConfig);
   };
 
-  const onRemoveSeries = (externalId: string) => {
+  const onRemoveSeries = (identifier: string) => {
     const nextSelected = new Set(selectedIds);
     const nextSeriesConfig = new Map(seriesConfig);
 
-    nextSelected.delete(externalId);
-    nextSeriesConfig.delete(externalId);
+    nextSelected.delete(identifier);
+    nextSeriesConfig.delete(identifier);
 
     persistQueryState(nextSelected, nextSeriesConfig);
   };
 
-  const onSeriesConfigChange = (externalId: string, patch: Partial<SeriesConfig>) => {
+  const onSeriesConfigChange = (identifier: string, patch: Partial<SeriesConfig>) => {
     const nextSeriesConfig = new Map(seriesConfig);
-    const current = nextSeriesConfig.get(externalId) ?? DEFAULT_SERIES_CONFIG;
+    const current = nextSeriesConfig.get(identifier) ?? DEFAULT_SERIES_CONFIG;
 
-    nextSeriesConfig.set(externalId, { ...current, ...patch });
+    nextSeriesConfig.set(identifier, { ...current, ...patch });
     persistQueryState(selectedIds, nextSeriesConfig);
   };
 
   return (
     <Stack direction="column" gap={1}>
       <TabsBar>
-        <Tab
-          label="Search"
-          active={activeTab === 'search'}
-          onChangeTab={() => setActiveTab('search')}
-        />
-        <Tab
-          label="Equipment"
-          active={activeTab === 'equipment'}
-          onChangeTab={() => setActiveTab('equipment')}
-        />
+        <Tab label="Search" active={activeTab === 'search'} onChangeTab={() => setActiveTab('search')} />
+        <Tab label="Equipment" active={activeTab === 'equipment'} onChangeTab={() => setActiveTab('equipment')} />
       </TabsBar>
 
       {activeTab === 'search' ? (
-        <SearchTab selectedIds={selectedIds} onAddSeries={onAddSeries} />
+        <SearchTab datasource={datasource} selectedIds={selectedIds} onAddSeries={onAddSeries} />
       ) : (
         <EquipmentTab selectedIds={selectedIds} onAddSeries={onAddSeries} />
       )}

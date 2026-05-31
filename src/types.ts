@@ -1,13 +1,23 @@
 import { DataSourceJsonData } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
 
-export interface MyQuery extends DataQuery {
-  queryText?: string;
-  constant: number;
+
+export interface SelectedTimeSeriesItem {
+  space: string
+  externalId: string
+  aggregation: string
+  label?: string
 }
 
-export const DEFAULT_QUERY: Partial<MyQuery> = {
+export interface SelectedTimeSeriesQuery extends DataQuery {
+  queryText?: string;
+  constant: number;
+  items: SelectedTimeSeriesItem[];
+}
+
+export const DEFAULT_QUERY: Partial<SelectedTimeSeriesQuery> = {
   constant: 6.5,
+  items: []
 };
 
 export interface DataPoint {
@@ -51,4 +61,48 @@ export interface CDFSecureLoginOptions {
   clientSecret?: string;
   refreshToken?: string;
   expiry?: string;
+}
+
+export interface ViewId {
+  space: string;
+  externalId: string;
+  version: string;
+}
+
+export interface InspectionResult {
+  involvedViewCount: number;
+  involvedViews: ViewId[];
+}
+
+export interface ContainerInspectResult {
+  space: string;
+  externalId: string;
+  inspectionResults: InspectionResult;
+}
+
+export interface InstanceId {
+  space: string;
+  externalId: string;
+}
+
+
+export interface InstanceResponse {
+  instanceType: string;
+  version: number;
+  space: string;
+  externalId: string;
+  type?: InstanceId;
+  createdTime: number;
+  lastUpdateTime: number;
+  deletedTime?: number;
+  properties: Map<string, Map<string, any>>
+}
+
+
+export interface TimeSeries {
+  space: string;
+  externalId: string;
+  name?: string;
+  description?: string;
+  unit?: string;
 }
