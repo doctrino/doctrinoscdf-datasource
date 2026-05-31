@@ -758,6 +758,10 @@ interface TimeSeriesListProps {
   listResetKey: string;
 }
 
+function instanceIdAsString(space: string, externalId: string) {
+  return `${space}:${externalId}`;
+}
+
 function TimeSeriesList({
   series,
   selectedIds,
@@ -813,20 +817,16 @@ function TimeSeriesList({
           <p className={styles.emptyState}>{emptyMessage}</p>
         ) : (
           paginatedSeries.map((item) => {
-            const inPanel = selectedIds.has(item.externalId);
-
+            const identifier = instanceIdAsString(item.space, item.externalId)
+            const inPanel = selectedIds.has(identifier);
+            const displayName = item.name ?? item.externalId
             return (
-              <div
-                key={item.externalId}
-                className={styles.resultRow}
-                role="listitem"
-                data-in-panel={inPanel}
-              >
+              <div key={identifier} className={styles.resultRow} role="listitem" data-in-panel={inPanel}>
                 <div className={styles.resultRowMain}>
                   <div className={styles.resultRowText}>
-                    <span className={styles.resultRowName}>{item.name}</span>
+                    <span className={styles.resultRowName}>{displayName}</span>
                     <span className={styles.resultRowMeta}>
-                      {item.externalId}
+                      {item.space} · {item.externalId}
                       {item.unit ? ` · ${item.unit}` : ''}
                     </span>
                     <p className={styles.resultDescription}>{item.description}</p>
@@ -838,8 +838,8 @@ function TimeSeriesList({
                       size="sm"
                       variant="secondary"
                       icon="plus"
-                      onClick={() => onAddSeries(item.externalId)}
-                      aria-label={`Add ${item.name} to panel`}
+                      onClick={() => onAddSeries(identifier)}
+                      aria-label={`Add ${displayName} to panel`}
                     >
                       Add
                     </Button>
@@ -982,6 +982,7 @@ function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
 
   // const filters = filtersByView[viewId] ?? DEFAULT_SEARCH_FILTERS;
 
+  // Load view options
   useEffect(() => {
     let cancelled = false;
     const loadViews = async () => {
@@ -1009,6 +1010,7 @@ function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
     };
   }, [datasource]);
 
+  // Search time series
   useEffect(() => {
     let cancelled = false
 
@@ -1165,35 +1167,35 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
     [onChange, onRunQuery, query]
   );
 
-  const onAddSeries = (externalId: string) => {
-    if (selectedIds.has(externalId)) {
+  const onAddSeries = (identifier: string) => {
+    if (selectedIds.has(identifier)) {
       return;
     }
 
     const nextSelected = new Set(selectedIds);
     const nextSeriesConfig = new Map(seriesConfig);
 
-    nextSelected.add(externalId);
-    nextSeriesConfig.set(externalId, { ...DEFAULT_SERIES_CONFIG });
+    nextSelected.add(identifier);
+    nextSeriesConfig.set(identifier, { ...DEFAULT_SERIES_CONFIG });
 
     persistQueryState(nextSelected, nextSeriesConfig);
   };
 
-  const onRemoveSeries = (externalId: string) => {
+  const onRemoveSeries = (identifier: string) => {
     const nextSelected = new Set(selectedIds);
     const nextSeriesConfig = new Map(seriesConfig);
 
-    nextSelected.delete(externalId);
-    nextSeriesConfig.delete(externalId);
+    nextSelected.delete(identifier);
+    nextSeriesConfig.delete(identifier);
 
     persistQueryState(nextSelected, nextSeriesConfig);
   };
 
-  const onSeriesConfigChange = (externalId: string, patch: Partial<SeriesConfig>) => {
+  const onSeriesConfigChange = (identifier: string, patch: Partial<SeriesConfig>) => {
     const nextSeriesConfig = new Map(seriesConfig);
-    const current = nextSeriesConfig.get(externalId) ?? DEFAULT_SERIES_CONFIG;
+    const current = nextSeriesConfig.get(identifier) ?? DEFAULT_SERIES_CONFIG;
 
-    nextSeriesConfig.set(externalId, { ...current, ...patch });
+    nextSeriesConfig.set(identifier, { ...current, ...patch });
     persistQueryState(selectedIds, nextSeriesConfig);
   };
 
