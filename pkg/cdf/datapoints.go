@@ -72,10 +72,9 @@ func (d *datapoints) retrieve(ctx context.Context, request DataPointsRetrieveReq
 		for i, item := range page.GetItems() {
 			if item.GetNextCursor() != "" {
 				cursor := item.GetNextCursor()
-				nextItems = append(nextItems, DataPointQueryItem{
-					InstanceId: request.Items[i].InstanceId,
-					Cursor:     &cursor,
-				})
+				next := request.Items[i] // copy all original fields
+				next.Cursor = &cursor
+				nextItems = append(nextItems, next)
 			}
 		}
 
