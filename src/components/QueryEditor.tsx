@@ -954,20 +954,23 @@ interface SearchTabProps {
   onAddSeries: (externalId: string) => void;
 }
 
+
+function viewIdAsString (view: ViewId) {
+  return `${view.space}:${view.externalId}(version=${view.version})`;
+}
+function viewStringAsId (viewString: string): ViewId {
+  const colonIndex = viewString.indexOf(':');
+  const space = viewString.slice(0, colonIndex);
+  const rest = viewString.slice(colonIndex + 1);
+  const parenIndex = rest.indexOf('(version=');
+  const externalId = rest.slice(0, parenIndex);
+  const versionWithParen = rest.slice(parenIndex + '(version='.length);
+  const version = versionWithParen.endsWith(')') ? versionWithParen.slice(0, -1) : versionWithParen;
+  return { space, externalId, version };
+}
+
 function SearchTab({datasource, selectedIds, onAddSeries }: SearchTabProps) {
-  const viewIdAsString = (view: ViewId) => {
-    return `${view.space}:${view.externalId}(version=${view.version})`;
-  };
-  const viewStringAsId = (viewString: string): ViewId => {
-    const colonIndex = viewString.indexOf(':');
-    const space = viewString.slice(0, colonIndex);
-    const rest = viewString.slice(colonIndex + 1);
-    const parenIndex = rest.indexOf('(version=');
-    const externalId = rest.slice(0, parenIndex);
-    const versionWithParen = rest.slice(parenIndex + '(version='.length);
-    const version = versionWithParen.endsWith(')') ? versionWithParen.slice(0, -1) : versionWithParen;
-    return { space, externalId, version };
-  }
+
 
   const [viewOptions, setViewOptions] = useState<Array<SelectableValue<string>>>([]);
   const [isViewsLoading, setIsViewsLoading] = useState(true);
