@@ -870,7 +870,7 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
       <div className={styles.seriesPanelHeader}>
         <span className={styles.seriesPanelTitle}>Panel</span>
         <span className={styles.seriesPanelCount}>
-          {sortedIds.length === 0 ? 'Empty' : `${sortedIds.length} item${sortedIds.length === 1 ? '' : 's'}`}
+          {sortedIds.length === 0 ? 'Empty' : `${sortedIds.length} timeseries`}
         </span>
       </div>
 
@@ -878,26 +878,26 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
         <p className={styles.seriesPanelEmpty}>Add time series from the list above.</p>
       ) : (
         <div className={styles.seriesPanelList}>
-          {sortedIds.map((externalId) => {
-            const series = timeSeriesById.get(externalId);
-            const config = seriesConfig.get(externalId) ?? DEFAULT_SERIES_CONFIG;
-            const displayLabel = series ? resolveSeriesDisplayLabel(series, config.label) : externalId;
+          {sortedIds.map((identifier) => {
+            const series = timeSeriesById.get(identifier);
+            const config = seriesConfig.get(identifier) ?? DEFAULT_SERIES_CONFIG;
+            const displayLabel = series ? resolveSeriesDisplayLabel(series, config.label) : identifier;
             const labelOptions = series ? getLabelOptionsForSeries(series) : [];
 
             return (
-              <div key={externalId} className={styles.seriesPanelRow}>
+              <div key={identifier} className={styles.seriesPanelRow}>
                 <IconButton
                   name="trash-alt"
                   variant="destructive"
                   size="md"
                   tooltip="Remove from panel"
-                  onClick={() => onRemoveSeries(externalId)}
+                  onClick={() => onRemoveSeries(identifier)}
                   className={styles.seriesPanelRemove}
                 />
                 <div className={styles.seriesPanelRowMain}>
                   <div className={styles.seriesPanelRowInfo}>
                     <span className={styles.seriesPanelRowLabel}>{displayLabel}</span>
-                    <span className={styles.seriesPanelRowMeta}>{externalId}</span>
+                    <span className={styles.seriesPanelRowMeta}>{identifier}</span>
                   </div>
                   <div className={styles.seriesPanelRowControls}>
                     <InlineField
@@ -907,12 +907,12 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
                       grow
                     >
                       <Select
-                        inputId={`query-editor-aggregation-${externalId}`}
+                        inputId={`query-editor-aggregation-${identifier}`}
                         options={aggregationOptions}
                         value={config.aggregation}
                         onChange={(option) => {
                           if (option.value) {
-                            onSeriesConfigChange(externalId, { aggregation: option.value });
+                            onSeriesConfigChange(identifier, { aggregation: option.value });
                           }
                         }}
                       />
@@ -924,17 +924,17 @@ function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfig
                       grow
                     >
                       <Select
-                        inputId={`query-editor-label-${externalId}`}
+                        inputId={`query-editor-label-${identifier}`}
                         options={labelOptions}
                         value={config.label}
                         allowCustomValue
                         placeholder="Select property or type custom label"
                         onChange={(option) => {
                           if (option.value !== undefined && option.value !== '') {
-                            onSeriesConfigChange(externalId, { label: String(option.value) });
+                            onSeriesConfigChange(identifier, { label: String(option.value) });
                           }
                         }}
-                        onCreateOption={(value) => onSeriesConfigChange(externalId, { label: value })}
+                        onCreateOption={(value) => onSeriesConfigChange(identifier, { label: value })}
                       />
                     </InlineField>
                   </div>
