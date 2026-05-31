@@ -26,31 +26,56 @@ type DataPointsRetrieveRequest struct {
 }
 
 func (d *datapoints) retrieve(ctx context.Context, request DataPointsRetrieveRequest) (*pb.DataPointListResponse, error) {
-	body, err := json.Marshal(request)
-	if err != nil {
-		return nil, fmt.Errorf("marshal request: %w", err)
+	// Build initial items from request
+	items := make([]DataPointQueryItem, len(request.Items))
+	copy(items, request.Items)
+
+	var allItems []*pb.DataPointListItem
+
+	for {
+		body, err := json.Marshal(DataPointsRetrieveRequest{Items: items})
+		if err != nil {
+			return nil, fmt.Errorf("marshal request: %w", err)
+		}
+
+		resp, err := d.apiClient.do(ctx, http.MethodPost, "/timeseries/data/list", bytes.NewReader(body), "accept/protobuf")
+		if err != nil {
+			return nil, err
+		}
+
+		respBody, err := io.ReadAll(resp.Body)
+		resp.Body.Close() //nolint:errcheck
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("datapoints list: status %d: %s", resp.StatusCode, respBody)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read response: %w", err)
+		}
+
+		var page pb.DataPointListResponse
+		if err := proto.Unmarshal(respBody, &page); err != nil {
+			return nil, fmt.Errorf("unmarshal protobuf: %w", err)
+		}
+
+		allItems = append(allItems, page.GetItems()...)
+
+		// Check for remaining cursors
+		var nextItems []DataPointQueryItem
+		for i, item := range page.GetItems() {
+			if item.GetNextCursor() != "" {
+				cursor := item.GetNextCursor()
+				nextItems = append(nextItems, DataPointQueryItem{
+					InstanceId: request.Items[i].InstanceId,
+					Cursor:     &cursor,
+				})
+			}
+		}
+
+		if len(nextItems) == 0 {
+			break
+		}
+		items = nextItems
 	}
 
-	resp, err := d.apiClient.do(ctx, http.MethodPost, "/timeseries/data/list", bytes.NewReader(body), "accept/protobuf")
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("datapoints list: status %d: %s", resp.StatusCode, respBody)
-	}
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response: %w", err)
-	}
-
-	var result pb.DataPointListResponse
-	if err := proto.Unmarshal(respBody, &result); err != nil {
-		return nil, fmt.Errorf("unmarshal protobuf: %w", err)
-	}
-
-	return &result, nil
+	return &pb.DataPointListResponse{Items: allItems}, nil
 }
