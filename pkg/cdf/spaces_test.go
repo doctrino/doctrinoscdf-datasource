@@ -8,30 +8,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSPaces_RetrieveUpsert(t *testing.T) {
+func TestSPaces_UpsertRetrieve(t *testing.T) {
 	ctx := context.Background()
+	name := "Grafana Test Space"
+	description := "Space for testing Grafana datasource plugin"
+	upsertRequest := SpaceUpsertRequest{
+		[]SpaceRequest{{
+			Space:       testSpace,
+			Name:        &name,
+			Description: &description,
+		}},
+	}
+	upsertResponse, err := testClient.Spaces.Upsert(ctx, upsertRequest)
+	require.NoError(t, err)
+	require.NotNil(t, upsertResponse)
+	require.Greater(t, len(upsertResponse), 0)
+	require.Equal(t, testSpace, upsertResponse[0].Space)
 	retrieveRequest := SpaceRetrieveRequest{
 		[]SpaceId{{Space: testSpace}},
 	}
-	resp, err := testClient.Spaces.Retrieve(ctx, retrieveRequest)
+	retrieveResponse, err := testClient.Spaces.Retrieve(ctx, retrieveRequest)
 	require.NoError(t, err)
-	require.NotNil(t, resp)
-	if len(resp) > 0 {
-		require.Equal(t, testSpace, resp[0].Space)
-	} else {
-		name := "Grafana Test Space"
-		description := "Space for testing Grafana datasource plugin"
-		upsertRequest := SpaceUpsertRequest{
-			[]SpaceRequest{{
-				Space:       testSpace,
-				Name:        &name,
-				Description: &description,
-			}},
-		}
-		resp2, err := testClient.Spaces.Upsert(ctx, upsertRequest)
-		require.NoError(t, err)
-		require.NotNil(t, resp2)
-		require.Greater(t, len(resp2), 0)
-		require.Equal(t, testSpace, resp2[0].Space)
-	}
+	require.NotNil(t, retrieveResponse)
+	require.Greater(t, len(retrieveResponse), 0)
+	require.Equal(t, testSpace, retrieveResponse[0].Space)
 }
