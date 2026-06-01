@@ -46,7 +46,7 @@ func (d *datapoints) Retrieve(ctx context.Context, request DataPointsRetrieveReq
 			return nil, fmt.Errorf("marshal request: %w", err)
 		}
 
-		resp, err := d.apiClient.do(ctx, http.MethodPost, "/timeseries/data/list", bytes.NewReader(body), "accept/protobuf")
+		resp, err := d.apiClient.do(ctx, http.MethodPost, "/timeseries/data/list", bytes.NewReader(body), "application/json", "accept/protobuf")
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +93,7 @@ func (d *datapoints) Insert(ctx context.Context, request *pb.DataPointInsertionR
 		return fmt.Errorf("marshal request: %w", err)
 	}
 
-	resp, err := d.apiClient.do(ctx, http.MethodPost, "/timeseries/data", bytes.NewReader(body), "application/protobuf")
+	resp, err := d.apiClient.do(ctx, http.MethodPost, "/timeseries/data", bytes.NewReader(body), "application/protobuf", "application/json")
 	if err != nil {
 		return err
 	}
