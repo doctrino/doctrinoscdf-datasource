@@ -87,8 +87,8 @@ func (d *datapoints) Retrieve(ctx context.Context, request DataPointsRetrieveReq
 	return &pb.DataPointListResponse{Items: allItems}, nil
 }
 
-func (d *datapoints) Insert(ctx context.Context, request pb.DataPointInsertionRequest) error {
-	body, err := proto.Marshal(&request)
+func (d *datapoints) Insert(ctx context.Context, request *pb.DataPointInsertionRequest) error {
+	body, err := proto.Marshal(request)
 	if err != nil {
 		return fmt.Errorf("marshal request: %w", err)
 	}
