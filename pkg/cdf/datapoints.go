@@ -46,7 +46,7 @@ func (d *datapoints) Retrieve(ctx context.Context, request DataPointsRetrieveReq
 			return nil, fmt.Errorf("marshal request: %w", err)
 		}
 
-		resp, err := d.apiClient.do(ctx, http.MethodPost, "/timeseries/data/list", bytes.NewReader(body), "application/json", "accept/protobuf")
+		resp, err := d.apiClient.do(ctx, http.MethodPost, "/timeseries/data/list", bytes.NewReader(body), "application/json", "application/protobuf")
 		if err != nil {
 			return nil, err
 		}
