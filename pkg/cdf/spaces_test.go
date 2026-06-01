@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSPaces_UpsertRetrieve(t *testing.T) {
+func TestSpaces_UpsertRetrieve(t *testing.T) {
 	ctx := context.Background()
 	name := "Grafana Test Space"
 	description := "Space for testing Grafana datasource plugin"
