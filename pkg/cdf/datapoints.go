@@ -12,10 +12,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type datapoints struct {
-	apiClient *apiClient
-}
-
 type DataPointQueryItem struct {
 	InstanceId       InstanceId `json:"instanceId"`
 	Start            *int64     `json:"start,omitempty"`
@@ -33,7 +29,11 @@ type DataPointsRetrieveRequest struct {
 	Items []DataPointQueryItem
 }
 
-func (d *datapoints) retrieve(ctx context.Context, request DataPointsRetrieveRequest) (*pb.DataPointListResponse, error) {
+type datapoints struct {
+	apiClient *apiClient
+}
+
+func (d *datapoints) Retrieve(ctx context.Context, request DataPointsRetrieveRequest) (*pb.DataPointListResponse, error) {
 	// Build initial items from request
 	items := make([]DataPointQueryItem, len(request.Items))
 	copy(items, request.Items)
@@ -85,4 +85,26 @@ func (d *datapoints) retrieve(ctx context.Context, request DataPointsRetrieveReq
 	}
 
 	return &pb.DataPointListResponse{Items: allItems}, nil
+}
+
+func (d *datapoints) Insert(ctx context.Context, request pb.DataPointInsertionRequest) error {
+	body, err := proto.Marshal(&request)
+	if err != nil {
+		return fmt.Errorf("marshal request: %w", err)
+	}
+
+	resp, err := d.apiClient.do(ctx, http.MethodPost, "/timeseries/data", bytes.NewReader(body), "application/protobuf")
+	if err != nil {
+		return err
+	}
+
+	respBody, err := io.ReadAll(resp.Body)
+	resp.Body.Close() //nolint:errcheck
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("datapoints insert: status %d: %s", resp.StatusCode, respBody)
+	}
+	if err != nil {
+		return fmt.Errorf("read response: %w", err)
+	}
+	return nil
 }
