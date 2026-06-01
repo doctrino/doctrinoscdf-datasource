@@ -9,8 +9,9 @@ import (
 )
 
 type InstanceId struct {
-	Space      string `json:"space"`
-	ExternalId string `json:"externalId"`
+	Space        string  `json:"space"`
+	ExternalId   string  `json:"externalId"`
+	InstanceType *string `json:"instanceType,omitempty"`
 }
 
 type InstanceResponse struct {
@@ -110,6 +111,15 @@ type InstanceUpsertRequest struct {
 	Replace                   *bool             `json:"replace,omitempty"`
 }
 
+type InstanceRetrieveSource struct {
+	Source ViewId `json:"source"`
+}
+
+type InstanceRetrieveRequest struct {
+	Sources []InstanceRetrieveSource `json:"sources,omitempty"`
+	Items   []InstanceId             `json:"items"`
+}
+
 type instances struct {
 	apiClient *apiClient
 }
@@ -158,6 +168,23 @@ func (i *instances) Upsert(ctx context.Context, request InstanceUpsertRequest) (
 	var resp InstanceSlimResponse
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("cdf /models/instances/upsert: %w", err)
+	}
+	return resp.Items, nil
+}
+
+func (i *instances) Retrieve(ctx context.Context, request InstanceRetrieveRequest) ([]InstanceResponse, error) {
+	data, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	body, err := i.apiClient.doBody(ctx, http.MethodPost, "/models/instances/byids", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	var resp InstanceItemResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("cdf /models/instances/byids: %w", err)
 	}
 	return resp.Items, nil
 }

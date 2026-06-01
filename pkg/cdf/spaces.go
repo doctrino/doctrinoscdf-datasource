@@ -26,8 +26,8 @@ type SpaceResponse struct {
 	Space           string  `json:"space"`
 	Name            *string `json:"name"`
 	Description     *string `json:"description,omitempty"`
-	CreatedTime     string  `json:"createdTime"`
-	LastUpdatedTime string  `json:"lastUpdatedTime"`
+	CreatedTime     int64   `json:"createdTime"`
+	LastUpdatedTime int64   `json:"lastUpdatedTime"`
 	IsGlobal        bool    `json:"isGlobal"`
 }
 
