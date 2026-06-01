@@ -64,9 +64,11 @@ func TestMain(m *testing.M) {
 			Sources: []InstanceData{{
 				Source: ViewId{"view", "cdf_cdm", "CogniteTimeSeries", "v1"},
 				Properties: map[string]any{
-					"isStep":     false,
-					"type":       "numeric",
-					"sourceUnit": "unknown",
+					"name":        "Grafana Test TimeSeries",
+					"description": "TimeSeries used for testing the Grafana datasource plugin. Safe to delete.",
+					"isStep":      false,
+					"type":        "numeric",
+					"sourceUnit":  "unknown",
 				},
 			}},
 		}},
