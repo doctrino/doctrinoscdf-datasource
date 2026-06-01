@@ -16,7 +16,7 @@ func TestSPaces_RetrieveUpsert(t *testing.T) {
 	resp, err := testClient.Spaces.Retrieve(ctx, retrieveRequest)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	if len(resp) >= 0 {
+	if len(resp) > 0 {
 		require.Equal(t, testSpace, resp[0].Space)
 	} else {
 		name := "Grafana Test Space"
