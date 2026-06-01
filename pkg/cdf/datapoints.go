@@ -22,11 +22,11 @@ type DataPointQueryItem struct {
 	TargetUnit       *string    `json:"targetUnit,omitempty"`
 	TargetUnitSystem *string    `json:"targetUnitSystem,omitempty"`
 	// For now, omitting the includeOutsidePoints and the status options for now.
-	Cursor *string `json:",omitempty"`
+	Cursor *string `json:"cursor,omitempty"`
 }
 
 type DataPointsRetrieveRequest struct {
-	Items []DataPointQueryItem
+	Items []DataPointQueryItem `json:"items"`
 }
 
 type datapoints struct {
