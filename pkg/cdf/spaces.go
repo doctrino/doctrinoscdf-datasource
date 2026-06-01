@@ -9,7 +9,7 @@ import (
 )
 
 type SpaceId struct {
-	SpaceId string `json:"space"`
+	Space string `json:"space"`
 }
 
 type SpaceRequest struct {
@@ -36,14 +36,14 @@ type SpaceItemsResponse struct {
 }
 
 type SpaceRetrieveRequest struct {
-	Items []SpaceId
+	Items []SpaceId `json:"items"`
 }
 
 type spaces struct {
 	apiClient *apiClient
 }
 
-func (s *spaces) Upsert(ctx context.Context, request SpaceRequest) ([]SpaceResponse, error) {
+func (s *spaces) Upsert(ctx context.Context, request SpaceUpsertRequest) ([]SpaceResponse, error) {
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, err

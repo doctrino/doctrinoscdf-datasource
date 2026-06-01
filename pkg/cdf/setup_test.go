@@ -11,6 +11,7 @@ import (
 )
 
 var testClient *CogniteClient
+var testSpace string = "doctrinos_grafana_plugin"
 
 func findRepoRoot(start string) (string, error) {
 	dir := start
