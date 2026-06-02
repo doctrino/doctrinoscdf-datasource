@@ -137,10 +137,7 @@ func (d *Datasource) query(ctx context.Context, _ backend.PluginContext, query b
 	limit := int64(10_000) / int64(len(qm.Items))
 
 	granularityMS := (end - start) / query.MaxDataPoints
-	granularity, err := granularityToString(granularityMS)
-	if err != nil {
-		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("invalid granularity: %v", err.Error()))
-	}
+	granularity := granularityToString(granularityMS)
 
 	var items = make([]cdf.DataPointQueryItem, len(qm.Items))
 	for i, item := range qm.Items {
