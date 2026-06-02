@@ -31,3 +31,5 @@
     in parallel. 
 11. [ ] **Implement correct label in frontend** Currently, the label is just wrong. It should use the available text
     properties for the user to select or allow the user to type in a custom label.
+12. [ ] **Implement filtering options for TimeSeries Search editor**: Allow the user the option to filter
+    on the selected time serise view properties.
