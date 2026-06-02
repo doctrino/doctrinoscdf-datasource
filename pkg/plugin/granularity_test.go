@@ -8,6 +8,10 @@ func TestGranularityToString(t *testing.T) {
 		inputMS  int64
 		expected string
 	}{
+		{"zero", 0, "1s"},
+		{"negative", -100, "1s"},
+		{"sub-second 500ms", 500, "1s"},
+		{"sub-second 999ms", 999, "1s"},
 		{"1 second", 1000, "1s"},
 		{"30 seconds", 30_000, "30s"},
 		{"1 minute", 60_000, "1m"},
@@ -27,35 +31,12 @@ func TestGranularityToString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := granularityToString(tt.inputMS)
-			if err != nil {
-				t.Fatalf("granularityToString(%d) returned unexpected error: %v", tt.inputMS, err)
-			}
+			result := granularityToString(tt.inputMS)
 			if result != tt.expected {
 				t.Errorf("granularityToString(%d) = %q, want %q", tt.inputMS, result, tt.expected)
 			}
 		})
 	}
 }
-
-func TestGranularityToStringError(t *testing.T) {
-	tests := []struct {
-		name    string
-		inputMS int64
-	}{
-		{"zero", 0},
-		{"negative", -100},
-		{"sub-second 500ms", 500},
-		{"sub-second 999ms", 999},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := granularityToString(tt.inputMS)
-			if err == nil {
-				t.Errorf("granularityToString(%d) expected error, got nil", tt.inputMS)
-			}
-		})
-	}
-}
-
+'
+'

@@ -9,9 +9,9 @@ import (
 // - second (s) and minute (m): multiple must be 1-120
 // - hour (h), day (d): multiple must be 1-100000
 // Returns an error if granularityMS is less than 1000 (sub-second granularity is not supported).
-func granularityToString(granularityMS int64) (string, error) {
+func granularityToString(granularityMS int64) string {
 	if granularityMS < 1000 {
-		return "", fmt.Errorf("granularity must be at least 1000ms (1s), got %dms", granularityMS)
+		return "1s"
 	}
 
 	const (
@@ -40,11 +40,9 @@ func granularityToString(granularityMS int64) (string, error) {
 			if multiple > u.maxMulti {
 				multiple = u.maxMulti
 			}
-			return fmt.Sprintf("%d%s", multiple, u.symbol), nil
+			return fmt.Sprintf("%d%s", multiple, u.symbol)
 		}
 	}
 
-	return "", fmt.Errorf("granularity must be at least 1000ms (1s), got %dms", granularityMS)
+	return "1s" // Fallback, should not reach here due to initial check.
 }
-
-
