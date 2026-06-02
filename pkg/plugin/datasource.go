@@ -3,13 +3,12 @@ package plugin
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/cognite/doctrino-s-cdf-source/pkg/auth"
 	"github.com/cognite/doctrino-s-cdf-source/pkg/cdf"
+	pb "github.com/cognite/doctrino-s-cdf-source/pkg/cdf/proto"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
@@ -121,7 +120,6 @@ type queryModel struct {
 	Items     []selectedTimeSeries `json:"items"`
 }
 
-
 func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 	var response backend.DataResponse
 
@@ -132,43 +130,42 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 	if err != nil {
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
 	}
-
+	if len(qm.Items) == 0 {
+		return backend.ErrDataResponse(backend.StatusBadRequest, "no time series selected")
+	}
 	start := query.TimeRange.From.UnixMilli()
 	end := query.TimeRange.To.UnixMilli()
-	var limit int64 = 10_000/len(qm.Items)
+	limit := int64(10_000) / int64(len(qm.Items))
 
 	granularityMS := (end - start) / query.MaxDataPoints
-	granularity := granularityToString(granularityMS)
-
+	granularity, err := granularityToString(granularityMS)
+	if err != nil {
+		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("invalid granularity: %v", err.Error()))
+	}
 
 	var items = make([]cdf.DataPointQueryItem, len(qm.Items))
 	for i, item := range qm.Items {
 		items[i] = cdf.DataPointQueryItem{
-			InstanceId: {
-				Space: item.Space,
-				ExternalId: item.ExternalId
+			InstanceId: cdf.InstanceId{
+				Space:      item.Space,
+				ExternalId: item.ExternalId,
 			},
-			Start: &start,
-			End: &end,
-			Limit: &limit,
-			Aggregates: []string{item.Aggregation},
+			Start:       &start,
+			End:         &end,
+			Limit:       &limit,
+			Aggregates:  []string{item.Aggregation},
 			Granularity: &granularity,
 		}
 	}
 
-
-	dataPointRequest := cdf.DataPointsRetrieveRequest{
+	datapointResponse, err := d.client.Datapoints.Retrieve(ctx, cdf.DataPointsRetrieveRequest{
 		Items: items,
-	}
-
-	datapointResponse, err := d.client.Datapoints.Retrieve(ctx, dataPointRequest)
+	})
 
 	// create data frame response.
 	// For an overview on data frames and how grafana handles them:
 	// https://grafana.com/developers/plugin-tools/introduction/data-frames
 	frame := data.NewFrame("response")
-
-
 
 	frame.Fields = append(
 		frame.Fields,

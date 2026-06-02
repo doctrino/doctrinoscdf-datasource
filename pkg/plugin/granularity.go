@@ -1,14 +1,17 @@
 package plugin
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // granularityToString converts a granularity in milliseconds to a CDF granularity string.
 // It picks the largest unit that divides evenly, respecting the API constraints:
 // - second (s) and minute (m): multiple must be 1-120
 // - hour (h), day (d): multiple must be 1-100000
-func granularityToString(granularityMS int64) string {
-	if granularityMS <= 0 {
-		return "1s"
+// Returns an error if granularityMS is less than 1000 (sub-second granularity is not supported).
+func granularityToString(granularityMS int64) (string, error) {
+	if granularityMS < 1000 {
+		return "", fmt.Errorf("granularity must be at least 1000ms (1s), got %dms", granularityMS)
 	}
 
 	const (
@@ -34,16 +37,14 @@ func granularityToString(granularityMS int64) string {
 	for _, u := range units {
 		if granularityMS >= u.ms {
 			multiple := granularityMS / u.ms
-			if multiple < 1 {
-				multiple = 1
-			}
 			if multiple > u.maxMulti {
 				multiple = u.maxMulti
 			}
-			return fmt.Sprintf("%d%s", multiple, u.symbol)
+			return fmt.Sprintf("%d%s", multiple, u.symbol), nil
 		}
 	}
 
-	return "1s"
+	return "", fmt.Errorf("granularity must be at least 1000ms (1s), got %dms", granularityMS)
 }
+
 
