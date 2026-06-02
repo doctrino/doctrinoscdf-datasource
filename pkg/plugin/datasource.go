@@ -116,9 +116,7 @@ type selectedTimeSeries struct {
 }
 
 type queryModel struct {
-	QueryText string               `json:"queryText"`
-	Constant  float64              `json:"constant"`
-	Items     []selectedTimeSeries `json:"items"`
+	Items []selectedTimeSeries `json:"items"`
 }
 
 func (d *Datasource) query(ctx context.Context, _ backend.PluginContext, query backend.DataQuery) backend.DataResponse {

@@ -29,6 +29,12 @@ type DataPointsRetrieveRequest struct {
 	Items []DataPointQueryItem `json:"items"`
 }
 
+// DatapointsAPI is the interface for datapoints operations, allowing mocking in tests.
+type DatapointsAPI interface {
+	Retrieve(ctx context.Context, request DataPointsRetrieveRequest) (*pb.DataPointListResponse, error)
+	Insert(ctx context.Context, request *pb.DataPointInsertionRequest) error
+}
+
 type datapoints struct {
 	apiClient *apiClient
 }

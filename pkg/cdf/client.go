@@ -63,7 +63,7 @@ type CogniteClient struct {
 	Spaces     *spaces
 	Containers *containers
 	Instances  *instances
-	Datapoints *datapoints
+	Datapoints DatapointsAPI
 }
 
 func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *CogniteClient {

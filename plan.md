@@ -23,3 +23,11 @@
 8. [ ] **Update CheckHealth to check authorization**. Check which instance and schema space
    the user has access to and return that in the response. If the user doesn't have access to
    any instance or schema space, return an error.
+9. [ ] **Improve Backend Datapoint Retrieval accuracy**: Always do count aggregate first to check if you can do a raw
+   query. If the count is below the maxDatapoints, use a raw query. If the count is above then use the aggregation.
+   In the frontend, add an information to the aggregation dropdown that explains it is only used in case of large
+   time ranges.
+10. [ ] **Improve Backend Datapoint Retrieval performance**: Fetch datapoints for all time series simultaneously and
+    in parallel. 
+11. [ ] **Implement correct label in frontend** Currently, the label is just wrong. It should use the available text
+    properties for the user to select or allow the user to type in a custom label.
