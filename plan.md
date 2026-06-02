@@ -20,6 +20,7 @@
    time series for, for example, a wind turbine. Then have the wind turbine as a variable
    that can be used to select different turbines in the dashboard. Including selecting multiple
    turbines and showing the same measurements in the same graph for easy comparison.
+--------------------------------------
 8. [ ] **Update CheckHealth to check authorization**. Check which instance and schema space
    the user has access to and return that in the response. If the user doesn't have access to
    any instance or schema space, return an error.
