@@ -8,7 +8,6 @@ import (
 // It picks the largest unit that divides evenly, respecting the API constraints:
 // - second (s) and minute (m): multiple must be 1-120
 // - hour (h), day (d): multiple must be 1-100000
-// Returns an error if granularityMS is less than 1000 (sub-second granularity is not supported).
 func granularityToString(granularityMS int64) string {
 	if granularityMS < 1000 {
 		return "1s"

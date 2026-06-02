@@ -38,5 +38,3 @@ func TestGranularityToString(t *testing.T) {
 		})
 	}
 }
-'
-'
