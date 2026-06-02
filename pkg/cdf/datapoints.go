@@ -17,7 +17,7 @@ type DataPointQueryItem struct {
 	Start            *int64     `json:"start,omitempty"`
 	End              *int64     `json:"end,omitempty"`
 	Limit            *int64     `json:"limit,omitempty"`
-	Aggregates       *string    `json:"aggregates,omitempty"`
+	Aggregates       []string   `json:"aggregates,omitempty"`
 	Granularity      *string    `json:"granularity,omitempty"`
 	TargetUnit       *string    `json:"targetUnit,omitempty"`
 	TargetUnitSystem *string    `json:"targetUnitSystem,omitempty"`

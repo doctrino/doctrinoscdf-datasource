@@ -121,7 +121,8 @@ type queryModel struct {
 	Items     []selectedTimeSeries `json:"items"`
 }
 
-func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
+
+func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 	var response backend.DataResponse
 
 	// Unmarshal the JSON into our queryModel.
@@ -132,23 +133,42 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
 	}
 
+	start := query.TimeRange.From.UnixMilli()
+	end := query.TimeRange.To.UnixMilli()
+	var limit int64 = 10_000/len(qm.Items)
+
+	granularityMS := (end - start) / query.MaxDataPoints
+	granularity := granularityToString(granularityMS)
+
+
+	var items = make([]cdf.DataPointQueryItem, len(qm.Items))
+	for i, item := range qm.Items {
+		items[i] = cdf.DataPointQueryItem{
+			InstanceId: {
+				Space: item.Space,
+				ExternalId: item.ExternalId
+			},
+			Start: &start,
+			End: &end,
+			Limit: &limit,
+			Aggregates: []string{item.Aggregation},
+			Granularity: &granularity,
+		}
+	}
+
+
+	dataPointRequest := cdf.DataPointsRetrieveRequest{
+		Items: items,
+	}
+
+	datapointResponse, err := d.client.Datapoints.Retrieve(ctx, dataPointRequest)
+
 	// create data frame response.
 	// For an overview on data frames and how grafana handles them:
 	// https://grafana.com/developers/plugin-tools/introduction/data-frames
 	frame := data.NewFrame("response")
 
-	duration := query.TimeRange.To.Sub(query.TimeRange.From)
-	mid := query.TimeRange.From.Add(duration / 2)
 
-	s := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(s)
-
-	lowVal := 10.0
-	highVal := 20.0
-	midVal := qm.Constant
-	if midVal == 0 {
-		midVal = lowVal + (r.Float64() * (highVal - lowVal))
-	}
 
 	frame.Fields = append(
 		frame.Fields,
