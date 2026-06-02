@@ -1,6 +1,7 @@
 package cdf
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 )
 
 var testClient *CogniteClient
+var testSpace string = "doctrinos_grafana_plugin"
 
 func findRepoRoot(start string) (string, error) {
 	dir := start
@@ -52,6 +54,28 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	testClient = client
+
+	ctx := context.Background()
+	_, err = testClient.Instances.Upsert(ctx, InstanceUpsertRequest{
+		Items: []InstanceRequest{{
+			InstanceType: "node",
+			Space:        testTimeSeriesId.Space,
+			ExternalId:   testTimeSeriesId.ExternalId,
+			Sources: []InstanceData{{
+				Source: ViewId{"view", "cdf_cdm", "CogniteTimeSeries", "v1"},
+				Properties: map[string]any{
+					"name":        "Grafana Test TimeSeries",
+					"description": "TimeSeries used for testing the Grafana datasource plugin. Safe to delete.",
+					"isStep":      false,
+					"type":        "numeric",
+					"sourceUnit":  "unknown",
+				},
+			}},
+		}},
+	})
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create timeseries %v", err))
+	}
 
 	os.Exit(m.Run())
 }

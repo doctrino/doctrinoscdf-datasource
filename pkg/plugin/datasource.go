@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/cognite/doctrino-s-cdf-source/pkg/auth"
 	"github.com/cognite/doctrino-s-cdf-source/pkg/cdf"
+	pb "github.com/cognite/doctrino-s-cdf-source/pkg/cdf/proto"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
@@ -116,12 +116,10 @@ type selectedTimeSeries struct {
 }
 
 type queryModel struct {
-	QueryText string               `json:"queryText"`
-	Constant  float64              `json:"constant"`
-	Items     []selectedTimeSeries `json:"items"`
+	Items []selectedTimeSeries `json:"items"`
 }
 
-func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
+func (d *Datasource) query(ctx context.Context, _ backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 	var response backend.DataResponse
 
 	// Unmarshal the JSON into our queryModel.
@@ -131,35 +129,138 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 	if err != nil {
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
 	}
+	if len(qm.Items) == 0 {
+		return backend.ErrDataResponse(backend.StatusBadRequest, "no time series selected")
+	}
+	start := query.TimeRange.From.UnixMilli()
+	end := query.TimeRange.To.UnixMilli()
+	limit := int64(10_000) / int64(len(qm.Items))
 
-	// create data frame response.
-	// For an overview on data frames and how grafana handles them:
-	// https://grafana.com/developers/plugin-tools/introduction/data-frames
-	frame := data.NewFrame("response")
+	granularityMS := (end - start) / query.MaxDataPoints
+	granularity := granularityToString(granularityMS)
 
-	duration := query.TimeRange.To.Sub(query.TimeRange.From)
-	mid := query.TimeRange.From.Add(duration / 2)
-
-	s := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(s)
-
-	lowVal := 10.0
-	highVal := 20.0
-	midVal := qm.Constant
-	if midVal == 0 {
-		midVal = lowVal + (r.Float64() * (highVal - lowVal))
+	var items = make([]cdf.DataPointQueryItem, len(qm.Items))
+	for i, item := range qm.Items {
+		items[i] = cdf.DataPointQueryItem{
+			InstanceId: cdf.InstanceId{
+				Space:      item.Space,
+				ExternalId: item.ExternalId,
+			},
+			Start:       &start,
+			End:         &end,
+			Limit:       &limit,
+			Aggregates:  []string{item.Aggregation},
+			Granularity: &granularity,
+		}
 	}
 
-	frame.Fields = append(
-		frame.Fields,
-		data.NewField("time", nil, []time.Time{query.TimeRange.From, mid, query.TimeRange.To}),
-		data.NewField("values", nil, []float64{lowVal, midVal, highVal}),
-	)
+	datapointResponse, err := d.client.Datapoints.Retrieve(ctx, cdf.DataPointsRetrieveRequest{
+		Items: items,
+	})
+	if err != nil {
+		return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("datapoints retrieve: %v", err))
+	}
 
-	// add the frames to the response.
-	response.Frames = append(response.Frames, frame)
+	// Convert each item in the response to a Grafana DataFrame.
+	for i, item := range datapointResponse.GetItems() {
+		label := qm.Items[i].Label
+		if label == "" {
+			label = fmt.Sprintf("%s/%s", item.GetInstanceId().GetSpace(), item.GetInstanceId().GetExternalId())
+		}
+		aggregation := qm.Items[i].Aggregation
+
+		frame := data.NewFrame(label)
+
+		switch dp := item.GetDatapointType().(type) {
+		case *pb.DataPointListItem_AggregateDatapoints:
+			points := dp.AggregateDatapoints.GetDatapoints()
+			timestamps := make([]time.Time, len(points))
+			values := make([]*float64, len(points))
+			for j, p := range points {
+				timestamps[j] = time.UnixMilli(p.GetTimestamp())
+				values[j] = getAggregateValue(p, aggregation)
+			}
+			frame.Fields = append(frame.Fields,
+				data.NewField("time", nil, timestamps),
+				data.NewField(label, nil, values),
+			)
+		case *pb.DataPointListItem_NumericDatapoints:
+			points := dp.NumericDatapoints.GetDatapoints()
+			timestamps := make([]time.Time, len(points))
+			values := make([]*float64, len(points))
+			for j, p := range points {
+				timestamps[j] = time.UnixMilli(p.GetTimestamp())
+				if p.GetNullValue() {
+					values[j] = nil
+				} else {
+					v := p.GetValue()
+					values[j] = &v
+				}
+			}
+			frame.Fields = append(frame.Fields,
+				data.NewField("time", nil, timestamps),
+				data.NewField(label, nil, values),
+			)
+		case *pb.DataPointListItem_StringDatapoints:
+			points := dp.StringDatapoints.GetDatapoints()
+			timestamps := make([]time.Time, len(points))
+			values := make([]string, len(points))
+			for j, p := range points {
+				timestamps[j] = time.UnixMilli(p.GetTimestamp())
+				values[j] = p.GetValue()
+			}
+			frame.Fields = append(frame.Fields,
+				data.NewField("time", nil, timestamps),
+				data.NewField(label, nil, values),
+			)
+		}
+
+		response.Frames = append(response.Frames, frame)
+	}
 
 	return response
+}
+
+// getAggregateValue extracts the value for the requested aggregation from an AggregateDatapoint.
+func getAggregateValue(p *pb.AggregateDatapoint, aggregation string) *float64 {
+	var v float64
+	switch aggregation {
+	case "average":
+		v = p.GetAverage()
+	case "max":
+		v = p.GetMax()
+	case "min":
+		v = p.GetMin()
+	case "count":
+		v = p.GetCount()
+	case "sum":
+		v = p.GetSum()
+	case "interpolation":
+		v = p.GetInterpolation()
+	case "stepInterpolation":
+		v = p.GetStepInterpolation()
+	case "continuousVariance":
+		v = p.GetContinuousVariance()
+	case "discreteVariance":
+		v = p.GetDiscreteVariance()
+	case "totalVariation":
+		v = p.GetTotalVariation()
+	case "countGood":
+		v = p.GetCountGood()
+	case "countUncertain":
+		v = p.GetCountUncertain()
+	case "countBad":
+		v = p.GetCountBad()
+	case "durationGood":
+		v = p.GetDurationGood()
+	case "durationUncertain":
+		v = p.GetDurationUncertain()
+	case "durationBad":
+		v = p.GetDurationBad()
+	default:
+		v = p.GetAverage()
+	}
+	return &v
 }
 
 // CheckHealth handles health checks sent from Grafana to the plugin.

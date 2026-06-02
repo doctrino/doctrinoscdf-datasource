@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package com.cognite.v1.timeseries.proto;
+
+import "data_points.proto";
+
+option java_multiple_files = true;
+option go_package = "github.com/cognite/doctrino-s-cdf-source/pkg/cdf/proto";
+
+message DataPointInsertionItem {
+  oneof timeSeriesReference {
+    int64 id = 1;
+    string externalId = 2;
+    InstanceId instanceId = 5;
+  }
+
+  oneof datapointType {
+    NumericDatapoints numericDatapoints = 3;
+    StringDatapoints stringDatapoints = 4;
+    StateDatapoints stateDatapoints = 6;
+  }
+}
+
+message DataPointInsertionRequest {
+  repeated DataPointInsertionItem items = 1;
+}

@@ -19,7 +19,7 @@ type apiClient struct {
 	tokenProvider auth.TokenProvider
 }
 
-func (a *apiClient) do(ctx context.Context, method, path string, body io.Reader) (*http.Response, error) {
+func (a *apiClient) do(ctx context.Context, method, path string, body io.Reader, contentType, accept string) (*http.Response, error) {
 	var url string
 	if strings.HasPrefix(path, "/api") {
 		url = fmt.Sprintf("%s%s", a.baseURL, path)
@@ -35,12 +35,13 @@ func (a *apiClient) do(ctx context.Context, method, path string, body io.Reader)
 		return nil, fmt.Errorf("auth: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Accept", accept)
 	return a.httpClient.Do(req)
 }
 
 func (a *apiClient) doBody(ctx context.Context, method, path string, body io.Reader) ([]byte, error) {
-	resp, err := a.do(ctx, method, path, body)
+	resp, err := a.do(ctx, method, path, body, "application/json", "application/json")
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +60,10 @@ func (a *apiClient) doBody(ctx context.Context, method, path string, body io.Rea
 type CogniteClient struct {
 	CDFProject string
 	Token      *token
+	Spaces     *spaces
 	Containers *containers
 	Instances  *instances
+	Datapoints DatapointsAPI
 }
 
 func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *CogniteClient {
@@ -71,15 +74,19 @@ func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *Cognite
 		tokenProvider: auth,
 	}
 
-	token := &token{apiClient: apiClient}
-	containers := &containers{apiClient: apiClient}
-	instances := &instances{apiClient: apiClient}
+	token := &token{apiClient}
+	spaces := &spaces{apiClient}
+	containers := &containers{apiClient}
+	instances := &instances{apiClient}
+	datapointsAPI := &datapoints{apiClient}
 
 	return &CogniteClient{
 		CDFProject: project,
 		Token:      token,
+		Spaces:     spaces,
 		Containers: containers,
 		Instances:  instances,
+		Datapoints: datapointsAPI,
 	}
 }
 
