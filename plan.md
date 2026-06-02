@@ -36,3 +36,4 @@
     on the selected time serise view properties.
 13. [ ] **Show the total number of timeseries in the TimeSeries Search editor**: Always show the total number of
     available timeseries in the search editor, even if there is more than 1000. 
+14. [ ] **Add documentation strings for the frontend Search and Equipment tabs**.
