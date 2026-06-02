@@ -9,7 +9,7 @@
    components to make the code more understandable. There is likely some AI-slop in the code that
    can be simplified.
 4. [x] **Understand and update end-to-end tests** (Learning goal). Get into chromium.
-5. [ ] **Create a TimeSeries Search query editor**. Enable the user to search for specific
+5. [x] **Create a TimeSeries Search query editor**. Enable the user to search for specific
    time series in the UI. This should use the inspect endpoint to find time series views and
    then have predefined search options defined on the field type. 
 6. [ ] **Create a TimeSeries selector based on asset/equipment**. Basic idea is to have the user
