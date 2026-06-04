@@ -35,6 +35,11 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
         const id = instanceIdAsString(item.space, item.externalId);
         // Use cached labelOptions if available, otherwise fallback to externalId
         const cachedOptions = labelOptionsCache.get(id) ?? [item.externalId];
+        // Ensure that custom selections are included in the options.
+        if (item.label && !cachedOptions.includes(item.label)) {
+          cachedOptions.push(item.label);
+        }
+
         const config: QueryEditorTimeSeriesState = {
           aggregation: item.aggregation as AggregationMethod,
           label: item.label ?? item.externalId,
