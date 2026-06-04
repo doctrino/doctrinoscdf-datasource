@@ -1,12 +1,11 @@
 import { IconButton, InlineField, Select, useStyles2 } from '@grafana/ui';
 import { getStyles } from './utils';
 import React, { useMemo } from 'react';
-import { AggregationMethod, PlaceholderTimeSeries,  QueryEditorTimeSeriesState } from '../types';
+import { AggregationMethod,  QueryEditorTimeSeriesState } from '../types';
 import {
   DEFAULT_SERIES_CONFIG,
   FILTER_LABEL_WIDTH,
-  LABEL_PROPERTY_VALUES,
-  PLACEHOLDER_TIME_SERIES,
+   PLACEHOLDER_TIME_SERIES,
 } from './PlaceholderValues';
 import { SelectableValue } from '@grafana/data';
 
@@ -19,70 +18,8 @@ const aggregationOptions: Array<SelectableValue<AggregationMethod>> = [
   { label: 'Count', value: 'count' },
   { label: 'Sum', value: 'sum' },
 ];
-type LabelProperty =
-  | 'name'
-  | 'externalId'
-  | 'description'
-  | 'unit'
-  | 'space'
-  | 'type'
-  | 'nameWithUnit'
-  | 'externalIdWithName'
-  | 'nameWithSpace';
+
 export const timeSeriesById = new Map(PLACEHOLDER_TIME_SERIES.map((series) => [series.externalId, series]));
-
-function getSeriesLabel(series: PlaceholderTimeSeries, labelProperty: LabelProperty): string {
-  switch (labelProperty) {
-    case 'externalId':
-      return series.externalId;
-    case 'description':
-      return series.description;
-    case 'unit':
-      return series.unit || '—';
-    case 'space':
-      return series.space;
-    case 'type':
-      return series.type;
-    case 'nameWithUnit':
-      return series.unit ? `${series.name} (${series.unit})` : series.name;
-    case 'externalIdWithName':
-      return `${series.externalId} — ${series.name}`;
-    case 'nameWithSpace':
-      return `${series.name} · ${series.space}`;
-    default:
-      return series.name;
-  }
-}
-
-function isLabelProperty(value: string): value is LabelProperty {
-  return LABEL_PROPERTY_VALUES.has(value);
-}
-
-function resolveSeriesDisplayLabel(series: PlaceholderTimeSeries, label: string): string {
-  if (isLabelProperty(label)) {
-    return getSeriesLabel(series, label);
-  }
-
-  return label;
-}
-
-function getLabelOptionsForSeries(series: PlaceholderTimeSeries): Array<SelectableValue<string>> {
-  const nameWithUnit = series.unit ? `${series.name} (${series.unit})` : series.name;
-  const externalIdWithName = `${series.externalId} — ${series.name}`;
-  const nameWithSpace = `${series.name} · ${series.space}`;
-
-  return [
-    { label: `Name — ${series.name}`, value: 'name' },
-    { label: `External ID — ${series.externalId}`, value: 'externalId' },
-    { label: `Description — ${series.description}`, value: 'description' },
-    { label: `Unit — ${series.unit || '—'}`, value: 'unit' },
-    { label: `Space — ${series.space}`, value: 'space' },
-    { label: `Type — ${series.type}`, value: 'type' },
-    { label: `Name + unit — ${nameWithUnit}`, value: 'nameWithUnit' },
-    { label: `ID + name — ${externalIdWithName}`, value: 'externalIdWithName' },
-    { label: `Name + space — ${nameWithSpace}`, value: 'nameWithSpace' },
-  ];
-}
 
 
 interface SeriesPanelProps {
@@ -109,10 +46,10 @@ export function SeriesPanel({ seriesState, onRemoveSeries, onSeriesConfigChange 
       ) : (
         <div className={styles.seriesPanelList}>
           {sortedIds.map((identifier) => {
-            const series = timeSeriesById.get(identifier);
-            const config = seriesState.get(identifier) ?? DEFAULT_SERIES_CONFIG;
-            const displayLabel = series ? resolveSeriesDisplayLabel(series, config.label) : identifier;
-            const labelOptions = series ? getLabelOptionsForSeries(series) : [];
+            const timeseriesState = seriesState.get(identifier) ?? DEFAULT_SERIES_CONFIG;
+            const displayLabel = timeseriesState ? timeseriesState.label : identifier;
+            const labelStrings = (timeseriesState ? timeseriesState.labelOptions : []);
+            const labelOptions: Array<SelectableValue<string>> = labelStrings.map((label) => ({ label, value: label }));
 
             return (
               <div key={identifier} className={styles.seriesPanelRow}>
@@ -139,7 +76,7 @@ export function SeriesPanel({ seriesState, onRemoveSeries, onSeriesConfigChange 
                       <Select
                         inputId={`query-editor-aggregation-${identifier}`}
                         options={aggregationOptions}
-                        value={config.aggregation}
+                        value={timeseriesState.aggregation}
                         onChange={(option) => {
                           if (option.value) {
                             onSeriesConfigChange(identifier, { aggregation: option.value });
@@ -156,7 +93,7 @@ export function SeriesPanel({ seriesState, onRemoveSeries, onSeriesConfigChange 
                       <Select
                         inputId={`query-editor-label-${identifier}`}
                         options={labelOptions}
-                        value={config.label}
+                        value={timeseriesState.label}
                         allowCustomValue
                         placeholder="Select property or type custom label"
                         onChange={(option) => {
