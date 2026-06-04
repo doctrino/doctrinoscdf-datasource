@@ -19,15 +19,6 @@ export const DEFAULT_QUERY: Partial<SelectedTimeSeriesQuery> = {
   items: [],
 };
 
-export interface DataPoint {
-  Time: number;
-  Value: number;
-}
-
-export interface DataSourceResponse {
-  datapoints: DataPoint[];
-}
-
 export type LoginFlow = 'token' | 'clientCredentials' | 'deviceCode';
 export type LoginMode = 'manual' | 'guided';
 export type IdpProvider = 'entra' | 'auth0' | 'cdf' | 'other';
