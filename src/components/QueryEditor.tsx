@@ -72,11 +72,14 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
       return;
     }
     const nextSeriesState = new Map(seriesState);
+    const label = timeseries.name ?? timeseries.externalId
+
+    const labelOptions = [timeseries.externalId, ...Object.values(timeseries.stringProperties)].sort();
 
     const tsState = {
       "aggregation": DEFAULT_AGGREGATION,
-      "label": DEFAULT_LABEL,
-      "labelOptions": []
+      "label": label,
+      "labelOptions": labelOptions,
     } as QueryEditorTimeSeriesState;
 
     nextSeriesState.set(identifier, tsState);
