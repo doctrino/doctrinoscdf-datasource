@@ -7,7 +7,7 @@ import {
   CDFLoginOptions,
   SelectedTimeSeriesItem,
   SelectedTimeSeriesQuery,
-  SeriesConfig,
+  QueryEditorTimeSeriesState,
 } from '../types';
 import { instanceIdAsString, instanceStringAsId } from './utils';
 import { SeriesPanel } from './SeriesPanel';
@@ -23,54 +23,43 @@ type Props = QueryEditorProps<DataSource, SelectedTimeSeriesQuery, CDFLoginOptio
 type SelectionTab = 'search' | 'equipment';
 
 
-function parseQueryState(items: SelectedTimeSeriesItem[]): {
-  selectedIds: Set<string>;
-  seriesConfig: Map<string, SeriesConfig>;
-} {
+function parseQueryState(items: SelectedTimeSeriesItem[]): Map<string, QueryEditorTimeSeriesState> {
   if (!items) {
-    return { selectedIds: new Set(), seriesConfig: new Map() };
+    return new Map();
   }
-  const selectedIds = new Set(items.map((item) => instanceIdAsString(item.space, item.externalId)));
-  const seriesConfig = new Map<string, SeriesConfig>(
+  return new Map<string, QueryEditorTimeSeriesState>(
     items.map((item) => {
       const id = instanceIdAsString(item.space, item.externalId);
       const config = { aggregation: item.aggregation as AggregationMethod, label: item.label ?? DEFAULT_LABEL };
       return [id, config];
     })
   );
-
-  return { selectedIds, seriesConfig };
 }
 
 function serializeQueryState(
-  selectedIds: Set<string>,
-  seriesConfig: Map<string, SeriesConfig>
+  seriesState: Map<string, QueryEditorTimeSeriesState>
 ): SelectedTimeSeriesItem[] {
-  const selected = [...selectedIds].sort();
   const selectedTimeSeriesItems: SelectedTimeSeriesItem[] = [];
-
-  for (const id of selected) {
-    const config = seriesConfig.get(id) ?? DEFAULT_SERIES_CONFIG;
+  for (const [id, config] of seriesState.entries()) {
     const instanceId = instanceStringAsId(id);
     selectedTimeSeriesItems.push({
       space: instanceId.space,
       externalId: instanceId.externalId,
       aggregation: config.aggregation as AggregationMethod,
-      label: config.label ?? DEFAULT_LABEL,
+      label: config.label,
     });
   }
-
   return selectedTimeSeriesItems;
 }
 
 export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) {
   const [activeTab, setActiveTab] = useState<SelectionTab>('search');
 
-  const { selectedIds, seriesConfig } = useMemo(() => parseQueryState(query.items), [query.items]);
+  const seriesState = useMemo(() => parseQueryState(query.items), [query.items]);
 
   const persistQueryState = useCallback(
-    (nextSelected: Set<string>, nextSeriesConfig: Map<string, SeriesConfig>) => {
-      const timeSeriesItems = serializeQueryState(nextSelected, nextSeriesConfig);
+      (nextSeriesState: Map<string, QueryEditorTimeSeriesState>) => {
+      const timeSeriesItems = serializeQueryState(nextSeriesState);
       onChange({ ...query, items: timeSeriesItems });
       if (timeSeriesItems) {
         onRunQuery();
@@ -80,35 +69,31 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
   );
 
   const onAddSeries = (identifier: string) => {
-    if (selectedIds.has(identifier)) {
+    if (seriesState.has(identifier)) {
       return;
     }
 
-    const nextSelected = new Set(selectedIds);
-    const nextSeriesConfig = new Map(seriesConfig);
+    const nextSeriesState = new Map(seriesState);
 
-    nextSelected.add(identifier);
-    nextSeriesConfig.set(identifier, { ...DEFAULT_SERIES_CONFIG });
+    nextSeriesState.set(identifier, { ...DEFAULT_SERIES_CONFIG });
 
-    persistQueryState(nextSelected, nextSeriesConfig);
+    persistQueryState(nextSeriesState);
   };
 
   const onRemoveSeries = (identifier: string) => {
-    const nextSelected = new Set(selectedIds);
-    const nextSeriesConfig = new Map(seriesConfig);
+    const nextSeriesState = new Map(seriesState);
 
-    nextSelected.delete(identifier);
-    nextSeriesConfig.delete(identifier);
+    nextSeriesState.delete(identifier);
 
-    persistQueryState(nextSelected, nextSeriesConfig);
+    persistQueryState(nextSeriesState);
   };
 
-  const onSeriesConfigChange = (identifier: string, patch: Partial<SeriesConfig>) => {
-    const nextSeriesConfig = new Map(seriesConfig);
-    const current = nextSeriesConfig.get(identifier) ?? DEFAULT_SERIES_CONFIG;
+  const onSeriesConfigChange = (identifier: string, patch: Partial<QueryEditorTimeSeriesState>) => {
+    const nextSeriesState = new Map(seriesState);
+    const current = nextSeriesState.get(identifier) ?? DEFAULT_SERIES_CONFIG;
 
-    nextSeriesConfig.set(identifier, { ...current, ...patch });
-    persistQueryState(selectedIds, nextSeriesConfig);
+    nextSeriesState.set(identifier, { ...current, ...patch });
+    persistQueryState(nextSeriesState);
   };
 
   return (
@@ -119,14 +104,13 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
       </TabsBar>
 
       {activeTab === 'search' ? (
-        <SearchTab datasource={datasource} selectedIds={selectedIds} onAddSeries={onAddSeries} />
+        <SearchTab datasource={datasource} seriesState={seriesState} onAddSeries={onAddSeries} />
       ) : (
-        <EquipmentTab selectedIds={selectedIds} onAddSeries={onAddSeries} />
+        <EquipmentTab seriesState={seriesState} onAddSeries={onAddSeries} />
       )}
 
       <SeriesPanel
-        selectedIds={selectedIds}
-        seriesConfig={seriesConfig}
+        seriesState={seriesState}
         onRemoveSeries={onRemoveSeries}
         onSeriesConfigChange={onSeriesConfigChange}
       />

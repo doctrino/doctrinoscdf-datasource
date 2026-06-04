@@ -1,7 +1,7 @@
 import { IconButton, InlineField, Select, useStyles2 } from '@grafana/ui';
 import { getStyles } from './utils';
 import React, { useMemo } from 'react';
-import { AggregationMethod, PlaceholderTimeSeries,  SeriesConfig } from '../types';
+import { AggregationMethod, PlaceholderTimeSeries,  QueryEditorTimeSeriesState } from '../types';
 import {
   DEFAULT_SERIES_CONFIG,
   FILTER_LABEL_WIDTH,
@@ -86,15 +86,14 @@ function getLabelOptionsForSeries(series: PlaceholderTimeSeries): Array<Selectab
 
 
 interface SeriesPanelProps {
-  selectedIds: Set<string>;
-  seriesConfig: Map<string, SeriesConfig>;
+  seriesState: Map<string, QueryEditorTimeSeriesState>;
   onRemoveSeries: (externalId: string) => void;
-  onSeriesConfigChange: (externalId: string, patch: Partial<SeriesConfig>) => void;
+  onSeriesConfigChange: (externalId: string, patch: Partial<QueryEditorTimeSeriesState>) => void;
 }
 
-export function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSeriesConfigChange }: SeriesPanelProps) {
+export function SeriesPanel({ seriesState, onRemoveSeries, onSeriesConfigChange }: SeriesPanelProps) {
   const styles = useStyles2(getStyles);
-  const sortedIds = useMemo(() => [...selectedIds].sort(), [selectedIds]);
+  const sortedIds = useMemo(() => [...seriesState.keys()].sort(), [seriesState]);
 
   return (
     <div className={styles.seriesPanel}>
@@ -111,7 +110,7 @@ export function SeriesPanel({ selectedIds, seriesConfig, onRemoveSeries, onSerie
         <div className={styles.seriesPanelList}>
           {sortedIds.map((identifier) => {
             const series = timeSeriesById.get(identifier);
-            const config = seriesConfig.get(identifier) ?? DEFAULT_SERIES_CONFIG;
+            const config = seriesState.get(identifier) ?? DEFAULT_SERIES_CONFIG;
             const displayLabel = series ? resolveSeriesDisplayLabel(series, config.label) : identifier;
             const labelOptions = series ? getLabelOptionsForSeries(series) : [];
 

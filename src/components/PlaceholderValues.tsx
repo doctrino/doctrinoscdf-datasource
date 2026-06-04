@@ -4,7 +4,7 @@ import {
   PlaceholderEquipment,
   PlaceholderTimeSeries,
   PlaceholderView,
-  SeriesConfig,
+  QueryEditorTimeSeriesState,
   TimeSeriesType,
 } from '../types';
 
@@ -21,7 +21,7 @@ export const LABEL_PROPERTY_VALUES = new Set<string>([
   'externalIdWithName',
   'nameWithSpace',
 ]);
-export const DEFAULT_SERIES_CONFIG: SeriesConfig = {
+export const DEFAULT_SERIES_CONFIG: QueryEditorTimeSeriesState = {
   aggregation: DEFAULT_AGGREGATION,
   label: DEFAULT_LABEL,
 };
