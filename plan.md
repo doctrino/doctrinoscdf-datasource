@@ -30,10 +30,10 @@
    time ranges.
 10. [ ] **Improve Backend Datapoint Retrieval performance**: Fetch datapoints for all time series simultaneously and
     in parallel. 
-11. [ ] **Implement correct label in frontend** Currently, the label is just wrong. It should use the available text
+11. [x] **Implement correct label in frontend** Currently, the label is just wrong. It should use the available text
     properties for the user to select or allow the user to type in a custom label.
 12. [ ] **Implement filtering options for TimeSeries Search editor**: Allow the user the option to filter
-    on the selected time serise view properties.
+    on the selected time series view properties.
 13. [ ] **Show the total number of timeseries in the TimeSeries Search editor**: Always show the total number of
     available timeseries in the search editor, even if there is more than 1000. 
 14. [ ] **Add documentation strings for the frontend Search and Equipment tabs**.
