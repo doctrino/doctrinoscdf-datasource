@@ -62,6 +62,7 @@ type CogniteClient struct {
 	Token      *token
 	Spaces     *spaces
 	Containers *containers
+	Views      *views
 	Instances  *instances
 	Datapoints DatapointsAPI
 }
