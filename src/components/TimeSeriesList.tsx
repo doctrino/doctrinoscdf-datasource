@@ -1,4 +1,4 @@
-import { TimeSeries } from '../types';
+import { QueryEditorTimeSeriesState, TimeSeries } from '../types';
 import { Button, useStyles2 } from '@grafana/ui';
 import { getStyles, instanceIdAsString } from './utils';
 import React, { useMemo, useState } from 'react';
@@ -6,8 +6,8 @@ import { ResultsPagination } from './ResultsPagination';
 
 interface TimeSeriesListProps {
   series: TimeSeries[];
-  selectedIds: Set<string>;
-  onAddSeries: (externalId: string) => void;
+  seriesState: Map<string, QueryEditorTimeSeriesState>;
+  onAddSeries: (timeseries: TimeSeries) => void;
   emptyMessage: string;
   contextLabel: string;
   listResetKey: string;
@@ -15,7 +15,7 @@ interface TimeSeriesListProps {
 
 export function  TimeSeriesList({
   series,
-  selectedIds,
+  seriesState,
   onAddSeries,
   emptyMessage,
   contextLabel,
@@ -50,7 +50,7 @@ export function  TimeSeriesList({
         <span>
           {series.length.toLocaleString()} time series {contextLabel}
         </span>
-        <span>{selectedIds.size} in panel</span>
+        <span>{seriesState.size} in panel</span>
       </div>
 
       {series.length > 0 && (
@@ -69,7 +69,7 @@ export function  TimeSeriesList({
         ) : (
           paginatedSeries.map((item) => {
             const identifier = instanceIdAsString(item.space, item.externalId);
-            const inPanel = selectedIds.has(identifier);
+            const inPanel = seriesState.has(identifier);
             const displayName = item.name ?? item.externalId;
             return (
               <div key={identifier} className={styles.resultRow} role="listitem" data-in-panel={inPanel}>
@@ -89,7 +89,7 @@ export function  TimeSeriesList({
                       size="sm"
                       variant="secondary"
                       icon="plus"
-                      onClick={() => onAddSeries(identifier)}
+                      onClick={() => onAddSeries(item)}
                       aria-label={`Add ${displayName} to panel`}
                     >
                       Add

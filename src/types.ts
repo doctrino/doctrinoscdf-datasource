@@ -100,10 +100,11 @@ export type TimeSeriesType = 'string' | 'numeric' | 'state';
 export type AggregationMethod = 'average' | 'max' | 'maxDatapoint' | 'min' | 'minDatapoint' | 'count' | 'sum';
 
 
-export interface SeriesConfig {
+export interface QueryEditorTimeSeriesState {
   aggregation: AggregationMethod;
   /** Property key (name, externalId, …) or custom label text. */
   label: string;
+  labelOptions: string[];
 }
 
 export interface PlaceholderView {

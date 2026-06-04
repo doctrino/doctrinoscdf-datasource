@@ -1,7 +1,7 @@
 import { DataSource } from '../datasource';
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { SelectableValue } from '@grafana/data';
-import { TimeSeries, ViewId } from '../types';
+import { QueryEditorTimeSeriesState, TimeSeries, ViewId } from '../types';
 import { viewIdAsString, viewStringAsId } from './utils';
 import { Alert, InlineField, Input, Select, Stack } from '@grafana/ui';
 import { DocumentationBlock } from './DocumentationBlock';
@@ -215,11 +215,11 @@ import { TimeSeriesList } from './TimeSeriesList';
 
 interface SearchTabProps {
   datasource: DataSource;
-  selectedIds: Set<string>;
-  onAddSeries: (externalId: string) => void;
+  seriesState: Map<string, QueryEditorTimeSeriesState>;
+  onAddSeries: (timeseries: TimeSeries) => void;
 }
 
-export function SearchTab({ datasource, selectedIds, onAddSeries }: SearchTabProps) {
+export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabProps) {
   const [viewOptions, setViewOptions] = useState<Array<SelectableValue<string>>>([]);
   const [isViewsLoading, setIsViewsLoading] = useState(true);
   const [viewsError, setViewsError] = useState<string | null>(null);
@@ -339,7 +339,7 @@ export function SearchTab({ datasource, selectedIds, onAddSeries }: SearchTabPro
 
       <TimeSeriesList
         series={searchResults}
-        selectedIds={selectedIds}
+        seriesState={seriesState}
         onAddSeries={onAddSeries}
         emptyMessage="No time series match your search or filters."
         contextLabel={`in ${viewId ?? 'view'}`}

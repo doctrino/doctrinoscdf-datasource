@@ -2,17 +2,17 @@ import React, { useMemo, useState } from 'react';
 import { SelectableValue } from '@grafana/data';
 import { InlineField, Select, Stack } from '@grafana/ui';
 import { PLACEHOLDER_EQUIPMENT } from './PlaceholderValues';
-import { PlaceholderTimeSeries } from '../types';
+import { PlaceholderTimeSeries, QueryEditorTimeSeriesState, TimeSeries } from '../types';
 import { DocumentationBlock } from './DocumentationBlock';
 import { TimeSeriesList } from './TimeSeriesList';
 import { timeSeriesById } from './SeriesPanel';
 
 interface EquipmentTabProps {
-  selectedIds: Set<string>;
-  onAddSeries: (externalId: string) => void;
+  seriesState: Map<string, QueryEditorTimeSeriesState>;
+  onAddSeries: (timeseries: TimeSeries) => void;
 }
 
-export function EquipmentTab({ selectedIds, onAddSeries }: EquipmentTabProps) {
+export function EquipmentTab({ seriesState, onAddSeries }: EquipmentTabProps) {
   const [equipmentId, setEquipmentId] = useState(PLACEHOLDER_EQUIPMENT[0].id);
 
   const equipmentOptions: Array<SelectableValue<string>> = PLACEHOLDER_EQUIPMENT.map((item) => ({
@@ -55,7 +55,7 @@ export function EquipmentTab({ selectedIds, onAddSeries }: EquipmentTabProps) {
 
       <TimeSeriesList
         series={equipmentTimeSeries}
-        selectedIds={selectedIds}
+        seriesState={seriesState}
         onAddSeries={onAddSeries}
         emptyMessage="No time series linked to this equipment."
         contextLabel={`for ${selectedEquipment?.name ?? 'equipment'}`}

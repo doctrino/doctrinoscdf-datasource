@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, {  useMemo, useState } from 'react';
 import { Stack, Tab, TabsBar } from '@grafana/ui';
 import { QueryEditorProps } from '@grafana/data';
 import { DataSource } from '../datasource';
@@ -7,108 +7,97 @@ import {
   CDFLoginOptions,
   SelectedTimeSeriesItem,
   SelectedTimeSeriesQuery,
-  SeriesConfig,
+  QueryEditorTimeSeriesState,
+  TimeSeries,
 } from '../types';
-import { instanceIdAsString, instanceStringAsId } from './utils';
+import { instanceIdAsString } from './utils';
 import { SeriesPanel } from './SeriesPanel';
 import { SearchTab } from './SearchTab';
 import { EquipmentTab } from './EquipmentTab';
-import {
-  DEFAULT_LABEL,
-  DEFAULT_SERIES_CONFIG,
-} from './PlaceholderValues';
+import { DEFAULT_AGGREGATION} from './PlaceholderValues';
 
 type Props = QueryEditorProps<DataSource, SelectedTimeSeriesQuery, CDFLoginOptions>;
 
 type SelectionTab = 'search' | 'equipment';
 
 
-function parseQueryState(items: SelectedTimeSeriesItem[]): {
-  selectedIds: Set<string>;
-  seriesConfig: Map<string, SeriesConfig>;
-} {
-  if (!items) {
-    return { selectedIds: new Set(), seriesConfig: new Map() };
-  }
-  const selectedIds = new Set(items.map((item) => instanceIdAsString(item.space, item.externalId)));
-  const seriesConfig = new Map<string, SeriesConfig>(
-    items.map((item) => {
-      const id = instanceIdAsString(item.space, item.externalId);
-      const config = { aggregation: item.aggregation as AggregationMethod, label: item.label ?? DEFAULT_LABEL };
-      return [id, config];
-    })
-  );
-
-  return { selectedIds, seriesConfig };
-}
-
-function serializeQueryState(
-  selectedIds: Set<string>,
-  seriesConfig: Map<string, SeriesConfig>
-): SelectedTimeSeriesItem[] {
-  const selected = [...selectedIds].sort();
-  const selectedTimeSeriesItems: SelectedTimeSeriesItem[] = [];
-
-  for (const id of selected) {
-    const config = seriesConfig.get(id) ?? DEFAULT_SERIES_CONFIG;
-    const instanceId = instanceStringAsId(id);
-    selectedTimeSeriesItems.push({
-      space: instanceId.space,
-      externalId: instanceId.externalId,
-      aggregation: config.aggregation as AggregationMethod,
-      label: config.label ?? DEFAULT_LABEL,
-    });
-  }
-
-  return selectedTimeSeriesItems;
-}
-
 export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) {
   const [activeTab, setActiveTab] = useState<SelectionTab>('search');
 
-  const { selectedIds, seriesConfig } = useMemo(() => parseQueryState(query.items), [query.items]);
+  const[labelOptionsCache, setLabelOptionsCache] = useState<Map<string, string[]>>(new Map());
 
-  const persistQueryState = useCallback(
-    (nextSelected: Set<string>, nextSeriesConfig: Map<string, SeriesConfig>) => {
-      const timeSeriesItems = serializeQueryState(nextSelected, nextSeriesConfig);
-      onChange({ ...query, items: timeSeriesItems });
-      if (timeSeriesItems) {
-        onRunQuery();
-      }
-    },
-    [onChange, onRunQuery, query]
-  );
+  const seriesState = useMemo(() => {
+    if (!query.items) {
+      return new Map<string, QueryEditorTimeSeriesState>();
+    }
+    return new Map<string, QueryEditorTimeSeriesState>(
+      query.items.map((item) => {
+        const id = instanceIdAsString(item.space, item.externalId);
+        // Use cached labelOptions if available, otherwise fallback to externalId
+        const cachedOptions = labelOptionsCache.get(id) ?? [item.externalId];
+        // Ensure that custom selections are included in the options.
+        if (item.label && !cachedOptions.includes(item.label)) {
+          cachedOptions.push(item.label);
+        }
 
-  const onAddSeries = (identifier: string) => {
-    if (selectedIds.has(identifier)) {
+        const config: QueryEditorTimeSeriesState = {
+          aggregation: item.aggregation as AggregationMethod,
+          label: item.label ?? item.externalId,
+          labelOptions: cachedOptions,
+        };
+        return [id, config];
+      })
+    );
+  }, [query.items, labelOptionsCache]);
+
+  const onAddSeries = (timeseries: TimeSeries) => {
+    const identifier = instanceIdAsString(timeseries.space, timeseries.externalId)
+    if (seriesState.has(identifier)) {
       return;
     }
-
-    const nextSelected = new Set(selectedIds);
-    const nextSeriesConfig = new Map(seriesConfig);
-
-    nextSelected.add(identifier);
-    nextSeriesConfig.set(identifier, { ...DEFAULT_SERIES_CONFIG });
-
-    persistQueryState(nextSelected, nextSeriesConfig);
+    const labelOptions = [timeseries.externalId, ...Object.values(timeseries.stringProperties)].sort();
+    setLabelOptionsCache((prev) => new Map(prev).set(identifier, labelOptions));
+    const nextItems: SelectedTimeSeriesItem[] = [
+      ...(query.items ?? []),
+      {
+        space: timeseries.space,
+        externalId: timeseries.externalId,
+        aggregation: DEFAULT_AGGREGATION,
+        label: timeseries.name ?? timeseries.externalId,
+      },
+    ];
+    onChange({ ...query, items: nextItems });
+    onRunQuery();
   };
 
   const onRemoveSeries = (identifier: string) => {
-    const nextSelected = new Set(selectedIds);
-    const nextSeriesConfig = new Map(seriesConfig);
+    setLabelOptionsCache((prev) => {
+      const next = new Map(prev);
+      next.delete(identifier);
+      return next;
+    });
 
-    nextSelected.delete(identifier);
-    nextSeriesConfig.delete(identifier);
-
-    persistQueryState(nextSelected, nextSeriesConfig);
+    const nextItems = (query.items ?? []).filter(
+        (item) => instanceIdAsString(item.space, item.externalId) !== identifier
+    );
+    onChange({ ...query, items: nextItems });
+    onRunQuery();
   };
 
-  const onSeriesConfigChange = (identifier: string, patch: Partial<SeriesConfig>) => {
-    const nextSeriesConfig = new Map(seriesConfig);
-    const current = nextSeriesConfig.get(identifier) ?? DEFAULT_SERIES_CONFIG;
+  const onSeriesConfigChange = (identifier: string, patch: Partial<QueryEditorTimeSeriesState>) => {
+    const nextItems = query.items.map((item) => {
+      if (instanceIdAsString(item.space, item.externalId) === identifier) {
+        return {
+          ...item,
+          aggregation: patch.aggregation ?? item.aggregation,
+          label: patch.label ?? item.label,
+        };
+      }
+      return item;
+    });
 
-    nextSeriesConfig.set(identifier, { ...current, ...patch });
-    persistQueryState(selectedIds, nextSeriesConfig);
+    onChange({ ...query, items: nextItems });
+    onRunQuery();
   };
 
   return (
@@ -119,14 +108,13 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
       </TabsBar>
 
       {activeTab === 'search' ? (
-        <SearchTab datasource={datasource} selectedIds={selectedIds} onAddSeries={onAddSeries} />
+        <SearchTab datasource={datasource} seriesState={seriesState} onAddSeries={onAddSeries} />
       ) : (
-        <EquipmentTab selectedIds={selectedIds} onAddSeries={onAddSeries} />
+        <EquipmentTab seriesState={seriesState} onAddSeries={onAddSeries} />
       )}
 
       <SeriesPanel
-        selectedIds={selectedIds}
-        seriesConfig={seriesConfig}
+        seriesState={seriesState}
         onRemoveSeries={onRemoveSeries}
         onSeriesConfigChange={onSeriesConfigChange}
       />
