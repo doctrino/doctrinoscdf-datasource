@@ -78,12 +78,17 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
       const spaceProperties = Object.values(instance.properties)[0] as Record<string, any>;
       const properties: Record<string, any> = Object.values(spaceProperties)[0];
       const unit = properties['unit'] as InstanceId | undefined;
+      const stringProperties = Object.fromEntries(
+        Object.entries(properties).filter(([_, value]) => typeof value === 'string') as Array<[string, string]>
+      );
+
       return {
         space: instance.space,
         externalId: instance.externalId,
         ...(typeof properties['name'] === 'string' && { name: properties['name'] }),
         ...(typeof properties['description'] === 'string' && { description: properties['description'] }),
         ...(unit && typeof unit.externalId === 'string' && { unit: unit.externalId }),
+        stringProperties: stringProperties,
       };
     });
   }

@@ -6,7 +6,7 @@ export interface SelectedTimeSeriesItem {
   space: string
   externalId: string
   aggregation: string
-  label?: string
+  label: string
 }
 
 export interface SelectedTimeSeriesQuery extends DataQuery {
@@ -105,4 +105,5 @@ export interface TimeSeries {
   name?: string;
   description?: string;
   unit?: string;
+  stringProperties: Record<string, string>;
 }
