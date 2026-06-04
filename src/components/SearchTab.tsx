@@ -216,7 +216,7 @@ import { TimeSeriesList } from './TimeSeriesList';
 interface SearchTabProps {
   datasource: DataSource;
   seriesState: Map<string, QueryEditorTimeSeriesState>;
-  onAddSeries: (externalId: string) => void;
+  onAddSeries: (timeseries: TimeSeries) => void;
 }
 
 export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabProps) {

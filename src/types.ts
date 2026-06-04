@@ -104,6 +104,7 @@ export interface QueryEditorTimeSeriesState {
   aggregation: AggregationMethod;
   /** Property key (name, externalId, …) or custom label text. */
   label: string;
+  labelOptions: string[];
 }
 
 export interface PlaceholderView {

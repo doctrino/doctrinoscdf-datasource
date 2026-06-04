@@ -24,6 +24,7 @@ export const LABEL_PROPERTY_VALUES = new Set<string>([
 export const DEFAULT_SERIES_CONFIG: QueryEditorTimeSeriesState = {
   aggregation: DEFAULT_AGGREGATION,
   label: DEFAULT_LABEL,
+  labelOptions: [DEFAULT_LABEL],
 };
 export const PLACEHOLDER_VIEWS: PlaceholderView[] = [
   { id: 'asset_hierarchy', label: 'Asset hierarchy' },

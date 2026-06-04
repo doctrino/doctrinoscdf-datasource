@@ -8,15 +8,13 @@ import {
   SelectedTimeSeriesItem,
   SelectedTimeSeriesQuery,
   QueryEditorTimeSeriesState,
+  TimeSeries,
 } from '../types';
 import { instanceIdAsString, instanceStringAsId } from './utils';
 import { SeriesPanel } from './SeriesPanel';
 import { SearchTab } from './SearchTab';
 import { EquipmentTab } from './EquipmentTab';
-import {
-  DEFAULT_LABEL,
-  DEFAULT_SERIES_CONFIG,
-} from './PlaceholderValues';
+import { DEFAULT_AGGREGATION, DEFAULT_LABEL, DEFAULT_SERIES_CONFIG } from './PlaceholderValues';
 
 type Props = QueryEditorProps<DataSource, SelectedTimeSeriesQuery, CDFLoginOptions>;
 
@@ -30,7 +28,7 @@ function parseQueryState(items: SelectedTimeSeriesItem[]): Map<string, QueryEdit
   return new Map<string, QueryEditorTimeSeriesState>(
     items.map((item) => {
       const id = instanceIdAsString(item.space, item.externalId);
-      const config = { aggregation: item.aggregation as AggregationMethod, label: item.label ?? DEFAULT_LABEL };
+      const config = { aggregation: item.aggregation as AggregationMethod, label: item.label ?? DEFAULT_LABEL, labelOptions: []};
       return [id, config];
     })
   );
@@ -68,14 +66,20 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
     [onChange, onRunQuery, query]
   );
 
-  const onAddSeries = (identifier: string) => {
+  const onAddSeries = (timeseries: TimeSeries) => {
+    const identifier = instanceIdAsString(timeseries.space, timeseries.externalId)
     if (seriesState.has(identifier)) {
       return;
     }
-
     const nextSeriesState = new Map(seriesState);
 
-    nextSeriesState.set(identifier, { ...DEFAULT_SERIES_CONFIG });
+    const tsState = {
+      "aggregation": DEFAULT_AGGREGATION,
+      "label": DEFAULT_LABEL,
+      "labelOptions": []
+    } as QueryEditorTimeSeriesState;
+
+    nextSeriesState.set(identifier, tsState);
 
     persistQueryState(nextSeriesState);
   };

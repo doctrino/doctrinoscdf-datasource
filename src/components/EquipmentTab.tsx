@@ -2,14 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { SelectableValue } from '@grafana/data';
 import { InlineField, Select, Stack } from '@grafana/ui';
 import { PLACEHOLDER_EQUIPMENT } from './PlaceholderValues';
-import { PlaceholderTimeSeries, QueryEditorTimeSeriesState } from '../types';
+import { PlaceholderTimeSeries, QueryEditorTimeSeriesState, TimeSeries } from '../types';
 import { DocumentationBlock } from './DocumentationBlock';
 import { TimeSeriesList } from './TimeSeriesList';
 import { timeSeriesById } from './SeriesPanel';
 
 interface EquipmentTabProps {
   seriesState: Map<string, QueryEditorTimeSeriesState>;
-  onAddSeries: (externalId: string) => void;
+  onAddSeries: (timeseries: TimeSeries) => void;
 }
 
 export function EquipmentTab({ seriesState, onAddSeries }: EquipmentTabProps) {

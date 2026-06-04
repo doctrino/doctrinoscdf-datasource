@@ -7,7 +7,7 @@ import { ResultsPagination } from './ResultsPagination';
 interface TimeSeriesListProps {
   series: TimeSeries[];
   seriesState: Map<string, QueryEditorTimeSeriesState>;
-  onAddSeries: (externalId: string) => void;
+  onAddSeries: (timeseries: TimeSeries) => void;
   emptyMessage: string;
   contextLabel: string;
   listResetKey: string;
@@ -89,7 +89,7 @@ export function  TimeSeriesList({
                       size="sm"
                       variant="secondary"
                       icon="plus"
-                      onClick={() => onAddSeries(identifier)}
+                      onClick={() => onAddSeries(item)}
                       aria-label={`Add ${displayName} to panel`}
                     >
                       Add
