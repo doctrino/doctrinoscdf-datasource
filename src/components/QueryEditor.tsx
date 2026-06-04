@@ -50,17 +50,6 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
     );
   }, [query.items, labelOptionsCache]);
 
-  // const persistQueryState = useCallback(
-  //     (nextSeriesState: Map<string, QueryEditorTimeSeriesState>) => {
-  //     const timeSeriesItems = serializeQueryState(nextSeriesState);
-  //     onChange({ ...query, items: timeSeriesItems });
-  //     if (timeSeriesItems) {
-  //       onRunQuery();
-  //     }
-  //   },
-  //   [onChange, onRunQuery, query]
-  // );
-
   const onAddSeries = (timeseries: TimeSeries) => {
     const identifier = instanceIdAsString(timeseries.space, timeseries.externalId)
     if (seriesState.has(identifier)) {
@@ -79,7 +68,6 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
     ];
     onChange({ ...query, items: nextItems });
     onRunQuery();
-
   };
 
   const onRemoveSeries = (identifier: string) => {
