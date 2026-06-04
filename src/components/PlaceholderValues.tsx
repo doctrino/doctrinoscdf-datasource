@@ -41,6 +41,7 @@ export const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: Array<Omit<PlaceholderTimeSeri
     space: 'sp:plant-a',
     type: 'numeric',
     isStep: false,
+    stringProperties: {} as Record<string, string>,
   },
   {
     externalId: 'ts-pump-01-flow',
@@ -51,6 +52,7 @@ export const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: Array<Omit<PlaceholderTimeSeri
     space: 'sp:plant-a',
     type: 'numeric',
     isStep: false,
+    stringProperties: {} as Record<string, string>,
   },
   {
     externalId: 'ts-pump-02-pressure',
@@ -61,6 +63,7 @@ export const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: Array<Omit<PlaceholderTimeSeri
     space: 'sp:plant-b',
     type: 'numeric',
     isStep: true,
+    stringProperties: {} as Record<string, string>,
   },
   {
     externalId: 'ts-compressor-power',
@@ -71,6 +74,7 @@ export const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: Array<Omit<PlaceholderTimeSeri
     space: 'sp:utilities',
     type: 'numeric',
     isStep: false,
+    stringProperties: {} as Record<string, string>,
   },
   {
     externalId: 'ts-compressor-vibration',
@@ -81,7 +85,9 @@ export const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: Array<Omit<PlaceholderTimeSeri
     space: 'sp:utilities',
     type: 'numeric',
     isStep: false,
+    stringProperties: {} as Record<string, string>,
   },
+
   {
     externalId: 'ts-tank-level',
     name: 'Storage tank – level',
@@ -91,6 +97,7 @@ export const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: Array<Omit<PlaceholderTimeSeri
     space: 'sp:storage',
     type: 'numeric',
     isStep: true,
+    stringProperties: {} as Record<string, string>,
   },
   {
     externalId: 'ts-motor-temp',
@@ -101,6 +108,7 @@ export const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: Array<Omit<PlaceholderTimeSeri
     space: 'sp:maintenance',
     type: 'numeric',
     isStep: false,
+    stringProperties: {} as Record<string, string>,
   },
   {
     externalId: 'ts-filter-dp',
@@ -111,6 +119,7 @@ export const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: Array<Omit<PlaceholderTimeSeri
     space: 'sp:maintenance',
     type: 'numeric',
     isStep: false,
+    stringProperties: {} as Record<string, string>,
   },
   {
     externalId: 'ts-valve-position',
@@ -121,6 +130,7 @@ export const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: Array<Omit<PlaceholderTimeSeri
     space: 'sp:maintenance',
     type: 'state',
     isStep: true,
+    stringProperties: {} as Record<string, string>,
   },
   {
     externalId: 'ts-valve-status',
@@ -131,6 +141,7 @@ export const HANDCRAFTED_PLACEHOLDER_TIME_SERIES: Array<Omit<PlaceholderTimeSeri
     space: 'sp:maintenance',
     type: 'string',
     isStep: false,
+    stringProperties: {} as Record<string, string>,
   },
 ];
 export const PLACEHOLDER_EQUIPMENT: PlaceholderEquipment[] = [
@@ -201,6 +212,7 @@ function buildPlaceholderCatalog(): PlaceholderTimeSeries[] {
       isStep: i % 7 === 0,
       height: 0.5 + (i % 200) * 0.1,
       createdTime: new Date(Date.UTC(2020, 0, 1) + i * 36 * 60 * 60 * 1000).toISOString(),
+      stringProperties: {} as Record<string, string>
     });
   }
 
