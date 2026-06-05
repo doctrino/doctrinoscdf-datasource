@@ -78,6 +78,7 @@ func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *Cognite
 	token := &token{apiClient}
 	spaces := &spaces{apiClient}
 	containers := &containers{apiClient}
+	views := &views{apiClient}
 	instances := &instances{apiClient}
 	datapointsAPI := &datapoints{apiClient}
 
@@ -86,6 +87,7 @@ func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *Cognite
 		Token:      token,
 		Spaces:     spaces,
 		Containers: containers,
+		Views:      views,
 		Instances:  instances,
 		Datapoints: datapointsAPI,
 	}
