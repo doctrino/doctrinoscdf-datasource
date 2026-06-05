@@ -9,7 +9,7 @@ import (
 )
 
 type ViewId struct {
-	Type       string `json:"type"`
+	Type       string `json:"type,omitempty"`
 	Space      string `json:"space"`
 	ExternalId string `json:"externalId"`
 	Version    string `json:"version"`
