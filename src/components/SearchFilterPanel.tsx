@@ -1,8 +1,8 @@
 import { Checkbox, InlineField, InlineSwitch, Input, Select, Stack, useStyles2 } from '@grafana/ui';
 import { getStyles } from './utils';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { FILTER_LABEL_WIDTH } from './PlaceholderValues';
-import { TimeSeriesType } from '../types';
+import { SearchFilters, TimeSeriesType } from '../types';
 import { SelectableValue } from '@grafana/data';
 
 
@@ -13,27 +13,7 @@ const typeFilterOptions: Array<SelectableValue<TimeSeriesType | ''>> = [
   { label: 'State', value: 'state' },
 ];
 
-interface SearchFilters {
-  space: string;
-  externalIdPrefix: string;
-  type: TimeSeriesType | '';
-  isStep: boolean;
-  heightMin: string;
-  heightMax: string;
-  createdTimeMin: string;
-  createdTimeMax: string;
-}
 
-const DEFAULT_SEARCH_FILTERS: SearchFilters = {
-  space: '',
-  externalIdPrefix: '',
-  type: '',
-  isStep: false,
-  heightMin: '',
-  heightMax: '',
-  createdTimeMin: '',
-  createdTimeMax: '',
-};
 
 interface SearchFiltersPanelProps {
   viewId: string;
@@ -44,7 +24,7 @@ interface SearchFiltersPanelProps {
 export function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchFiltersPanelProps) {
   const styles = useStyles2(getStyles);
   const [showFilters, setShowFilters] = useState(false);
-  const spaceOptions = PLACEHOLDER_SPACES_BY_VIEW[viewId] ?? [{ label: 'All spaces', value: '' }];
+  const spaceOptions = [{ label: 'All spaces', value: '' }];
 
   const updateFilters = (patch: Partial<SearchFilters>) => {
     onFiltersChange({ ...filters, ...patch });
@@ -154,60 +134,60 @@ export function SearchFiltersPanel({ viewId, filters, onFiltersChange }: SearchF
   );
 }
 
-function matchesSearchFilters(series: PlaceholderTimeSeries, filters: SearchFilters): boolean {
-  if (filters.space && series.space !== filters.space) {
-    return false;
-  }
+// function matchesSearchFilters(series: PlaceholderTimeSeries, filters: SearchFilters): boolean {
+//   if (filters.space && series.space !== filters.space) {
+//     return false;
+//   }
+//
+//   if (filters.externalIdPrefix && !series.externalId.startsWith(filters.externalIdPrefix)) {
+//     return false;
+//   }
+//
+//   if (filters.type && series.type !== filters.type) {
+//     return false;
+//   }
+//
+//   if (filters.isStep && !series.isStep) {
+//     return false;
+//   }
+//
+//   const heightMin = parseOptionalNumber(filters.heightMin);
+//   if (heightMin !== null && series.height < heightMin) {
+//     return false;
+//   }
+//
+//   const heightMax = parseOptionalNumber(filters.heightMax);
+//   if (heightMax !== null && series.height > heightMax) {
+//     return false;
+//   }
+//
+//   const createdTimeMin = parseOptionalDate(filters.createdTimeMin);
+//   if (createdTimeMin !== null && new Date(series.createdTime) < createdTimeMin) {
+//     return false;
+//   }
+//
+//   const createdTimeMax = parseOptionalDate(filters.createdTimeMax);
+//   if (createdTimeMax !== null && new Date(series.createdTime) > createdTimeMax) {
+//     return false;
+//   }
+//
+//   return true;
+// }
 
-  if (filters.externalIdPrefix && !series.externalId.startsWith(filters.externalIdPrefix)) {
-    return false;
-  }
+// function parseOptionalNumber(value: string): number | null {
+//   if (!value.trim()) {
+//     return null;
+//   }
+//
+//   const parsed = Number.parseFloat(value);
+//   return Number.isNaN(parsed) ? null : parsed;
+// }
 
-  if (filters.type && series.type !== filters.type) {
-    return false;
-  }
-
-  if (filters.isStep && !series.isStep) {
-    return false;
-  }
-
-  const heightMin = parseOptionalNumber(filters.heightMin);
-  if (heightMin !== null && series.height < heightMin) {
-    return false;
-  }
-
-  const heightMax = parseOptionalNumber(filters.heightMax);
-  if (heightMax !== null && series.height > heightMax) {
-    return false;
-  }
-
-  const createdTimeMin = parseOptionalDate(filters.createdTimeMin);
-  if (createdTimeMin !== null && new Date(series.createdTime) < createdTimeMin) {
-    return false;
-  }
-
-  const createdTimeMax = parseOptionalDate(filters.createdTimeMax);
-  if (createdTimeMax !== null && new Date(series.createdTime) > createdTimeMax) {
-    return false;
-  }
-
-  return true;
-}
-
-function parseOptionalNumber(value: string): number | null {
-  if (!value.trim()) {
-    return null;
-  }
-
-  const parsed = Number.parseFloat(value);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
-function parseOptionalDate(value: string): Date | null {
-  if (!value.trim()) {
-    return null;
-  }
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
+// function parseOptionalDate(value: string): Date | null {
+//   if (!value.trim()) {
+//     return null;
+//   }
+//
+//   const parsed = new Date(value);
+//   return Number.isNaN(parsed.getTime()) ? null : parsed;
+// }

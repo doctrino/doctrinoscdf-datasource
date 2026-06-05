@@ -4,7 +4,7 @@ import {
   PlaceholderEquipment,
   PlaceholderTimeSeries,
   PlaceholderView,
-  QueryEditorTimeSeriesState,
+  QueryEditorTimeSeriesState, SearchFilters,
   TimeSeriesType,
 } from '../types';
 
@@ -221,3 +221,14 @@ function buildPlaceholderCatalog(): PlaceholderTimeSeries[] {
 }
 
 export const PLACEHOLDER_TIME_SERIES = buildPlaceholderCatalog();
+
+export const DEFAULT_SEARCH_FILTERS: SearchFilters = {
+  space: '',
+  externalIdPrefix: '',
+  type: '',
+  isStep: false,
+  heightMin: '',
+  heightMax: '',
+  createdTimeMin: '',
+  createdTimeMax: '',
+};

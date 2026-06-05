@@ -99,13 +99,25 @@ export interface TimeSeries {
 export type TimeSeriesType = 'string' | 'numeric' | 'state';
 export type AggregationMethod = 'average' | 'max' | 'maxDatapoint' | 'min' | 'minDatapoint' | 'count' | 'sum';
 
-
 export interface QueryEditorTimeSeriesState {
   aggregation: AggregationMethod;
   /** Property key (name, externalId, …) or custom label text. */
   label: string;
   labelOptions: string[];
 }
+
+
+export interface SearchFilters {
+  space: string;
+  externalIdPrefix: string;
+  type: TimeSeriesType | '';
+  isStep: boolean;
+  heightMin: string;
+  heightMax: string;
+  createdTimeMin: string;
+  createdTimeMax: string;
+}
+
 
 export interface PlaceholderView {
   id: string;
@@ -131,3 +143,4 @@ export interface PlaceholderEquipment {
   name: string;
   timeSeriesIds: string[];
 }
+

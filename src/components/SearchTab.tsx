@@ -1,12 +1,13 @@
 import { DataSource } from '../datasource';
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { SelectableValue } from '@grafana/data';
-import { QueryEditorTimeSeriesState, TimeSeries, ViewId } from '../types';
+import { QueryEditorTimeSeriesState, SearchFilters, TimeSeries, ViewId } from '../types';
 import { viewIdAsString, viewStringAsId } from './utils';
 import { Alert, InlineField, Input, Select, Stack } from '@grafana/ui';
 import { DocumentationBlock } from './DocumentationBlock';
 import { TimeSeriesList } from './TimeSeriesList';
 import { SearchFiltersPanel } from './SearchFilterPanel';
+import { DEFAULT_SEARCH_FILTERS} from './PlaceholderValues';
 
 interface SearchTabProps {
   datasource: DataSource;
@@ -79,8 +80,6 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
       cancelled = true;
     };
   }, [viewId, searchQuery, datasource]);
-
-  const selectedView = PLACEHOLDER_VIEWS.find((view) => view.id === viewId);
 
   const onViewChange = (option: SelectableValue<string>) => {
     if (option.value) {
