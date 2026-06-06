@@ -1,9 +1,10 @@
-import { Checkbox, InlineField, InlineSwitch, Input, Select, Stack, useStyles2 } from '@grafana/ui';
-import { getStyles } from './utils';
-import React, { useState } from 'react';
-import { FILTER_LABEL_WIDTH } from './PlaceholderValues';
-import { FilterField, SearchFilters, TimeSeriesType } from '../types';
-import { SelectableValue } from '@grafana/data';
+// import { Checkbox, InlineField, InlineSwitch, Input, Select, Stack, useStyles2 } from '@grafana/ui';
+import { InlineSwitch,  Stack } from '@grafana/ui';
+// import { getStyles } from './utils';
+import React from 'react';
+// import { FILTER_LABEL_WIDTH } from './PlaceholderValues';
+import { FilterField,  } from '../types';
+// import { SelectableValue } from '@grafana/data';
 
 
 // const typeFilterOptions: Array<SelectableValue<TimeSeriesType | ''>> = [
