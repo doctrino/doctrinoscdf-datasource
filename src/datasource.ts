@@ -4,12 +4,15 @@ import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
 import {
   CDFLoginOptions,
   ContainerInspectResult,
-  DEFAULT_QUERY,
+  DEFAULT_QUERY, EnumProperty,
   FilterField,
   InstanceId,
   InstanceResponse,
   SelectedTimeSeriesQuery,
-  TimeSeries, ViewContainerPropResponse,
+  SUPPORTED_FILTER_TYPES,
+  SupportedFilterType,
+  TimeSeries,
+  ViewContainerPropResponse,
   ViewId,
   ViewItemResponses,
 } from './types';
@@ -105,13 +108,27 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     }
 
     return Object.entries(response.items[0].properties)
-      .filter((entry): entry is [string, ViewContainerPropResponse] => 'container' in entry[1]
-    ).map(([key, prop]) => {
-      return {
-        propertyID: key,
-        label: prop.name ?? key,
-        type: prop.type.type,
-      };
-    });
+      .filter(
+        (entry): entry is [string, ViewContainerPropResponse] =>
+          'container' in entry[1]
+          && SUPPORTED_FILTER_TYPES.includes(entry[1].type.type as SupportedFilterType)
+          && (entry[1].type.type === "enum" || !(entry[1].type.list ?? false))
+      )
+      .map(([key, prop]) => {
+        let options: Array<{ label: string; value: string }> | undefined = undefined;
+        if (prop.type.type === "enum") {
+          const enumProp = prop.type as EnumProperty;
+          options = Object.entries(enumProp.values).map(([valueId, enumVal]) => {
+            return {label: enumVal.name ?? valueId, value: valueId}
+          })
+        }
+
+        return {
+          propertyID: key,
+          label: prop.name ?? key,
+          type: prop.type.type as SupportedFilterType,
+          options: options
+        } as FilterField;
+      });
   }
 }

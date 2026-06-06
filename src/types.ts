@@ -19,6 +19,17 @@ export const DEFAULT_QUERY: Partial<SelectedTimeSeriesQuery> = {
   items: [],
 };
 
+export type SupportedFilterType = 'boolean' | 'float32' | 'float64' | 'int32' | 'int64' | 'timestamp' | 'date' | 'text'
+export const SUPPORTED_FILTER_TYPES = [
+  'boolean',
+  'float32',
+  'float64',
+  'int32',
+  'int64',
+  'timestamp',
+  'date',
+  'text',
+] as const satisfies readonly SupportedFilterType[];
 export type LoginFlow = 'token' | 'clientCredentials' | 'deviceCode';
 export type LoginMode = 'manual' | 'guided';
 export type IdpProvider = 'entra' | 'auth0' | 'cdf' | 'other';
@@ -244,11 +255,10 @@ export interface SearchFilters {
 }
 
 export interface FilterField {
-  propertyID: string
+  propertyID: string;
   label: string; // display name
-  type: 'string' | 'number' | 'boolean' | 'enum' | 'datetime';
+  type: SupportedFilterType;
   options?: Array<{ label: string; value: string }>; // for enum types
-  range?: boolean; // true → render min/max pair
 }
 
 export interface PlaceholderView {
