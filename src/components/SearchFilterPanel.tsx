@@ -42,8 +42,9 @@ function FilterFieldInput({ field, value, onChange }: {
           options={field.options}
           value={value ?? null}
           placeholder="Equals…"
-          onChange={(option) => onChange(option.value)}
+          onChange={(option) => onChange(option?.value ?? null)}
           width={20}
+          isClearable={true}
         />
       );
     case 'float32':

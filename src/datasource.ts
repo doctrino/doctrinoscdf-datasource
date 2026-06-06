@@ -75,15 +75,14 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     if (query !== undefined && query !== null) {
       body['query'] = query;
     }
-    if (filter !== undefined && filter !== null) {
+    if (filter !== undefined && filter !== null && Object.keys(filter).length > 0) {
       body['filter'] = {
-        and: Object.values(filter)
+        and: Object.values(filter),
       };
     }
     if (limit !== undefined) {
       body['limit'] = limit;
     }
-    console.log('Searching with body', body);
     const response: InstanceResponse[] = await this.postResource('instances/search', body);
     return response.map((instance) => {
       const spaceProperties = Object.values(instance.properties)[0] as Record<string, any>;
