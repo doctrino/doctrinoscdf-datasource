@@ -104,6 +104,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
     try {
       const fields = await datasource.getFilterFields(viewStringAsId(viewId));
       setFilterSchema(fields);
+      console.log('Loaded filter schema', fields);
     } catch (err) {
       console.error('Failed to load filter schema', err);
       setFilterSchema(null);

@@ -191,10 +191,6 @@ export interface ViewResponse {
   implements?: ViewId[];
 }
 
-export interface ViewItemResponses {
-  items: ViewResponse[]
-}
-
 export interface InspectionResult {
   involvedViewCount: number;
   involvedViews: ViewId[];

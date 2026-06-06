@@ -4,7 +4,8 @@ import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
 import {
   CDFLoginOptions,
   ContainerInspectResult,
-  DEFAULT_QUERY, EnumProperty,
+  DEFAULT_QUERY,
+  EnumProperty,
   FilterField,
   InstanceId,
   InstanceResponse,
@@ -14,7 +15,7 @@ import {
   TimeSeries,
   ViewContainerPropResponse,
   ViewId,
-  ViewItemResponses,
+  ViewResponse,
 } from './types';
 
 export interface DeviceCodeStartResponse {
@@ -102,12 +103,11 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
   }
 
   async getFilterFields(viewId: ViewId): Promise<FilterField[]> {
-    const response: ViewItemResponses = await this.postResource('views/retrieve', { items: [viewId] });
-    if (response.items.length !== 1) {
-      throw new Error(`Expected 1 view, got ${response.items.length}`);
+    const response: ViewResponse[] = await this.postResource('views/retrieve', { items: [viewId] });
+    if (response.length !== 1) {
+      throw new Error(`Expected 1 view, got ${response.length}`);
     }
-
-    return Object.entries(response.items[0].properties)
+    return Object.entries(response[0].properties)
       .filter(
         (entry): entry is [string, ViewContainerPropResponse] =>
           'container' in entry[1]
