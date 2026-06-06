@@ -27,7 +27,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
   const [searchResults, setSearchResults] = useState<TimeSeries[]>([]);
 
   const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [filterSchema, _setFilterSchema] = useState<FilterField[] | null>(null);
+  const [filterSchema, setFilterSchema] = useState<FilterField[] | null>(null);
   const [filterValues, setFilterValues] = useState<Record<string, any> | undefined>(undefined);
 
   // Load view options
@@ -96,13 +96,19 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
     setFilterValues(nextValues);
   }
 
-  const onShowFiltersChange = (nextValue: boolean) => {
+  const onShowFiltersChange = async (nextValue: boolean) => {
     setShowFilters(nextValue);
     if (!nextValue) {
       return;
     }
-    // Todo set FilterField[] based on viewId
-  }
+    try {
+      const fields = await datasource.getFilterFields(viewStringAsId(viewId));
+      setFilterSchema(fields);
+    } catch (err) {
+      console.error('Failed to load filter schema', err);
+      setFilterSchema(null);
+    }
+  };
 
   return (
     <Stack direction="column" gap={1}>
