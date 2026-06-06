@@ -96,6 +96,14 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
     setFilterValues(nextValues);
   }
 
+  const onShowFiltersChange = (nextValue: boolean) => {
+    setShowFilters(nextValue);
+    if (!nextValue) {
+      return;
+    }
+    // Todo set FilterField[] based on viewId
+  }
+
   return (
     <Stack direction="column" gap={1}>
       <DocumentationBlock testId="query-editor-documentation" />
@@ -133,7 +141,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
       {
         <SearchFiltersPanel
           showFilters={showFilters}
-          onShowFiltersChange={setShowFilters}
+          onShowFiltersChange={onShowFiltersChange}
           filterSchema={filterSchema ?? []}
           filterValues={filterValues ?? {}}
           onFilterValuesChange={onFilterValuesChange}

@@ -5,11 +5,13 @@ import {
   CDFLoginOptions,
   ContainerInspectResult,
   DEFAULT_QUERY,
+  FilterField,
   InstanceId,
   InstanceResponse,
   SelectedTimeSeriesQuery,
-  TimeSeries,
+  TimeSeries, ViewContainerPropResponse,
   ViewId,
+  ViewItemResponses,
 } from './types';
 
 export interface DeviceCodeStartResponse {
@@ -92,6 +94,23 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
         ...(typeof properties['description'] === 'string' && { description: properties['description'] }),
         ...(unit && typeof unit.externalId === 'string' && { unit: unit.externalId }),
         stringProperties: stringProperties,
+      };
+    });
+  }
+
+  async getFilterFields(viewId: ViewId): Promise<FilterField[]> {
+    const response: ViewItemResponses = await this.postResource('views/retrieve', { items: [viewId] });
+    if (response.items.length !== 1) {
+      throw new Error(`Expected 1 view, got ${response.items.length}`);
+    }
+
+    return Object.entries(response.items[0].properties)
+      .filter((entry): entry is [string, ViewContainerPropResponse] => 'container' in entry[1]
+    ).map(([key, prop]) => {
+      return {
+        propertyID: key,
+        label: prop.name ?? key,
+        type: prop.type.type,
       };
     });
   }
