@@ -64,12 +64,14 @@ export const getStyles = (theme: GrafanaTheme2) => ({
   rangeInputs: css({
     alignItems: 'center',
     display: 'flex',
-    flexWrap: 'wrap',
-    gap: theme.spacing(0.5, 1.5),
+    flexWrap: 'nowrap',
+    gap: theme.spacing(0.5),
+    minWidth: 0,
   }),
   rangeSeparator: css({
     color: theme.colors.text.secondary,
     fontSize: theme.typography.bodySmall.fontSize,
+    flexShrink: 0,
   }),
   paginationField: css({
     flexShrink: 0,
