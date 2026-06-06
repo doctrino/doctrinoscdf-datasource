@@ -31,12 +31,12 @@ type InstanceItemResponse struct {
 }
 
 type InstanceAggregateRequest struct {
-	View       ViewId           `json:"view"`
-	Aggregates []AggregateItem  `json:"aggregates,omitempty"`
-	Query      string           `json:"query,omitempty"`
-	Properties []string         `json:"properties,omitempty"`
-	Filter     []map[string]any `json:"filter,omitempty"`
-	Limit      int              `json:"limit,omitempty"`
+	View       ViewId          `json:"view"`
+	Aggregates []AggregateItem `json:"aggregates,omitempty"`
+	Query      string          `json:"query,omitempty"`
+	Properties []string        `json:"properties,omitempty"`
+	Filter     map[string]any  `json:"filter,omitempty"`
+	Limit      int             `json:"limit,omitempty"`
 }
 
 type AggregateValue struct {
@@ -67,11 +67,11 @@ type AggregateItem struct {
 }
 
 type InstanceSearchRequest struct {
-	View       ViewId           `json:"view"`
-	Query      string           `json:"query,omitempty"`
-	Properties []string         `json:"properties,omitempty"`
-	Filter     []map[string]any `json:"filter,omitempty"`
-	Limit      int              `json:"limit,omitempty"`
+	View       ViewId         `json:"view"`
+	Query      string         `json:"query,omitempty"`
+	Properties []string       `json:"properties,omitempty"`
+	Filter     map[string]any `json:"filter,omitempty"`
+	Limit      int            `json:"limit,omitempty"`
 }
 
 type InstanceSlimItem struct {
