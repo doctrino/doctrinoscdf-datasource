@@ -1,13 +1,13 @@
 import { DataSource } from '../datasource';
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { SelectableValue } from '@grafana/data';
-import { QueryEditorTimeSeriesState, SearchFilters, TimeSeries, ViewId } from '../types';
+import { FilterField, QueryEditorTimeSeriesState, TimeSeries, ViewId } from '../types';
 import { viewIdAsString, viewStringAsId } from './utils';
 import { Alert, InlineField, Input, Select, Stack } from '@grafana/ui';
 import { DocumentationBlock } from './DocumentationBlock';
 import { TimeSeriesList } from './TimeSeriesList';
 import { SearchFiltersPanel } from './SearchFilterPanel';
-import { DEFAULT_SEARCH_FILTERS} from './PlaceholderValues';
+
 
 interface SearchTabProps {
   datasource: DataSource;
@@ -23,11 +23,12 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
   const [viewId, setViewId] = useState<string>(viewIdAsString(cogniteTimeSeries));
 
   const [searchQuery, setSearchQuery] = useState<string | undefined>('');
-  const [filtersByView, setFiltersByView] = useState<Record<string, SearchFilters>>({});
 
   const [searchResults, setSearchResults] = useState<TimeSeries[]>([]);
 
-  const filters = filtersByView[viewId] ?? DEFAULT_SEARCH_FILTERS;
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [filterSchema, setFilterSchema] = useState<FilterField[] | null>(null);
+  const [filterValues, setFilterValues] = useState<Record<string, any> | null>(null);
 
   // Load view options
   useEffect(() => {
@@ -63,8 +64,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
 
     const searchTimeSeries = async () => {
       try {
-        console.log('viewStringAsId' + viewStringAsId(viewId));
-        const searchResults = await datasource.searchTimeSeries(viewStringAsId(viewId), searchQuery, 1000);
+        const searchResults = await datasource.searchTimeSeries(viewStringAsId(viewId), searchQuery, filterValues, 1000);
         if (cancelled) {
           return;
         }
@@ -79,7 +79,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
     return () => {
       cancelled = true;
     };
-  }, [viewId, searchQuery, datasource]);
+  }, [viewId, searchQuery, filterValues, datasource]);
 
   const onViewChange = (option: SelectableValue<string>) => {
     if (option.value) {
@@ -91,9 +91,10 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
     setSearchQuery(event.target.value);
   };
 
-  const onFiltersChange = (nextFilters: SearchFilters) => {
-    setFiltersByView((current) => ({ ...current, [viewId]: nextFilters }));
-  };
+  // Todo: Partial instead?
+  const onFilterValuesChange = (nextValues: Record<string, any>) => {
+    setFilterValues(nextValues);
+  }
 
   return (
     <Stack direction="column" gap={1}>
@@ -129,7 +130,16 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
         />
       </InlineField>
 
-      {<SearchFiltersPanel viewId={viewId} filters={filters} onFiltersChange={onFiltersChange} />}
+      {
+        <SearchFiltersPanel
+          showFilters={showFilters}
+          onShowFiltersChange={setShowFilters}
+          filterSchema={filterSchema ?? []}
+          filterValues={filterValues ?? {}}
+          onFilterValuesChange={onFilterValuesChange}
+          isLoading={false}
+        />
+      }
 
       <TimeSeriesList
         series={searchResults}

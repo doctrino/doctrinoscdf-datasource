@@ -61,13 +61,16 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     return response[0].inspectionResults.involvedViews;
   }
 
-  async searchTimeSeries(view: ViewId, query?: string, limit?: number): Promise<TimeSeries[]> {
+  async searchTimeSeries(view: ViewId, query?: string, filter?: Record<string, any>, limit?: number): Promise<TimeSeries[]> {
     const body: Record<string, unknown> = { view: {
       type: 'view',
       ...view
       } };
     if (query !== undefined && query !== null) {
       body['query'] = query;
+    }
+    if (filter !== undefined && filter !== null) {
+      body['filter'] = filter;
     }
     if (limit !== undefined) {
       body['limit'] = limit;

@@ -118,6 +118,13 @@ export interface SearchFilters {
   createdTimeMax: string;
 }
 
+export interface FilterField {
+  propertyID: string
+  label: string; // display name
+  type: 'string' | 'number' | 'boolean' | 'enum' | 'datetime';
+  options?: Array<{ label: string; value: string }>; // for enum types
+  range?: boolean; // true → render min/max pair
+}
 
 export interface PlaceholderView {
   id: string;
