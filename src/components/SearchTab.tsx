@@ -27,8 +27,8 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
   const [searchResults, setSearchResults] = useState<TimeSeries[]>([]);
 
   const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [filterSchema, setFilterSchema] = useState<FilterField[] | null>(null);
-  const [filterValues, setFilterValues] = useState<Record<string, any> | null>(null);
+  const [filterSchema, _setFilterSchema] = useState<FilterField[] | null>(null);
+  const [filterValues, setFilterValues] = useState<Record<string, any> | undefined>(undefined);
 
   // Load view options
   useEffect(() => {
