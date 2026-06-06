@@ -76,7 +76,9 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
       body['query'] = query;
     }
     if (filter !== undefined && filter !== null) {
-      body['filter'] = filter;
+      body['filter'] = {
+        and: Object.values(filter)
+      };
     }
     if (limit !== undefined) {
       body['limit'] = limit;

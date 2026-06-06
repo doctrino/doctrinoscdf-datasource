@@ -8,6 +8,38 @@ import { DocumentationBlock } from './DocumentationBlock';
 import { TimeSeriesList } from './TimeSeriesList';
 import { SearchFiltersPanel } from './SearchFilterPanel';
 
+function buildAPIFilter(filterValues: Record<string, any>, filterSchema: FilterField[], viewId: ViewId): Record<string, any> | undefined {
+  const result: Record<string, any> = {};
+  for (const field of filterSchema) {
+    const val = filterValues[field.propertyID];
+    if (val === undefined || val === '' || val === null) {continue;}
+
+    const propertyKey = [viewId.space, `${viewId.externalId}/${viewId.version}`, field.propertyID];
+    switch (field.type) {
+      case 'text':
+        result[field.propertyID] = { prefix: { property: propertyKey, value: val } };
+        break;
+      case 'boolean':
+      case 'enum':
+        result[field.propertyID] = { equals: { property: propertyKey, value: val } };
+        break;
+      case 'float32':
+      case 'float64':
+      case 'int32':
+      case 'int64':
+        result[field.propertyID] = {
+          range: {
+            property: propertyKey,
+            ...(val[0] != null && { gte: val[0] }),
+            ...(val[1] != null && { lte: val[1] }),
+          },
+        };
+        break;
+    }
+  }
+  return result ?? undefined;
+}
+
 
 interface SearchTabProps {
   datasource: DataSource;
@@ -64,7 +96,9 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
 
     const searchTimeSeries = async () => {
       try {
-        const searchResults = await datasource.searchTimeSeries(viewStringAsId(viewId), searchQuery, filterValues, 1000);
+        const apiFilter = filterSchema && filterValues ? buildAPIFilter(filterValues, filterSchema, viewStringAsId(viewId)) :undefined
+
+        const searchResults = await datasource.searchTimeSeries(viewStringAsId(viewId), searchQuery, apiFilter, 1000);
         if (cancelled) {
           return;
         }
@@ -79,7 +113,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
     return () => {
       cancelled = true;
     };
-  }, [viewId, searchQuery, filterValues, datasource]);
+  }, [viewId, searchQuery, filterValues, filterSchema, datasource]);
 
   const onViewChange = (option: SelectableValue<string>) => {
     if (option.value) {
@@ -92,19 +126,20 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
   };
 
   // Todo: Partial instead?
-  const onFilterValuesChange = (nextValues: Record<string, any>) => {
-    setFilterValues(nextValues);
+  const onFilterValuesChange = (update: Partial<Record<string, any>>) => {
+    setFilterValues((prev) => ({ ...prev, ...update }));
   }
 
   const onShowFiltersChange = async (nextValue: boolean) => {
     setShowFilters(nextValue);
     if (!nextValue) {
+      setFilterSchema(null)
+      setFilterValues(undefined);
       return;
     }
     try {
       const fields = await datasource.getFilterFields(viewStringAsId(viewId));
       setFilterSchema(fields);
-      console.log('Loaded filter schema', fields);
     } catch (err) {
       console.error('Failed to load filter schema', err);
       setFilterSchema(null);

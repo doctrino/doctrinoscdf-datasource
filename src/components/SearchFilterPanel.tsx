@@ -1,19 +1,83 @@
-// import { Checkbox, InlineField, InlineSwitch, Input, Select, Stack, useStyles2 } from '@grafana/ui';
-import { InlineSwitch,  Stack } from '@grafana/ui';
-// import { getStyles } from './utils';
+import { Checkbox, InlineField, InlineSwitch, Input, Select, Stack, useStyles2  } from '@grafana/ui';
+import { getStyles } from './utils';
 import React from 'react';
 // import { FILTER_LABEL_WIDTH } from './PlaceholderValues';
 import { FilterField,  } from '../types';
+import { FILTER_LABEL_WIDTH } from './PlaceholderValues';
 // import { SelectableValue } from '@grafana/data';
 
 
-// const typeFilterOptions: Array<SelectableValue<TimeSeriesType | ''>> = [
-//   { label: 'Any type', value: '' },
-//   { label: 'String', value: 'string' },
-//   { label: 'Numeric', value: 'numeric' },
-//   { label: 'State', value: 'state' },
-// ];
+function propertyTypeToInputType(propType: 'float32' | 'float64' | 'int32' | 'int64' | 'date' | 'timestamp'): string {
+  switch (propType) {
+    case 'date':
+      return 'date';
+    case 'timestamp':
+      return 'datetime-local';
+    case 'float32':
+    case 'float64':
+    case 'int32':
+    case 'int64':
+      return 'number';
+    default:
+      return 'number';
+  }
+}
 
+function FilterFieldInput({ field, value, onChange }: {
+  field: FilterField;
+  value: any;
+  onChange: (value: any) => void;
+}) {
+  const styles = useStyles2(getStyles);
+  switch (field.type) {
+    case 'text':
+      return (
+        <Input value={value ?? ''} placeholder="Prefix…" onChange={(e) => onChange(e.currentTarget.value)} width={20} />
+      );
+    case 'boolean':
+      return <Checkbox value={value ?? false} onChange={(e) => onChange(e.currentTarget.checked)} />;
+    case 'enum':
+      return (
+        <Select
+          options={field.options}
+          value={value ?? null}
+          placeholder="Equals…"
+          onChange={(option) => onChange(option.value)}
+          width={20}
+        />
+      );
+    case 'float32':
+    case 'float64':
+    case 'int32':
+    case 'int64':
+    case 'date':
+    case 'timestamp':
+      const inputType = propertyTypeToInputType(field.type);
+      const inputWidth = field.type === 'timestamp' || field.type === 'date' ? 20 : 12;
+      return (
+        <div className={styles.rangeInputs}>
+          <span className={styles.rangeSeparator}>From</span>
+          <Input
+            type={inputType}
+            placeholder="Min"
+            onChange={(e) => onChange([e.currentTarget.value, value?.[0] ?? null])}
+            value={value?.[0] ?? ''}
+            width={inputWidth}
+          />
+          <span className={styles.rangeSeparator}>to</span>
+          <Input
+            type={inputType}
+            placeholder="Max"
+            onChange={(e) => onChange([e.currentTarget.value, value?.[1] ?? null])}
+            value={value?.[1] ?? ''}
+            width={inputWidth}
+          />
+        </div>
+      );
+    default:
+      return null;
+  }
+}
 
 
 interface SearchFiltersPanelProps {
@@ -21,12 +85,12 @@ interface SearchFiltersPanelProps {
   onShowFiltersChange: (showFilters: boolean) => void;
   filterSchema: FilterField[];
   filterValues: Record<string, any>;
-  onFilterValuesChange: (filter: Record<string, any>) => void;
+  onFilterValuesChange: (filter: Partial<Record<string, any>>) => void;
   isLoading: boolean;
 }
 
 export function SearchFiltersPanel({ showFilters, onShowFiltersChange, filterSchema, filterValues, onFilterValuesChange, isLoading }: SearchFiltersPanelProps) {
-  // const styles = useStyles2(getStyles);
+  const styles = useStyles2(getStyles);
 
   return (
     <Stack direction="column" gap={0.5}>
@@ -38,96 +102,28 @@ export function SearchFiltersPanel({ showFilters, onShowFiltersChange, filterSch
         onChange={(event) => onShowFiltersChange(event.currentTarget.checked)}
       />
 
-      {/*{showFilters && (*/}
-      {/*  <div className={styles.filtersGrid}>*/}
-      {/*    <InlineField label="Space" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>*/}
-      {/*      <Select*/}
-      {/*        inputId="query-editor-filter-space"*/}
-      {/*        options={spaceOptions}*/}
-      {/*        value={filters.space}*/}
-      {/*        onChange={(option) => updateFilters({ space: option.value ?? '' })}*/}
-      {/*        width={20}*/}
-      {/*      />*/}
-      {/*    </InlineField>*/}
-      {/*    <InlineField*/}
-      {/*      label="External ID"*/}
-      {/*      labelWidth={FILTER_LABEL_WIDTH}*/}
-      {/*      tooltip="Filter by external ID prefix"*/}
-      {/*      className={styles.filterField}*/}
-      {/*    >*/}
-      {/*      <Input*/}
-      {/*        id="query-editor-filter-external-id"*/}
-      {/*        placeholder="Prefix…"*/}
-      {/*        value={filters.externalIdPrefix}*/}
-      {/*        onChange={(event) => updateFilters({ externalIdPrefix: event.currentTarget.value })}*/}
-      {/*        width={20}*/}
-      {/*      />*/}
-      {/*    </InlineField>*/}
-      {/*    <InlineField label="Type" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>*/}
-      {/*      <Select*/}
-      {/*        inputId="query-editor-filter-type"*/}
-      {/*        options={typeFilterOptions}*/}
-      {/*        value={filters.type}*/}
-      {/*        onChange={(option) => updateFilters({ type: option.value ?? '' })}*/}
-      {/*        width={20}*/}
-      {/*      />*/}
-      {/*    </InlineField>*/}
-      {/*    <InlineField label="Is step" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterField}>*/}
-      {/*      <Checkbox*/}
-      {/*        id="query-editor-filter-is-step"*/}
-      {/*        value={filters.isStep}*/}
-      {/*        label="Step only"*/}
-      {/*        onChange={(event) => updateFilters({ isStep: event.currentTarget.checked })}*/}
-      {/*      />*/}
-      {/*    </InlineField>*/}
-      {/*    <InlineField label="Height" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>*/}
-      {/*      <div className={styles.rangeInputs}>*/}
-      {/*        <Input*/}
-      {/*          id="query-editor-filter-height-min"*/}
-      {/*          type="number"*/}
-      {/*          step="any"*/}
-      {/*          placeholder="Min"*/}
-      {/*          aria-label="Minimum height"*/}
-      {/*          value={filters.heightMin}*/}
-      {/*          onChange={(event) => updateFilters({ heightMin: event.currentTarget.value })}*/}
-      {/*          width={12}*/}
-      {/*        />*/}
-      {/*        <span className={styles.rangeSeparator}>to</span>*/}
-      {/*        <Input*/}
-      {/*          id="query-editor-filter-height-max"*/}
-      {/*          type="number"*/}
-      {/*          step="any"*/}
-      {/*          placeholder="Max"*/}
-      {/*          aria-label="Maximum height"*/}
-      {/*          value={filters.heightMax}*/}
-      {/*          onChange={(event) => updateFilters({ heightMax: event.currentTarget.value })}*/}
-      {/*          width={12}*/}
-      {/*        />*/}
-      {/*      </div>*/}
-      {/*    </InlineField>*/}
-      {/*    <InlineField label="Created" labelWidth={FILTER_LABEL_WIDTH} className={styles.filterFieldWide}>*/}
-      {/*      <div className={styles.rangeInputs}>*/}
-      {/*        <Input*/}
-      {/*          id="query-editor-filter-created-min"*/}
-      {/*          type="datetime-local"*/}
-      {/*          aria-label="Created after"*/}
-      {/*          value={filters.createdTimeMin}*/}
-      {/*          onChange={(event) => updateFilters({ createdTimeMin: event.currentTarget.value })}*/}
-      {/*          width={22}*/}
-      {/*        />*/}
-      {/*        <span className={styles.rangeSeparator}>to</span>*/}
-      {/*        <Input*/}
-      {/*          id="query-editor-filter-created-max"*/}
-      {/*          type="datetime-local"*/}
-      {/*          aria-label="Created before"*/}
-      {/*          value={filters.createdTimeMax}*/}
-      {/*          onChange={(event) => updateFilters({ createdTimeMax: event.currentTarget.value })}*/}
-      {/*          width={22}*/}
-      {/*        />*/}
-      {/*      </div>*/}
-      {/*    </InlineField>*/}
-      {/*  </div>*/}
-      {/*)}*/}
+      {showFilters && filterSchema.length === 0 && !isLoading && (
+        <div>No properties for filtering available for the selected view.</div>
+      )}
+
+      {showFilters && filterSchema.length > 0 && (
+        <div className={styles.filtersGrid}>
+          {filterSchema.map((field) => (
+            <InlineField
+              label={field.label}
+              labelWidth={FILTER_LABEL_WIDTH}
+              className={field.type === 'timestamp' ||field.type === 'date' ? styles.filterFieldWide : styles.filterField}
+              key={field.propertyID}
+            >
+              <FilterFieldInput
+                field={field}
+                value={filterValues[field.propertyID]}
+                onChange={(value) => onFilterValuesChange({ [field.propertyID]: value })}
+              />
+            </InlineField>
+          ))}
+        </div>
+      )}
     </Stack>
   );
 }

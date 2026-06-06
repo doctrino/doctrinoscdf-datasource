@@ -19,7 +19,7 @@ export const DEFAULT_QUERY: Partial<SelectedTimeSeriesQuery> = {
   items: [],
 };
 
-export type SupportedFilterType = 'boolean' | 'float32' | 'float64' | 'int32' | 'int64' | 'timestamp' | 'date' | 'text'
+export type SupportedFilterType = 'boolean' | 'float32' | 'float64' | 'int32' | 'int64' | 'timestamp' | 'date' | 'text' | 'enum'
 export const SUPPORTED_FILTER_TYPES = [
   'boolean',
   'float32',
@@ -29,6 +29,7 @@ export const SUPPORTED_FILTER_TYPES = [
   'timestamp',
   'date',
   'text',
+  'enum',
 ] as const satisfies readonly SupportedFilterType[];
 export type LoginFlow = 'token' | 'clientCredentials' | 'deviceCode';
 export type LoginMode = 'manual' | 'guided';

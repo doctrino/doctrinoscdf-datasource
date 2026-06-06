@@ -65,7 +65,7 @@ export const getStyles = (theme: GrafanaTheme2) => ({
     alignItems: 'center',
     display: 'flex',
     flexWrap: 'wrap',
-    gap: theme.spacing(0.5, 1),
+    gap: theme.spacing(0.5, 1.5),
   }),
   rangeSeparator: css({
     color: theme.colors.text.secondary,
