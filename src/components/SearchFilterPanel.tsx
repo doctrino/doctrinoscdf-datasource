@@ -54,6 +54,7 @@ function FilterFieldInput({ field, value, onChange }: {
     case 'date':
     case 'timestamp':
       const inputType = propertyTypeToInputType(field.type);
+      const inputWidth = (field.type === 'date' || field.type === 'timestamp') ? undefined : 10;
       return (
         <div className={styles.rangeInputs}>
           <span className={styles.rangeSeparator}>From</span>
@@ -62,6 +63,7 @@ function FilterFieldInput({ field, value, onChange }: {
             placeholder="Min"
             onChange={(e) => onChange([e.currentTarget.value, value?.[0] ?? null])}
             value={value?.[0] ?? ''}
+            width={inputWidth}
           />
           <span className={styles.rangeSeparator}>to</span>
           <Input
@@ -69,6 +71,7 @@ function FilterFieldInput({ field, value, onChange }: {
             placeholder="Max"
             onChange={(e) => onChange([e.currentTarget.value, value?.[1] ?? null])}
             value={value?.[1] ?? ''}
+            width={inputWidth}
           />
         </div>
       );
@@ -110,7 +113,12 @@ export function SearchFiltersPanel({ showFilters, onShowFiltersChange, filterSch
             <InlineField
               label={field.label}
               labelWidth={FILTER_LABEL_WIDTH}
-              className={field.type === 'timestamp' ||field.type === 'date' ? styles.filterFieldWide : styles.filterField}
+              className={
+                field.type === 'timestamp' ||
+                field.type === 'date'
+                  ? styles.filterFieldWide
+                  : styles.filterField
+              }
               key={field.propertyID}
             >
               <FilterFieldInput

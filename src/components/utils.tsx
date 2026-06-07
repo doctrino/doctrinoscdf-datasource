@@ -49,7 +49,7 @@ export const getStyles = (theme: GrafanaTheme2) => ({
   filtersGrid: css({
     display: 'grid',
     gap: theme.spacing(0.5, 2),
-    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
     width: '100%',
   }),
   filterField: css({
@@ -57,7 +57,7 @@ export const getStyles = (theme: GrafanaTheme2) => ({
     minWidth: 0,
   }),
   filterFieldWide: css({
-    gridColumn: '1 / -1',
+    gridColumn: 'span 2',
     marginBottom: 0,
     minWidth: 0,
   }),
