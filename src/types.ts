@@ -296,3 +296,10 @@ export interface SpaceStatisticsResponse {
   recordsOnlyContainers?: number;
   recordsOnlyContainerProperties?: number;
 }
+
+export interface MyVariableQuery {
+  namespace: string;
+  rawQuery: string;
+}
+
+
