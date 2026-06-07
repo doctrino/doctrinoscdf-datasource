@@ -1,11 +1,9 @@
-import { Checkbox, InlineField, InlineSwitch, Input, Select, Stack, useStyles2  } from '@grafana/ui';
+import { Checkbox, InlineField, Spinner, InlineSwitch, Input, Select, Stack, useStyles2  } from '@grafana/ui';
 import { getStyles } from './utils';
 import React from 'react';
-// import { FILTER_LABEL_WIDTH } from './PlaceholderValues';
 import { FilterField,  } from '../types';
 import { FILTER_LABEL_WIDTH } from './PlaceholderValues';
-// import { SelectableValue } from '@grafana/data';
-import { Spinner } from '@grafana/ui';
+
 
 function propertyTypeToInputType(propType: 'float32' | 'float64' | 'int32' | 'int64' | 'date' | 'timestamp'): string {
   switch (propType) {
