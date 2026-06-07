@@ -5,7 +5,7 @@ import React from 'react';
 import { FilterField,  } from '../types';
 import { FILTER_LABEL_WIDTH } from './PlaceholderValues';
 // import { SelectableValue } from '@grafana/data';
-
+import { Spinner } from '@grafana/ui';
 
 function propertyTypeToInputType(propType: 'float32' | 'float64' | 'int32' | 'int64' | 'date' | 'timestamp'): string {
   switch (propType) {
@@ -102,7 +102,11 @@ export function SearchFiltersPanel({ showFilters, onShowFiltersChange, filterSch
         value={showFilters}
         onChange={(event) => onShowFiltersChange(event.currentTarget.checked)}
       />
-
+      {showFilters && isLoading && (
+        <Stack direction="row" alignItems="center" gap={1}>
+          <Spinner /> Loading filter properties…
+        </Stack>
+      )}
       {showFilters && filterSchema.length === 0 && !isLoading && (
         <div>No properties for filtering available for the selected view.</div>
       )}
@@ -114,10 +118,7 @@ export function SearchFiltersPanel({ showFilters, onShowFiltersChange, filterSch
               label={field.label}
               labelWidth={FILTER_LABEL_WIDTH}
               className={
-                field.type === 'timestamp' ||
-                field.type === 'date'
-                  ? styles.filterFieldWide
-                  : styles.filterField
+                field.type === 'timestamp' || field.type === 'date' ? styles.filterFieldWide : styles.filterField
               }
               key={field.propertyID}
             >
