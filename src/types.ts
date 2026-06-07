@@ -19,6 +19,18 @@ export const DEFAULT_QUERY: Partial<SelectedTimeSeriesQuery> = {
   items: [],
 };
 
+export type SupportedFilterType = 'boolean' | 'float32' | 'float64' | 'int32' | 'int64' | 'timestamp' | 'date' | 'text' | 'enum'
+export const SUPPORTED_FILTER_TYPES = [
+  'boolean',
+  'float32',
+  'float64',
+  'int32',
+  'int64',
+  'timestamp',
+  'date',
+  'text',
+  'enum',
+] as const satisfies readonly SupportedFilterType[];
 export type LoginFlow = 'token' | 'clientCredentials' | 'deviceCode';
 export type LoginMode = 'manual' | 'guided';
 export type IdpProvider = 'entra' | 'auth0' | 'cdf' | 'other';
@@ -57,6 +69,127 @@ export interface ViewId {
   space: string;
   externalId: string;
   version: string;
+}
+
+export interface ContainerId {
+  space: string;
+  externalId: string;
+}
+
+export type ConstraintStatus = "current" | "pending"  | "failed"
+
+export interface ConstraintState {
+  nullability: ConstraintStatus
+  maxListSize: ConstraintStatus
+  maxTextSize: ConstraintStatus
+}
+
+export interface TextProperty {
+  type: 'text';
+  list?: boolean;
+  maxListSize?: number;
+  maxTextSize?: number;
+  collation?: string;
+}
+
+export interface Unit {
+  externalId: string;
+  sourceUnit?: string;
+}
+
+export interface PrimitiveProperty {
+  type: "boolean" |"float32" |"float64" |"int32" |"int64" |"timestamp"| "date"| "json";
+  unit?: Unit
+  list?: boolean
+  maxListSize?: number
+}
+
+export interface CDFExternalIdReference {
+  type: "timeseries" | "file" |"sequence";
+  list?: boolean;
+  maxListSize?: number;
+}
+
+export interface ViewDirectNodeRelation {
+  type: 'direct';
+  container: ContainerId;
+  list?: boolean;
+  maxListSize?: number;
+  source?: ViewId;
+}
+
+export interface EnumValue {
+  name?: string;
+  description?: string;
+}
+
+export interface EnumProperty {
+  type: 'enum';
+  unknownValue?: string;
+  values: Record<string, EnumValue>
+}
+
+export type ContainerProperty = TextProperty | PrimitiveProperty | CDFExternalIdReference | ViewDirectNodeRelation | EnumProperty;
+
+
+export interface ViewContainerPropResponse {
+  container: ContainerId;
+  containerPropertyIdentifier: string;
+  type: ContainerProperty;
+  constraintState: ConstraintState;
+  immutable?: boolean;
+  nullable?: boolean;
+  autoIncrement?: boolean;
+  defaultValue?: string | number | boolean | object;
+  description?: string;
+  name?: string;
+}
+
+export interface ViewEdgeConnectionResponse {
+  connectionType: 'multi_edge_connection' | 'single_edge_connection';
+  name?: string;
+  description?: string;
+  type: InstanceId;
+  source: ViewId;
+  edgeSource?: ViewId;
+  direction?: "outwards" | "inwards"
+}
+
+export interface ViewPropertyId extends ViewId {
+  source: ViewId;
+  identifier: string;
+}
+
+export interface ViewReverseDirectRelationResponse {
+  connectionType: 'multi_reverse_direct_relation' | 'single_reverse_direct_relation';
+  name?: string;
+  description?: string;
+  source: ViewId;
+  through: ViewPropertyId;
+  targetsList: boolean;
+}
+
+export type ViewPropResponse =
+  | ViewContainerPropResponse
+  | ViewEdgeConnectionResponse
+  | ViewReverseDirectRelationResponse;
+
+export interface ViewResponse {
+  space: string;
+  externalId: string;
+  version: string;
+  createdTime: number;
+  lastUpdateTime: number;
+  writable: boolean;
+  queryable: boolean;
+  usedFor: 'node' | 'edge' | 'record' | 'all';
+  isGlobal: boolean;
+  properties: Record<string, ViewPropResponse>;
+  mappedContainers: ContainerId[];
+  name?: string;
+  description?: string;
+  filter?: Record<string, any>;
+  implements?: ViewId[];
 }
 
 export interface InspectionResult {
@@ -99,12 +232,30 @@ export interface TimeSeries {
 export type TimeSeriesType = 'string' | 'numeric' | 'state';
 export type AggregationMethod = 'average' | 'max' | 'maxDatapoint' | 'min' | 'minDatapoint' | 'count' | 'sum';
 
-
 export interface QueryEditorTimeSeriesState {
   aggregation: AggregationMethod;
   /** Property key (name, externalId, …) or custom label text. */
   label: string;
   labelOptions: string[];
+}
+
+export interface SearchFilters {
+  space: string;
+  externalIdPrefix: string;
+  type: TimeSeriesType | '';
+  isStep: boolean;
+  heightMin: string;
+  heightMax: string;
+  createdTimeMin: string;
+  createdTimeMax: string;
+}
+
+export interface FilterField {
+  propertyID: string;
+  propertyKey: string[];
+  label: string; // display name
+  type: SupportedFilterType;
+  options?: Array<{ label: string; value: string }>; // for enum types
 }
 
 export interface PlaceholderView {
@@ -130,4 +281,18 @@ export interface PlaceholderEquipment {
   id: string;
   name: string;
   timeSeriesIds: string[];
+}
+
+export interface SpaceStatisticsResponse {
+  space: string;
+  containers: number;
+  views: number;
+  dataModels: number;
+  edges: number;
+  nodes: number;
+  softDeletedEdges: number;
+  softDeletedNodes: number;
+  containerProperties?: number;
+  recordsOnlyContainers?: number;
+  recordsOnlyContainerProperties?: number;
 }

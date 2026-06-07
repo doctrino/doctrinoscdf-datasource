@@ -12,9 +12,7 @@ import { SelectableValue } from '@grafana/data';
 const aggregationOptions: Array<SelectableValue<AggregationMethod>> = [
   { label: 'Average', value: 'average' },
   { label: 'Max', value: 'max' },
-  { label: 'Max datapoint', value: 'maxDatapoint' },
   { label: 'Min', value: 'min' },
-  { label: 'Min datapoint', value: 'minDatapoint' },
   { label: 'Count', value: 'count' },
   { label: 'Sum', value: 'sum' },
 ];

@@ -27,6 +27,28 @@ func TestInstances_Search(t *testing.T) {
 	require.Greater(t, len(resp), 0)
 }
 
+func TestInstances_SearchWithFilter(t *testing.T) {
+	ctx := context.Background()
+	viewId := ViewId{"view", "cdf_cdm", "CogniteTimeSeries", "v1"}
+	request := InstanceSearchRequest{
+		View:  viewId,
+		Limit: 10,
+		Filter: map[string]any{
+			"and": []map[string]any{
+				{
+					"prefix": map[string]any{
+						"property": []string{"cdf_cdm", "CogniteTimeSeries/v1", "description"},
+						"value":    "Time",
+					},
+				},
+			},
+		}}
+	resp, err := testClient.Instances.Search(ctx, request)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Greater(t, len(resp), 0)
+}
+
 func TestInstances_UpsertRetrieve(t *testing.T) {
 	ctx := context.Background()
 	externalId := "grafana_plugin_upsert_instance_test"

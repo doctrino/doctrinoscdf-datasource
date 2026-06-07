@@ -33,3 +33,11 @@ func TestSpaces_UpsertRetrieve(t *testing.T) {
 	require.Greater(t, len(retrieveResponse), 0)
 	require.Equal(t, testSpace, retrieveResponse[0].Space)
 }
+
+func TestSpaces_Statistics(t *testing.T) {
+	ctx := context.Background()
+	statsResponse, err := testClient.Spaces.Statistics(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, statsResponse)
+	require.Greater(t, len(statsResponse), 0)
+}
