@@ -37,6 +37,7 @@ func newResourceHandler(d *Datasource) backend.CallResourceHandler {
 	mux.HandleFunc("/views/retrieve", resourceHandler("Views Retrieve", d.client.Views.Retrieve))
 	mux.HandleFunc("/instances/search", resourceHandler("Instances search", d.client.Instances.Search))
 	mux.HandleFunc("/instances/aggregate", resourceHandler("Instances aggregate", d.client.Instances.Aggregate))
+	mux.HandleFunc("/spaces/statistics", resourceHandlerGet("Instances aggregate", d.client.Spaces.Statistics))
 	return httpadapter.New(mux)
 }
 

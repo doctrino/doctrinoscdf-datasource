@@ -46,3 +46,25 @@ func resourceHandler[Req any, Resp any](
 	}
 }
 
+func resourceHandlerGet[Resp any](
+	name string,
+	call func(ctx context.Context) (Resp, error),
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+		defer cancel()
+		resp, err := call(ctx)
+		if err != nil {
+			log.DefaultLogger.Error(name, "error", err)
+			http.Error(w, fmt.Sprintf("%s: %v", name, err), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			log.DefaultLogger.Error(name, "error", err)
+		}
+	}
+}
