@@ -97,7 +97,7 @@ export function SearchFiltersPanel({ showFilters, onShowFiltersChange, filterSch
     <Stack direction="column" gap={0.5}>
       <InlineSwitch
         id="query-editor-show-filters"
-        label="Show filters"
+        label="Use filters"
         showLabel
         value={showFilters}
         onChange={(event) => onShowFiltersChange(event.currentTarget.checked)}
