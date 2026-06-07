@@ -29,8 +29,8 @@ function buildAPIFilter(filterValues: Record<string, any>, filterSchema: FilterF
         result[field.propertyID] = {
           range: {
             property: field.propertyKey,
-            ...(val[0] != null && { gte: val[0] }),
-            ...(val[1] != null && { lte: val[1] }),
+            ...(val[0] != null && !isNaN(Number(val[0])) && { gte: Number(val[0]) }),
+            ...(val[1] != null && !isNaN(Number(val[1])) && { lte: Number(val[1]) }),
           },
         };
         break;

@@ -61,7 +61,7 @@ function FilterFieldInput({ field, value, onChange }: {
           <Input
             type={inputType}
             placeholder="Min"
-            onChange={(e) => onChange([e.currentTarget.value, value?.[0] ?? null])}
+            onChange={(e) => onChange([e.currentTarget.value, value?.[1] ?? null])}
             value={value?.[0] ?? ''}
             width={inputWidth}
           />
@@ -69,7 +69,7 @@ function FilterFieldInput({ field, value, onChange }: {
           <Input
             type={inputType}
             placeholder="Max"
-            onChange={(e) => onChange([e.currentTarget.value, value?.[1] ?? null])}
+            onChange={(e) => onChange([value?.[0] ?? null, e.currentTarget.value])}
             value={value?.[1] ?? ''}
             width={inputWidth}
           />
