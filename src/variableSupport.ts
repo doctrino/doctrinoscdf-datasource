@@ -14,6 +14,7 @@ export class MyVariableSupport extends CustomVariableSupport<DataSource, MyVaria
   }
 
   query(request: DataQueryRequest<MyVariableQuery>): Observable<{ data: MetricFindValue[] }> {
+    // Input from user to dropdown used in Panel as a whole.
     const [query] = request.targets;
     const { range, scopedVars } = request;
 
