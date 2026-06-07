@@ -108,7 +108,7 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     if (response.length !== 1) {
       throw new Error(`Expected 1 view, got ${response.length}`);
     }
-    return Object.entries(response[0].properties)
+    const filterFields =  Object.entries(response[0].properties)
       .filter(
         (entry): entry is [string, ViewContainerPropResponse] =>
           'container' in entry[1]
@@ -126,10 +126,26 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
 
         return {
           propertyID: key,
+          propertyKey: [viewId.space, `${viewId.externalId}/${viewId.version}`, key],
           label: prop.name ?? key,
           type: prop.type.type as SupportedFilterType,
           options: options
         } as FilterField;
       });
+    return [
+      {
+        propertyID: 'space',
+        propertyKey: ['node', 'space'],
+        label: 'Space',
+        type: 'text' as SupportedFilterType,
+      },
+      {
+        propertyID: 'externalId',
+        propertyKey: ['node', 'externalId'],
+        label: 'External Id',
+        type: 'text' as SupportedFilterType,
+      },
+      ...filterFields,
+    ];
   }
 }

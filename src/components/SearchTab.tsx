@@ -8,20 +8,19 @@ import { DocumentationBlock } from './DocumentationBlock';
 import { TimeSeriesList } from './TimeSeriesList';
 import { SearchFiltersPanel } from './SearchFilterPanel';
 
-function buildAPIFilter(filterValues: Record<string, any>, filterSchema: FilterField[], viewId: ViewId): Record<string, any> | undefined {
+function buildAPIFilter(filterValues: Record<string, any>, filterSchema: FilterField[]): Record<string, any> | undefined {
   const result: Record<string, any> = {};
   for (const field of filterSchema) {
     const val = filterValues[field.propertyID];
     if (val === undefined || val === '' || val === null) {continue;}
 
-    const propertyKey = [viewId.space, `${viewId.externalId}/${viewId.version}`, field.propertyID];
     switch (field.type) {
       case 'text':
-        result[field.propertyID] = { prefix: { property: propertyKey, value: val } };
+        result[field.propertyID] = { prefix: { property: field.propertyKey, value: val } };
         break;
       case 'boolean':
       case 'enum':
-        result[field.propertyID] = { equals: { property: propertyKey, value: val } };
+        result[field.propertyID] = { equals: { property: field.propertyKey, value: val } };
         break;
       case 'float32':
       case 'float64':
@@ -29,7 +28,7 @@ function buildAPIFilter(filterValues: Record<string, any>, filterSchema: FilterF
       case 'int64':
         result[field.propertyID] = {
           range: {
-            property: propertyKey,
+            property: field.propertyKey,
             ...(val[0] != null && { gte: val[0] }),
             ...(val[1] != null && { lte: val[1] }),
           },
@@ -97,7 +96,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
     const searchTimeSeries = async () => {
       try {
         console.log("Filter values are ", filterValues);
-        const apiFilter = filterSchema && filterValues ? buildAPIFilter(filterValues, filterSchema, viewStringAsId(viewId)) :undefined
+        const apiFilter = filterSchema && filterValues ? buildAPIFilter(filterValues, filterSchema) :undefined
         console.log("Built API filter is ", apiFilter);
         const searchResults = await datasource.searchTimeSeries(viewStringAsId(viewId), searchQuery, apiFilter, 1000);
         if (cancelled) {

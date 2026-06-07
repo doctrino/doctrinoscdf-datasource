@@ -253,6 +253,7 @@ export interface SearchFilters {
 
 export interface FilterField {
   propertyID: string;
+  propertyKey: string[];
   label: string; // display name
   type: SupportedFilterType;
   options?: Array<{ label: string; value: string }>; // for enum types
