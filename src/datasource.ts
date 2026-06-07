@@ -10,6 +10,7 @@ import {
   InstanceId,
   InstanceResponse,
   SelectedTimeSeriesQuery,
+  SpaceStatisticsResponse,
   SUPPORTED_FILTER_TYPES,
   SupportedFilterType,
   TimeSeries,
@@ -35,6 +36,7 @@ export interface DeviceCodePollResponse {
 }
 
 export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, CDFLoginOptions> {
+  private instanceSpaces: Promise<string[]> | null = null;
   constructor(instanceSettings: DataSourceInstanceSettings<CDFLoginOptions>) {
     super(instanceSettings);
   }
@@ -132,12 +134,14 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
           options: options
         } as FilterField;
       });
+    const spaceOptions = await this.getInstanceSpaces()
     return [
       {
         propertyID: 'space',
         propertyKey: ['node', 'space'],
         label: 'Space',
-        type: 'text' as SupportedFilterType,
+        type: 'enum' as SupportedFilterType,
+        options: spaceOptions.map((space) => ({ label: space, value: space })),
       },
       {
         propertyID: 'externalId',
@@ -147,5 +151,14 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
       },
       ...filterFields,
     ];
+  }
+
+  async getInstanceSpaces(): Promise<string[]> {
+    if (!this.instanceSpaces) {
+      const allSpaces: SpaceStatisticsResponse[] = await this.getResource('spaces/statistics');
+      this.instanceSpaces =  Promise.resolve(
+          allSpaces.filter((space) => space.nodes + space.edges > 0).map((space) => space.space));
+    }
+    return this.instanceSpaces
   }
 }

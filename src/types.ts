@@ -239,7 +239,6 @@ export interface QueryEditorTimeSeriesState {
   labelOptions: string[];
 }
 
-
 export interface SearchFilters {
   space: string;
   externalIdPrefix: string;
@@ -284,3 +283,16 @@ export interface PlaceholderEquipment {
   timeSeriesIds: string[];
 }
 
+export interface SpaceStatisticsResponse {
+  space: string;
+  containers: number;
+  views: number;
+  dataModels: number;
+  edges: number;
+  nodes: number;
+  softDeletedEdges: number;
+  softDeletedNodes: number;
+  containerProperties?: number;
+  recordsOnlyContainers?: number;
+  recordsOnlyContainerProperties?: number;
+}
