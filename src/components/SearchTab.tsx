@@ -134,9 +134,25 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
     };
   }, [viewId, searchQuery, filterValues, filterSchema, datasource]);
 
+  const loadFilterSchema = async (newViewId: string) => {
+    setFilterSchema(null);
+    setFilterValues(undefined);
+    try {
+      const fields = await datasource.getFilterFields(viewStringAsId(newViewId));
+      setFilterSchema(fields);
+    } catch (err) {
+      console.error('Failed to load filter schema', err);
+      setFilterSchema(null);
+    }
+  };
+
+
   const onViewChange = (option: SelectableValue<string>) => {
     if (option.value) {
       setViewId(option.value);
+      if (showFilters) {
+        void loadFilterSchema(option.value);
+      }
     }
   };
 
@@ -144,7 +160,6 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
     setSearchQuery(event.target.value);
   };
 
-  // Todo: Partial instead?
   const onFilterValuesChange = (update: Partial<Record<string, any>>) => {
     setFilterValues((prev) => ({ ...prev, ...update }));
   }
@@ -156,13 +171,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
       setFilterValues(undefined);
       return;
     }
-    try {
-      const fields = await datasource.getFilterFields(viewStringAsId(viewId));
-      setFilterSchema(fields);
-    } catch (err) {
-      console.error('Failed to load filter schema', err);
-      setFilterSchema(null);
-    }
+    await loadFilterSchema(viewId);
   };
 
   return (
