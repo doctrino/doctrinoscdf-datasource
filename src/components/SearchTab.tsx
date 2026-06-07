@@ -77,6 +77,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
   const [searchResults, setSearchResults] = useState<TimeSeries[]>([]);
 
   const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [isFilterSchemaLoading, setIsFilterSchemaLoading] = useState(false);
   const [filterSchema, setFilterSchema] = useState<FilterField[] | null>(null);
   const [filterValues, setFilterValues] = useState<Record<string, any> | undefined>(undefined);
 
@@ -135,6 +136,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
   }, [viewId, searchQuery, filterValues, filterSchema, datasource]);
 
   const loadFilterSchema = async (newViewId: string) => {
+    setIsFilterSchemaLoading(true);
     setFilterSchema(null);
     setFilterValues(undefined);
     try {
@@ -143,9 +145,10 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
     } catch (err) {
       console.error('Failed to load filter schema', err);
       setFilterSchema(null);
+    } finally {
+      setIsFilterSchemaLoading(false);
     }
   };
-
 
   const onViewChange = (option: SelectableValue<string>) => {
     if (option.value) {
@@ -215,7 +218,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
           filterSchema={filterSchema ?? []}
           filterValues={filterValues ?? {}}
           onFilterValuesChange={onFilterValuesChange}
-          isLoading={false}
+          isLoading={isFilterSchemaLoading}
         />
       }
 
