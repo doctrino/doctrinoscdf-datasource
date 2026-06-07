@@ -1,4 +1,4 @@
-import { CoreApp, DataSourceInstanceSettings, ScopedVars } from '@grafana/data';
+import { CoreApp, DataSourceInstanceSettings, MetricFindValue, ScopedVars } from '@grafana/data';
 import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
 
 import {
@@ -9,6 +9,7 @@ import {
   FilterField,
   InstanceId,
   InstanceResponse,
+  EquipmentVariableQuery,
   SelectedTimeSeriesQuery,
   SpaceStatisticsResponse,
   SUPPORTED_FILTER_TYPES,
@@ -18,6 +19,7 @@ import {
   ViewId,
   ViewResponse,
 } from './types';
+import {EquipmentVariableSelection} from "./equipmentVariableSelection";
 
 export interface DeviceCodeStartResponse {
   userCode: string;
@@ -39,6 +41,8 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
   private instanceSpaces: Promise<string[]> | null = null;
   constructor(instanceSettings: DataSourceInstanceSettings<CDFLoginOptions>) {
     super(instanceSettings);
+
+    this.variables = new EquipmentVariableSelection(this);
   }
 
   getDefaultQuery(_: CoreApp): Partial<SelectedTimeSeriesQuery> {
@@ -57,6 +61,10 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     return !!query.queryText;
   }
 
+  async createEquipmentVariableDropdown(_: EquipmentVariableQuery): Promise<MetricFindValue[]> {
+    throw new Error('createEquipmentVariableDropdown is not implemented yet');
+  }
+
   async getTimeSeriesViews(): Promise<ViewId[]> {
     const response: ContainerInspectResult[] = await this.postResource('containers/inspect', {
       items: [
@@ -69,11 +77,18 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     return response[0].inspectionResults.involvedViews;
   }
 
-  async searchTimeSeries(view: ViewId, query?: string, filter?: Record<string, any>, limit?: number): Promise<TimeSeries[]> {
-    const body: Record<string, unknown> = { view: {
-      type: 'view',
-      ...view
-      } };
+  async searchTimeSeries(
+    view: ViewId,
+    query?: string,
+    filter?: Record<string, any>,
+    limit?: number
+  ): Promise<TimeSeries[]> {
+    const body: Record<string, unknown> = {
+      view: {
+        type: 'view',
+        ...view,
+      },
+    };
     if (query !== undefined && query !== null) {
       body['query'] = query;
     }
@@ -110,20 +125,20 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     if (response.length !== 1) {
       throw new Error(`Expected 1 view, got ${response.length}`);
     }
-    const filterFields =  Object.entries(response[0].properties)
+    const filterFields = Object.entries(response[0].properties)
       .filter(
         (entry): entry is [string, ViewContainerPropResponse] =>
-          'container' in entry[1]
-          && SUPPORTED_FILTER_TYPES.includes(entry[1].type.type as SupportedFilterType)
-          && (entry[1].type.type === "enum" || !(entry[1].type.list ?? false))
+          'container' in entry[1] &&
+          SUPPORTED_FILTER_TYPES.includes(entry[1].type.type as SupportedFilterType) &&
+          (entry[1].type.type === 'enum' || !(entry[1].type.list ?? false))
       )
       .map(([key, prop]) => {
         let options: Array<{ label: string; value: string }> | undefined = undefined;
-        if (prop.type.type === "enum") {
+        if (prop.type.type === 'enum') {
           const enumProp = prop.type as EnumProperty;
           options = Object.entries(enumProp.values).map(([valueId, enumVal]) => {
-            return {label: enumVal.name ?? valueId, value: valueId}
-          })
+            return { label: enumVal.name ?? valueId, value: valueId };
+          });
         }
 
         return {
@@ -131,10 +146,10 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
           propertyKey: [viewId.space, `${viewId.externalId}/${viewId.version}`, key],
           label: prop.name ?? key,
           type: prop.type.type as SupportedFilterType,
-          options: options
+          options: options,
         } as FilterField;
       });
-    const spaceOptions = await this.getInstanceSpaces()
+    const spaceOptions = await this.getInstanceSpaces();
     return [
       {
         propertyID: 'space',
@@ -156,9 +171,10 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
   async getInstanceSpaces(): Promise<string[]> {
     if (!this.instanceSpaces) {
       const allSpaces: SpaceStatisticsResponse[] = await this.getResource('spaces/statistics');
-      this.instanceSpaces =  Promise.resolve(
-          allSpaces.filter((space) => space.nodes + space.edges > 0).map((space) => space.space));
+      this.instanceSpaces = Promise.resolve(
+        allSpaces.filter((space) => space.nodes + space.edges > 0).map((space) => space.space)
+      );
     }
-    return this.instanceSpaces
+    return this.instanceSpaces;
   }
 }
