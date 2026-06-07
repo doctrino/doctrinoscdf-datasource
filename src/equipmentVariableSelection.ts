@@ -2,24 +2,21 @@ import { CustomVariableSupport, DataQueryRequest, MetricFindValue } from '@grafa
 import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { DataSource } from './datasource';
-import { MyVariableQuery } from './types';
+import { EquipmentVariableQuery } from './types';
 import { VariableQueryEditor } from './components/VariableEditor';
 
 
-export class MyVariableSupport extends CustomVariableSupport<DataSource, MyVariableQuery> {
+export class EquipmentVariableSelection extends CustomVariableSupport<DataSource, EquipmentVariableQuery> {
   editor = VariableQueryEditor;
 
   constructor(private datasource: DataSource) {
     super();
   }
 
-  query(request: DataQueryRequest<MyVariableQuery>): Observable<{ data: MetricFindValue[] }> {
+  query(request: DataQueryRequest<EquipmentVariableQuery>): Observable<{ data: MetricFindValue[] }> {
     // Input from user to dropdown used in Panel as a whole.
     const [query] = request.targets;
-    const { range, scopedVars } = request;
-
-    const result = this.datasource.metricFindQuery(query, { scopedVars, range });
+    const result = this.datasource.createEquipmentVariableDropdown(query);
     return from(result).pipe(map((data) => ({ data })));
   }
 }
-

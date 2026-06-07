@@ -76,6 +76,9 @@ export interface ContainerId {
   externalId: string;
 }
 
+export interface DataModelId {
+
+}
 export type ConstraintStatus = "current" | "pending"  | "failed"
 
 export interface ConstraintState {
@@ -297,7 +300,11 @@ export interface SpaceStatisticsResponse {
   recordsOnlyContainerProperties?: number;
 }
 
-export interface MyVariableQuery extends DataQuery {
+export interface EquipmentVariableQuery extends DataQuery {
+  dataModelId: DataModelId;
+  type: string;
+  displayProperty?: string;
+  // Todo delete
   namespace: string;
   rawQuery: string;
 }

@@ -9,7 +9,7 @@ import {
   FilterField,
   InstanceId,
   InstanceResponse,
-  MyVariableQuery,
+  EquipmentVariableQuery,
   SelectedTimeSeriesQuery,
   SpaceStatisticsResponse,
   SUPPORTED_FILTER_TYPES,
@@ -19,7 +19,7 @@ import {
   ViewId,
   ViewResponse,
 } from './types';
-import {MyVariableSupport} from "./variableSupport";
+import {EquipmentVariableSelection} from "./equipmentVariableSelection";
 
 export interface DeviceCodeStartResponse {
   userCode: string;
@@ -42,7 +42,7 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
   constructor(instanceSettings: DataSourceInstanceSettings<CDFLoginOptions>) {
     super(instanceSettings);
 
-    this.variables = new MyVariableSupport(this);
+    this.variables = new EquipmentVariableSelection(this);
   }
 
   getDefaultQuery(_: CoreApp): Partial<SelectedTimeSeriesQuery> {
@@ -61,18 +61,8 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     return !!query.queryText;
   }
 
-  async metricFindQuery(variableQuery: MyVariableQuery | string, options?: any): Promise<MetricFindValue[]> {
-    if (typeof variableQuery === 'string') {
-      const interpolated = getTemplateSrv().replace(variableQuery);
-      return [{ text: interpolated }];
-    }
-
-    // If using MyVariableQuery model:
-    const namespace = getTemplateSrv().replace(variableQuery.namespace ?? '');
-    const rawQuery = getTemplateSrv().replace(variableQuery.rawQuery ?? '');
-
-    // Placeholder: return the query itself as a variable value
-    return [{ text: `${namespace}:${rawQuery}` }];
+  async createEquipmentVariableDropdown(_: EquipmentVariableQuery): Promise<MetricFindValue[]> {
+    throw new Error('createEquipmentVariableDropdown is not implemented yet');
   }
 
   async getTimeSeriesViews(): Promise<ViewId[]> {

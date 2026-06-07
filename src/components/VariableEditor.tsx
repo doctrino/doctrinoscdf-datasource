@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { InlineField, InlineFieldRow, Input } from '@grafana/ui';
-import { MyVariableQuery } from '../types';
+import { EquipmentVariableQuery } from '../types';
 
 interface VariableQueryProps {
-  query: MyVariableQuery;
-  onChange: (query: MyVariableQuery, definition: string) => void;
+  query: EquipmentVariableQuery;
+  onChange: (query: EquipmentVariableQuery, definition: string) => void;
 }
 
 export const VariableQueryEditor = ({ query, onChange }: VariableQueryProps) => {
-  const [state, setState] = useState<MyVariableQuery>({
+  const [state, setState] = useState<EquipmentVariableQuery>({
     ...query,
     namespace: query.namespace ?? '',
     rawQuery: query.rawQuery ?? '',
