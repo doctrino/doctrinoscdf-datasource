@@ -29,11 +29,30 @@ function buildAPIFilter(filterValues: Record<string, any>, filterSchema: FilterF
         result[field.propertyID] = {
           range: {
             property: field.propertyKey,
-            ...(val[0] != null && !isNaN(Number(val[0])) && { gte: Number(val[0]) }),
-            ...(val[1] != null && !isNaN(Number(val[1])) && { lte: Number(val[1]) }),
+            ...(!isNaN(Number(val[0])) && { gte: Number(val[0]) }),
+            ...(!isNaN(Number(val[1])) && { lte: Number(val[1]) }),
           },
         };
         break;
+      case 'date':
+        result[field.propertyID] = {
+          range: {
+            property: field.propertyKey,
+            ...(!isNaN(Date.parse(val[0])) && { gte: val[0] }),
+            ...(!isNaN(Date.parse(val[1])) && { lte: val[1] }),
+          },
+        };
+        break;
+      case 'timestamp':
+        result[field.propertyID] = {
+          range: {
+            property: field.propertyKey,
+            ...(!isNaN(Date.parse(val[0])) && { gte: new Date(val[0]).toISOString() }),
+            ...(!isNaN(Date.parse(val[1])) && { lte: new Date(val[1]).toISOString() }),
+          },
+        };
+        break;
+
     }
   }
   return result ?? undefined;
