@@ -8,7 +8,11 @@ interface VariableQueryProps {
 }
 
 export const VariableQueryEditor = ({ query, onChange }: VariableQueryProps) => {
-  const [state, setState] = useState<MyVariableQuery>(query);
+  const [state, setState] = useState<MyVariableQuery>({
+    ...query,
+    namespace: query.namespace ?? '',
+    rawQuery: query.rawQuery ?? '',
+  });
 
   const saveQuery = () => {
     // Second argument is the human-readable label shown in the variable list
@@ -32,6 +36,7 @@ export const VariableQueryEditor = ({ query, onChange }: VariableQueryProps) => 
       <InlineFieldRow>
         <InlineField label="Namespace" labelWidth={20}>
           <Input
+            name="namespace"
             type="text"
             aria-label="Namespace selector"
             placeholder="Enter namespace"
@@ -44,6 +49,7 @@ export const VariableQueryEditor = ({ query, onChange }: VariableQueryProps) => 
       <InlineFieldRow>
         <InlineField label="Query" labelWidth={20}>
           <Input
+            name="rawQuery"
             type="text"
             aria-label="Query selector"
             placeholder="Enter query"
@@ -56,3 +62,4 @@ export const VariableQueryEditor = ({ query, onChange }: VariableQueryProps) => 
     </>
   );
 };
+

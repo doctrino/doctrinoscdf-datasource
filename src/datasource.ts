@@ -64,29 +64,15 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
   async metricFindQuery(variableQuery: MyVariableQuery | string, options?: any): Promise<MetricFindValue[]> {
     if (typeof variableQuery === 'string') {
       const interpolated = getTemplateSrv().replace(variableQuery);
-      const response = await this.fetchVariableValues({ rawQuery: interpolated });
-      return response.map((name) => ({ text: name }));
+      return [{ text: interpolated }];
     }
 
     // If using MyVariableQuery model:
-    const namespace = getTemplateSrv().replace(variableQuery.namespace);
-    const rawQuery = getTemplateSrv().replace(variableQuery.rawQuery);
+    const namespace = getTemplateSrv().replace(variableQuery.namespace ?? '');
+    const rawQuery = getTemplateSrv().replace(variableQuery.rawQuery ?? '');
 
-    const response = await this.fetchMetricNames(namespace, rawQuery);
-
-    // Adapt this to match your backend response
-    return response.data.map((item: any) => ({
-      text: item.name,
-      // optional: value: item.id,
-    }));
-  }
-
-  private async fetchMetricNames(namespace: string, rawQuery: string) {
-    // call backend/API and return data in a consistent shape
-  }
-
-  private async fetchVariableValues(args: { rawQuery: string }) {
-    // simplified variant if using a simple string-based query
+    // Placeholder: return the query itself as a variable value
+    return [{ text: `${namespace}:${rawQuery}` }];
   }
 
   async getTimeSeriesViews(): Promise<ViewId[]> {

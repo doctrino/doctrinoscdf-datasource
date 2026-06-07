@@ -297,7 +297,7 @@ export interface SpaceStatisticsResponse {
   recordsOnlyContainerProperties?: number;
 }
 
-export interface MyVariableQuery {
+export interface MyVariableQuery extends DataQuery {
   namespace: string;
   rawQuery: string;
 }
