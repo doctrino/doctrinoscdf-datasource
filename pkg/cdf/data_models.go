@@ -60,7 +60,10 @@ type dataModels struct {
 	apiClient *apiClient
 }
 
-func (d *dataModels) List(ctx context.Context, request DataModelListRequest) ([]DataModelResponse, error) {
+func (d *dataModels) List(ctx context.Context, request *DataModelListRequest) ([]DataModelResponse, error) {
+	if request == nil {
+		request = &DataModelListRequest{}
+	}
 	body, err := d.apiClient.doQueryParam(ctx, "/models/datamodels", request.asQueryParams())
 	if err != nil {
 		return nil, err
