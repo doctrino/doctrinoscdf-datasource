@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func TestToken_Inspect(t *testing.T) {
 	ctx := context.Background()
 	resp, err := testClient.Token.Inspect(ctx)
