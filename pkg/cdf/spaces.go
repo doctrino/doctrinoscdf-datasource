@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 type SpaceId struct {
@@ -56,6 +57,13 @@ type SpaceStatisticsResponse struct {
 type SpaceItemsStatisticsResponse struct {
 	Items []SpaceStatisticsResponse `json:"items"`
 }
+
+type SpaceStatisticsRequest struct{}
+
+func (s *SpaceStatisticsRequest) asQueryParam() url.Values {
+	return url.Values{}
+}
+
 type spaces struct {
 	apiClient *apiClient
 }
@@ -94,8 +102,11 @@ func (s *spaces) Retrieve(ctx context.Context, request SpaceRetrieveRequest) ([]
 	return resp.Items, nil
 }
 
-func (s *spaces) Statistics(ctx context.Context) ([]SpaceStatisticsResponse, error) {
-	body, err := s.apiClient.doBody(ctx, http.MethodGet, "/models/statistics/spaces", nil)
+func (s *spaces) Statistics(ctx context.Context, request *SpaceStatisticsRequest) ([]SpaceStatisticsResponse, error) {
+	if request == nil {
+		request = &SpaceStatisticsRequest{}
+	}
+	body, err := s.apiClient.doQueryParam(ctx, "/models/statistics/spaces", request.asQueryParam())
 	if err != nil {
 		return nil, err
 	}

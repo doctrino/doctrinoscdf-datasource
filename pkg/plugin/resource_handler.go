@@ -46,9 +46,9 @@ func resourceHandler[Req any, Resp any](
 	}
 }
 
-func resourceHandlerGet[Resp any](
+func resourceHandlerGet[Req any, Resp any](
 	name string,
-	call func(ctx context.Context) (Resp, error),
+	call func(ctx context.Context, req Req) (Resp, error),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -56,7 +56,26 @@ func resourceHandlerGet[Resp any](
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 		defer cancel()
-		resp, err := call(ctx)
+
+		var req Req
+		params := r.URL.Query()
+		paramMap := make(map[string]string, len(params))
+		for k, v := range params {
+			if len(v) > 0 {
+				paramMap[k] = v[0]
+			}
+		}
+		raw, err := json.Marshal(paramMap)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := json.Unmarshal(raw, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		resp, err := call(ctx, req)
 		if err != nil {
 			log.DefaultLogger.Error(name, "error", err)
 			http.Error(w, fmt.Sprintf("%s: %v", name, err), http.StatusBadGateway)

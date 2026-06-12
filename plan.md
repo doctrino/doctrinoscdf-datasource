@@ -37,3 +37,10 @@
 13. [ ] **Show the total number of timeseries in the TimeSeries Search editor**: Always show the total number of
     available timeseries in the search editor, even if there is more than 1000. 
 14. [ ] **Add documentation strings for the frontend Search and Equipment tabs**.
+
+
+-----------------------
+Single tasks
+* [ ] Add data modeling list endpoint to backend for selecting data model. Should include the full view. Required for
+   variable selection and asset/equipment-centric selection.
+* [ ] 
