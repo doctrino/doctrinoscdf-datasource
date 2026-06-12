@@ -64,13 +64,21 @@ func (d *dataModels) List(ctx context.Context, request *DataModelListRequest) ([
 	if request == nil {
 		request = &DataModelListRequest{}
 	}
-	body, err := d.apiClient.doQueryParam(ctx, "/models/datamodels", request.asQueryParams())
-	if err != nil {
-		return nil, err
+	var allItems []DataModelResponse
+	for {
+		body, err := d.apiClient.doQueryParam(ctx, "/models/datamodels", request.asQueryParams())
+		if err != nil {
+			return nil, err
+		}
+		var resp DataModelItemsResponse
+		if err := json.Unmarshal(body, &resp); err != nil {
+			return nil, fmt.Errorf("cdf /models/datamodels: %w", err)
+		}
+		allItems = append(allItems, resp.Items...)
+		if resp.NextCursor == nil {
+			break
+		}
+		request.Cursor = resp.NextCursor
 	}
-	var resp DataModelItemsResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("cdf /models/datamodels: %w", err)
-	}
-	return resp.Items, nil
+	return allItems, nil
 }
