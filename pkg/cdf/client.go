@@ -63,6 +63,7 @@ type CogniteClient struct {
 	Spaces     *spaces
 	Containers *containers
 	Views      *views
+	DataModels *dataModels
 	Instances  *instances
 	Datapoints DatapointsAPI
 }
@@ -79,6 +80,7 @@ func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *Cognite
 	spaces := &spaces{apiClient}
 	containers := &containers{apiClient}
 	views := &views{apiClient}
+	dataModels := &dataModels{apiClient}
 	instances := &instances{apiClient}
 	datapointsAPI := &datapoints{apiClient}
 
@@ -88,6 +90,7 @@ func NewCogniteClient(baseURL, project string, auth auth.TokenProvider) *Cognite
 		Spaces:     spaces,
 		Containers: containers,
 		Views:      views,
+		DataModels: dataModels,
 		Instances:  instances,
 		Datapoints: datapointsAPI,
 	}
