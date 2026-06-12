@@ -64,9 +64,10 @@ func (d *dataModels) List(ctx context.Context, request *DataModelListRequest) ([
 	if request == nil {
 		request = &DataModelListRequest{}
 	}
+	queryParams := request.asQueryParams()
 	var allItems []DataModelResponse
 	for {
-		body, err := d.apiClient.doQueryParam(ctx, "/models/datamodels", request.asQueryParams())
+		body, err := d.apiClient.doQueryParam(ctx, "/models/datamodels", queryParams)
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +79,7 @@ func (d *dataModels) List(ctx context.Context, request *DataModelListRequest) ([
 		if resp.NextCursor == nil {
 			break
 		}
-		request.Cursor = resp.NextCursor
+		queryParams.Set("cursor", *resp.NextCursor)
 	}
 	return allItems, nil
 }
