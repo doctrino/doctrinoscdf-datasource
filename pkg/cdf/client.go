@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -55,6 +56,14 @@ func (a *apiClient) doBody(ctx context.Context, method, path string, body io.Rea
 		return nil, fmt.Errorf("%s: %s", resp.Status, string(respBody))
 	}
 	return respBody, nil
+}
+
+func (a *apiClient) doQueryParam(ctx context.Context, path string, query url.Values) ([]byte, error) {
+	fullPath := path
+	if len(query) > 0 {
+		fullPath = fmt.Sprintf("%s?%s", path, query.Encode())
+	}
+	return a.doBody(ctx, http.MethodGet, fullPath, nil)
 }
 
 type CogniteClient struct {
