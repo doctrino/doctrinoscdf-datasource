@@ -41,6 +41,6 @@
 
 -----------------------
 Single tasks
-* [ ] Add data modeling list endpoint to backend for selecting data model. Should include the full view. Required for
+* [x] Add data modeling list endpoint to backend for selecting data model. Should include the full view. Required for
    variable selection and asset/equipment-centric selection.
-* [ ] 
+* [ ]  
