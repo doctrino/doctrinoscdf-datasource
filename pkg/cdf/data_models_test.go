@@ -36,7 +36,7 @@ func TestDataModels_Retrieve(t *testing.T) {
 					},
 				},
 			},
-				false,
+				tt.inlineViews,
 			)
 			require.NoError(t, err)
 			require.Equal(t, 1, len(resp), "Expected exactly one model")

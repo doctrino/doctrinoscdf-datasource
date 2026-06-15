@@ -36,6 +36,9 @@ func newResourceHandler(d *Datasource) backend.CallResourceHandler {
 	mux.HandleFunc("/containers/inspect", resourceHandler("Containers inspect", d.client.Containers.Inspect))
 	mux.HandleFunc("/views/retrieve", resourceHandler("Views Retrieve", d.client.Views.Retrieve))
 	mux.HandleFunc("/dataModels/list", resourceHandlerGet("Data Models List", d.client.DataModels.List))
+	mux.HandleFunc("/dataModels/retrieve", resourceHandler("Data Models Retrieve", func(ctx context.Context, request cdf.DataModelRetrieveRequest) ([]cdf.DataModelResponse, error) {
+		return d.client.DataModels.Retrieve(ctx, request, true)
+	}))
 	mux.HandleFunc("/instances/search", resourceHandler("Instances search", d.client.Instances.Search))
 	mux.HandleFunc("/instances/aggregate", resourceHandler("Instances aggregate", d.client.Instances.Aggregate))
 	mux.HandleFunc("/spaces/statistics", resourceHandlerGet("Instances aggregate", d.client.Spaces.Statistics))
