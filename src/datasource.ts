@@ -70,7 +70,7 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
   async getTimeSeriesDataModels(): Promise<DataModelId[]> {
     const timeSeriesViews = await this.getTimeSeriesViews();
     const allDataModels: DataModelResponse[] = await this.getResource('/dataModels/list', {
-      isGlobal: true,
+      includeGlobal: true,
     });
     const timeSeriesViewSet = new Set(timeSeriesViews.map(versionedIdAsString));
     return allDataModels.filter((model) => (model.views ?? []).some((view) => timeSeriesViewSet.has(versionedIdAsString(view)))).map((model) => ({

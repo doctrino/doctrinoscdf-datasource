@@ -59,10 +59,16 @@ func resourceHandlerGet[Req any, Resp any](
 
 		var req Req
 		params := r.URL.Query()
-		paramMap := make(map[string]string, len(params))
+		paramMap := make(map[string]json.RawMessage, len(params))
 		for k, v := range params {
 			if len(v) > 0 {
-				paramMap[k] = v[0]
+				val := v[0]
+				if val == "true" || val == "false" {
+					paramMap[k] = json.RawMessage(val)
+				} else {
+					quoted, _ := json.Marshal(val)
+					paramMap[k] = quoted
+				}
 			}
 		}
 		raw, err := json.Marshal(paramMap)
