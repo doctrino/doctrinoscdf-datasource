@@ -1,9 +1,11 @@
 package cdf
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 )
 
@@ -56,6 +58,16 @@ type DataModelItemsResponse struct {
 	NextCursor *string             `json:"nextCursor,omitempty"`
 }
 
+type DataModelId struct {
+	Space      string `json:"space"`
+	ExternalId string `json:"externalId"`
+	Version    string `json:"version"`
+}
+
+type DataModelRetrieveRequest struct {
+	Items []DataModelId `json:"items"`
+}
+
 type dataModels struct {
 	apiClient *apiClient
 }
@@ -82,4 +94,25 @@ func (d *dataModels) List(ctx context.Context, request *DataModelListRequest) ([
 		queryParams.Set("cursor", *resp.NextCursor)
 	}
 	return allItems, nil
+}
+
+func (d *dataModels) Retrieve(ctx context.Context, request DataModelRetrieveRequest, inlineViews bool) ([]DataModelResponse, error) {
+	data, err := json.Marshal(&request)
+	if err != nil {
+		return nil, err
+	}
+	query := url.Values{}
+	query.Set("inlineViews", fmt.Sprintf("%t", inlineViews))
+	fullPath := fmt.Sprintf("%s?%s", "/models/datamodels/byids", query.Encode())
+
+	body, err := d.apiClient.doBody(ctx, http.MethodPost, fullPath, bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	var resp DataModelItemsResponse
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return nil, fmt.Errorf("cdf /models/datamodels/byids: %w", err)
+	}
+	return resp.Items, nil
 }
