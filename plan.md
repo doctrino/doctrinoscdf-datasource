@@ -43,4 +43,7 @@
 Single tasks
 * [x] Add data modeling list endpoint to backend for selecting data model. Should include the full view. Required for
    variable selection and asset/equipment-centric selection.
-* [ ]  
+* [ ] Add data modeling retrieve endpoint. Needed in the query editor for finding specific data model and show all
+      views that has a connection to a time series view. Required for asset/equipment-centric selection.
+* [ ] Refactor out the filtering selection used in the SearchTab to reuse in the Variable selection to narrow
+      down the equipment that is shown and used.
