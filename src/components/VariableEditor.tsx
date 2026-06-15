@@ -1,61 +1,64 @@
-import React, { useState } from 'react';
-import { InlineField, InlineFieldRow, Input } from '@grafana/ui';
+import React, { useEffect, useState } from 'react';
+import { InlineField, InlineFieldRow, Select } from '@grafana/ui';
 import { EquipmentVariableQuery } from '../types';
+import {SelectableValue} from "@grafana/data";
+import {DataSource} from "../datasource";
+import {versionedIdAsString} from "../utils";
 
 interface VariableQueryProps {
   query: EquipmentVariableQuery;
   onChange: (query: EquipmentVariableQuery, definition: string) => void;
+  datasource: DataSource;
 }
 
-export const VariableQueryEditor = ({ query, onChange }: VariableQueryProps) => {
-  const [state, setState] = useState<EquipmentVariableQuery>({
-    ...query,
-    namespace: query.namespace ?? '',
-    rawQuery: query.rawQuery ?? '',
-  });
+export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQueryProps) => {
+  // const [variableQuery, setVariableQuery] = useState<EquipmentVariableQuery>(query);
+    // Todo: Handle Errors in loading data models/ views.
+  const [dataModelOptions, setDataModelOptions] = useState<Array<SelectableValue<string>>>([]);
+  const [dataModelId, setDataModelId] = useState<string>('');
+  
+  // Load Data Models
+  useEffect(() => {
+      let cancelled = false;
+      const loadDataModels = async () => {
+          try {
+              const dataModels = await datasource.getTimeSeriesDataModels();
+              if (cancelled) {
+                  return;
+              }
+              const options = dataModels.map((model) => ({label: versionedIdAsString(model), value: versionedIdAsString(model)}))
+              setDataModelOptions(options);
+          } catch (err) {
+              console.error(err);
+          } finally {
+                if (!cancelled) {
 
-  const saveQuery = () => {
-    // Second argument is the human-readable label shown in the variable list
-    const definition = `${state.rawQuery} (${state.namespace})`;
-    onChange(state, definition);
-  };
+                }
+          }
+      }
+      loadDataModels();
+      return () => {
+          cancelled = true;
+      }
+  }, [datasource])
 
-  const handleChange = (event: React.FormEvent<HTMLInputElement>) => {
-    const { name, value } = event.currentTarget;
+  const onDataModelChange = (option: SelectableValue<string>)=> {
+      if (option.value) {
+          setDataModelId(option.value);
+      }
+  }
 
-    const next = {
-      ...state,
-      [name]: value,
-    };
-
-    setState(next);
-  };
 
   return (
     <>
       <InlineFieldRow>
-        <InlineField label="Namespace" labelWidth={20}>
-          <Input
-            name="namespace"
-            type="text"
-            aria-label="Namespace selector"
-            placeholder="Enter namespace"
-            value={state.namespace}
-            onChange={handleChange}
-            onBlur={saveQuery}
-          />
-        </InlineField>
-      </InlineFieldRow>
-      <InlineFieldRow>
-        <InlineField label="Query" labelWidth={20}>
-          <Input
-            name="rawQuery"
-            type="text"
-            aria-label="Query selector"
-            placeholder="Enter query"
-            value={state.rawQuery}
-            onChange={handleChange}
-            onBlur={saveQuery}
+        <InlineField label="Data Model" labelWidth={20} tooltip="Select a data model to find equipment/assets. Note only data models that have time series are shown.">
+          <Select
+            id="variable-editor-data-model"
+            options={dataModelOptions}
+            value={dataModelId}
+            onChange={onDataModelChange}
+            width={28}
           />
         </InlineField>
       </InlineFieldRow>

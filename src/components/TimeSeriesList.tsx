@@ -1,8 +1,9 @@
 import { QueryEditorTimeSeriesState, TimeSeries } from '../types';
 import { Button, useStyles2 } from '@grafana/ui';
-import { getStyles, instanceIdAsString } from './utils';
+import { getStyles } from './utils';
 import React, { useMemo, useState } from 'react';
 import { ResultsPagination } from './ResultsPagination';
+import {instanceIdAsString} from "../utils";
 
 interface TimeSeriesListProps {
   series: TimeSeries[];

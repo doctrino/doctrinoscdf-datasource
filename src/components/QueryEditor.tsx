@@ -10,11 +10,11 @@ import {
   QueryEditorTimeSeriesState,
   TimeSeries,
 } from '../types';
-import { instanceIdAsString } from './utils';
 import { SeriesPanel } from './SeriesPanel';
 import { SearchTab } from './SearchTab';
 import { EquipmentTab } from './EquipmentTab';
 import { DEFAULT_AGGREGATION} from './PlaceholderValues';
+import { instanceIdAsString } from '../utils';
 
 type Props = QueryEditorProps<DataSource, SelectedTimeSeriesQuery, CDFLoginOptions>;
 

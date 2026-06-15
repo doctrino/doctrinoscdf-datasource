@@ -18,8 +18,10 @@ import {
   ViewContainerPropResponse,
   ViewId,
   ViewResponse,
+  DataModelId, DataModelResponse,
 } from './types';
 import {EquipmentVariableSelection} from "./equipmentVariableSelection";
+import { versionedIdAsString } from './utils';
 
 export interface DeviceCodeStartResponse {
   userCode: string;
@@ -63,6 +65,19 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
 
   async createEquipmentVariableDropdown(_: EquipmentVariableQuery): Promise<MetricFindValue[]> {
     throw new Error('createEquipmentVariableDropdown is not implemented yet');
+  }
+
+  async getTimeSeriesDataModels(): Promise<DataModelId[]> {
+    const timeSeriesViews = await this.getTimeSeriesViews();
+    const allDataModels: DataModelResponse[] = await this.getResource('/dataModels/list', {
+      includeGlobal: true,
+    });
+    const timeSeriesViewSet = new Set(timeSeriesViews.map(versionedIdAsString));
+    return allDataModels.filter((model) => (model.views ?? []).some((view) => timeSeriesViewSet.has(versionedIdAsString(view)))).map((model) => ({
+      space: model.space,
+      externalId: model.externalId,
+      version: model.version,
+    }));
   }
 
   async getTimeSeriesViews(): Promise<ViewId[]> {

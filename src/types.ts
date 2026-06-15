@@ -65,20 +65,34 @@ export interface CDFSecureLoginOptions {
   expiry?: string;
 }
 
-export interface ViewId {
+export interface VersionedId {
   space: string;
   externalId: string;
   version: string;
 }
+
+export interface ViewId extends VersionedId {}
 
 export interface ContainerId {
   space: string;
   externalId: string;
 }
 
-export interface DataModelId {
+export interface DataModelId extends VersionedId {}
 
+export interface DataModelResponse {
+  space: string;
+  externalId: string;
+  version: string;
+  name?: string;
+  description?: string;
+  views?: ViewId[];
+  createdTime: number;
+  lastUpdatedTime: number;
+  isGlobal: boolean
 }
+
+
 export type ConstraintStatus = "current" | "pending"  | "failed"
 
 export interface ConstraintState {
@@ -308,5 +322,3 @@ export interface EquipmentVariableQuery extends DataQuery {
   namespace: string;
   rawQuery: string;
 }
-
-
