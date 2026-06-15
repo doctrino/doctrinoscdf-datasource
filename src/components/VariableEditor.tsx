@@ -52,7 +52,7 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
   return (
     <>
       <InlineFieldRow>
-        <InlineField label="Data Model" labelWidth={20}>
+        <InlineField label="Data Model" labelWidth={20} tooltip="Select a data model to find equipment/assets. Note only data models that have time series are shown.">
           <Select
             id="variable-editor-data-model"
             options={dataModelOptions}
