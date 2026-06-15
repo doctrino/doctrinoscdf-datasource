@@ -13,6 +13,7 @@ interface VariableQueryProps {
 
 export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQueryProps) => {
   // const [variableQuery, setVariableQuery] = useState<EquipmentVariableQuery>(query);
+    // Todo: Handle Errors in loading data models/ views.
   const [dataModelOptions, setDataModelOptions] = useState<Array<SelectableValue<string>>>([]);
   const [dataModelId, setDataModelId] = useState<string>('');
   
