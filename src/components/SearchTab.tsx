@@ -2,17 +2,22 @@ import { DataSource } from '../datasource';
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { SelectableValue } from '@grafana/data';
 import { FilterField, QueryEditorTimeSeriesState, TimeSeries, ViewId } from '../types';
-import { viewIdAsString, viewStringAsId } from './utils';
 import { Alert, InlineField, Input, Select, Stack } from '@grafana/ui';
 import { DocumentationBlock } from './DocumentationBlock';
 import { TimeSeriesList } from './TimeSeriesList';
 import { SearchFiltersPanel } from './SearchFilterPanel';
+import { versionedIdAsString, versionedStringAsId } from '../utils';
 
-function buildAPIFilter(filterValues: Record<string, any>, filterSchema: FilterField[]): Record<string, any> | undefined {
+function buildAPIFilter(
+  filterValues: Record<string, any>,
+  filterSchema: FilterField[]
+): Record<string, any> | undefined {
   const result: Record<string, any> = {};
   for (const field of filterSchema) {
     const val = filterValues[field.propertyID];
-    if (val === undefined || val === '' || val === null) {continue;}
+    if (val === undefined || val === '' || val === null) {
+      continue;
+    }
 
     switch (field.type) {
       case 'text':
@@ -52,7 +57,6 @@ function buildAPIFilter(filterValues: Record<string, any>, filterSchema: FilterF
           },
         };
         break;
-
     }
   }
   return result ?? undefined;
@@ -70,7 +74,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
   const [isViewsLoading, setIsViewsLoading] = useState(true);
   const [viewsError, setViewsError] = useState<string | null>(null);
   const cogniteTimeSeries: ViewId = { space: 'cdf_cdm', externalId: 'CogniteTimeSeries', version: 'v1' };
-  const [viewId, setViewId] = useState<string>(viewIdAsString(cogniteTimeSeries));
+  const [viewId, setViewId] = useState<string>(versionedIdAsString(cogniteTimeSeries));
 
   const [searchQuery, setSearchQuery] = useState<string | undefined>('');
 
@@ -93,7 +97,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
           return;
         }
 
-        const options = views.map((view) => ({ label: viewIdAsString(view), value: viewIdAsString(view) }));
+        const options = views.map((view) => ({ label: versionedIdAsString(view), value: versionedIdAsString(view) }));
         setViewOptions(options);
       } catch (err) {
         setViewsError(err instanceof Error ? err.message : JSON.stringify(err, null, 2));
@@ -118,7 +122,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
         console.log("Filter values are ", filterValues);
         const apiFilter = filterSchema && filterValues ? buildAPIFilter(filterValues, filterSchema) :undefined
         console.log("Built API filter is ", apiFilter);
-        const searchResults = await datasource.searchTimeSeries(viewStringAsId(viewId), searchQuery, apiFilter, 1000);
+        const searchResults = await datasource.searchTimeSeries(versionedStringAsId(viewId), searchQuery, apiFilter, 1000);
         if (cancelled) {
           return;
         }
@@ -140,7 +144,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
     setFilterSchema(null);
     setFilterValues(undefined);
     try {
-      const fields = await datasource.getFilterFields(viewStringAsId(newViewId));
+      const fields = await datasource.getFilterFields(versionedStringAsId(newViewId));
       setFilterSchema(fields);
     } catch (err) {
       console.error('Failed to load filter schema', err);
