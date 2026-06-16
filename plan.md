@@ -46,3 +46,5 @@
 18. [ ] Add aggregation call to the Variable Editor such that the user can see how many assets/equipment that
       matches the filter + selected view. Give a warning if it is above 1000 (Search endpoint limit) and 
       suggest the user to narrow down the filter.
+19. [ ] Add end-to-end test for the different flows of selecting time series in the frontend, including search based and
+        asset/equipment based selection.
