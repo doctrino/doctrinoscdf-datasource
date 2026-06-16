@@ -78,47 +78,45 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
 
   return (
     <>
-        <FieldSet label="Equipment/Asset Variable Selection">
-          { isLoadingModel && (
-              <span><Spinner /> Loading data models with timeseries...</span>
-          )
-          }
-          { !isLoadingModel && loadModelError && (
-                <div>Error loading data models: {loadModelError}</div>
-              )
-          }
-          {!isLoadingModel && !loadModelError && (
-        <InlineField label="Data Model" labelWidth={20} tooltip="Select data model containing your equipment/assets. Note only data models that have time series are shown.">
-          <Select
-            id="variable-editor-data-model"
-            options={dataModelOptions}
-            value={dataModelId}
-            onChange={onDataModelChange}
-            width={28}
-          />
-        </InlineField>
+      <FieldSet label="Equipment/Asset Variable Selection">
+        {isLoadingModel && (
+          <span>
+            <Spinner /> Loading data models with timeseries...
+          </span>
         )}
-            { isLoadingView && (
-                <span><Spinner />Loading views for {dataModelId}</span>
-            )}
-            {!isLoadingView && loadViewError && (
-                <div>Error loading views for {dataModelId}: {loadViewError}</div>
-            )}
-            {
-                !isLoadingView && !loadViewError && (
-                    <InlineField label="View" labelWidth={20} tooltip="Select the view to use as basis for the variable">
-                        <Select
-                            id="variable-editor-view"
-                            options={viewOptions}
-                            value={viewId}
-                            onChange={onViewChange}
-                            width={28}
-                            />
-                    </InlineField>
-                )
-            }
-
-        </FieldSet>
+        {!isLoadingModel && loadModelError && <div>Error loading data models: {loadModelError}</div>}
+        {!isLoadingModel && !loadModelError && (
+          <InlineField
+            label="Data Model"
+            labelWidth={20}
+            tooltip="Select data model containing your equipment/assets. Note only data models that have time series are shown."
+          >
+            <Select
+              id="variable-editor-data-model"
+              options={dataModelOptions}
+              value={dataModelId}
+              onChange={onDataModelChange}
+              width={42}
+            />
+          </InlineField>
+        )}
+        {isLoadingView && (
+          <span>
+            <Spinner />
+            Loading views for {dataModelId}
+          </span>
+        )}
+        {!isLoadingView && loadViewError && (
+          <div>
+            Error loading views for {dataModelId}: {loadViewError}
+          </div>
+        )}
+        {!isLoadingView && !loadViewError && (
+          <InlineField label="View" labelWidth={20} tooltip="Select the view to use as basis for the variable">
+            <Select id="variable-editor-view" options={viewOptions} value={viewId} onChange={onViewChange} width={42} />
+          </InlineField>
+        )}
+      </FieldSet>
     </>
   );
 };
