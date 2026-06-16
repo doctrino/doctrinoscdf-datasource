@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { InlineField, InlineFieldRow, Select } from '@grafana/ui';
+import { InlineField, InlineFieldRow, Select, Spinner } from '@grafana/ui';
 import { EquipmentVariableQuery } from '../types';
 import {SelectableValue} from "@grafana/data";
 import {DataSource} from "../datasource";
@@ -13,14 +13,18 @@ interface VariableQueryProps {
 
 export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQueryProps) => {
   // const [variableQuery, setVariableQuery] = useState<EquipmentVariableQuery>(query);
-    // Todo: Handle Errors in loading data models/ views.
+  const [isLoadingModel, setIsLoadingModel] = useState(true);
+  const [loadModelError, setLoadModelError] = useState('');
   const [dataModelOptions, setDataModelOptions] = useState<Array<SelectableValue<string>>>([]);
   const [dataModelId, setDataModelId] = useState<string>('');
   
   // Load Data Models
   useEffect(() => {
       let cancelled = false;
+
       const loadDataModels = async () => {
+          setIsLoadingModel(true);
+          setLoadModelError('');
           try {
               const dataModels = await datasource.getTimeSeriesDataModels();
               if (cancelled) {
@@ -29,10 +33,10 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
               const options = dataModels.map((model) => ({label: versionedIdAsString(model), value: versionedIdAsString(model)}))
               setDataModelOptions(options);
           } catch (err) {
-              console.error(err);
+              setLoadModelError(err instanceof Error ? err.message : JSON.stringify(err, null, 2));
           } finally {
                 if (!cancelled) {
-
+                    setIsLoadingModel(false);
                 }
           }
       }
@@ -52,7 +56,16 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
   return (
     <>
       <InlineFieldRow>
-        <InlineField label="Data Model" labelWidth={20} tooltip="Select a data model to find equipment/assets. Note only data models that have time series are shown.">
+          { isLoadingModel && (
+              <span><Spinner /> Loading data models with timeseries...</span>
+          )
+          }
+          { !isLoadingModel && loadModelError && (
+                <div>Error loading data models: {loadModelError}</div>
+              )
+          }
+          {!isLoadingModel && !loadModelError && (
+        <InlineField label="Data Model" labelWidth={20} tooltip="Select data model containing your equipment/assets. Note only data models that have time series are shown.">
           <Select
             id="variable-editor-data-model"
             options={dataModelOptions}
@@ -61,6 +74,7 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
             width={28}
           />
         </InlineField>
+        )}
       </InlineFieldRow>
     </>
   );
