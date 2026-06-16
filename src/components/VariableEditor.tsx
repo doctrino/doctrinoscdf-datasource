@@ -17,7 +17,13 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
   const [loadModelError, setLoadModelError] = useState('');
   const [dataModelOptions, setDataModelOptions] = useState<Array<SelectableValue<string>>>([]);
   const [dataModelId, setDataModelId] = useState<string>('');
-  
+
+  const [isLoadingView, setIsLoadingView] = useState(false);
+  const [loadViewError, setLoadViewError] = useState('');
+  const [viewOptions, setViewOptions] = useState<Array<SelectableValue<string>>>([]);
+  const [viewId, setViewId] = useState<string>('');
+
+
   // Load Data Models
   useEffect(() => {
       let cancelled = false;
@@ -51,6 +57,8 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
           setDataModelId(option.value);
       }
   }
+
+
 
 
   return (

@@ -92,6 +92,18 @@ export interface DataModelResponse {
   isGlobal: boolean
 }
 
+export interface DataModelFullResponse {
+  space: string;
+  externalId: string;
+  version: string;
+  name?: string;
+  description?: string;
+  views?: ViewResponse[];
+  createdTime: number;
+  lastUpdatedTime: number;
+  isGlobal: boolean;
+}
+
 
 export type ConstraintStatus = "current" | "pending"  | "failed"
 
