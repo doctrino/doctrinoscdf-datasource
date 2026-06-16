@@ -37,16 +37,12 @@
 13. [ ] **Show the total number of timeseries in the TimeSeries Search editor**: Always show the total number of
     available timeseries in the search editor, even if there is more than 1000. 
 14. [ ] **Add documentation strings for the frontend Search and Equipment tabs**.
-
-
------------------------
-Single tasks
-* [x] Add data modeling list endpoint to backend for selecting data model. Should include the full view. Required for
+15. [x] Add data modeling list endpoint to backend for selecting data model. Should include the full view. Required for
    variable selection and asset/equipment-centric selection.
-* [x] Add data modeling retrieve endpoint. Needed in the query editor for finding specific data model and show all
+16. [x] Add data modeling retrieve endpoint. Needed in the query editor for finding specific data model and show all
       views that has a connection to a time series view. Required for asset/equipment-centric selection.
-* [ ] Refactor out the filtering selection used in the SearchTab to reuse in the Variable selection to narrow
+17. [ ] Refactor out the filtering selection used in the SearchTab to reuse in the Variable selection to narrow
       down the equipment that is shown and used.
-* [ ] Add aggregation call to the Variable Editor such that the user can see how many assets/equipment that
+18. [ ] Add aggregation call to the Variable Editor such that the user can see how many assets/equipment that
       matches the filter + selected view. Give a warning if it is above 1000 (Search endpoint limit) and 
       suggest the user to narrow down the filter.
