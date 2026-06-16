@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { InlineField, InlineFieldRow, Select, Spinner } from '@grafana/ui';
+import { FieldSet, InlineField, InlineFieldRow, Select, Spinner } from '@grafana/ui';
 import { EquipmentVariableQuery } from '../types';
 import {SelectableValue} from "@grafana/data";
 import {DataSource} from "../datasource";
@@ -55,7 +55,7 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
 
   return (
     <>
-      <InlineFieldRow>
+        <FieldSet label="Equipment/Asset Variable Selection">
           { isLoadingModel && (
               <span><Spinner /> Loading data models with timeseries...</span>
           )
@@ -75,7 +75,7 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
           />
         </InlineField>
         )}
-      </InlineFieldRow>
+        </FieldSet>
     </>
   );
 };
