@@ -12,7 +12,6 @@ interface VariableQueryProps {
 }
 
 export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQueryProps) => {
-  // const [variableQuery, setVariableQuery] = useState<EquipmentVariableQuery>(query);
   const [isLoadingModel, setIsLoadingModel] = useState(true);
   const [loadModelError, setLoadModelError] = useState('');
   const [dataModelOptions, setDataModelOptions] = useState<Array<SelectableValue<string>>>([]);
@@ -57,6 +56,11 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
           return
       }
       setDataModelId(option.value);
+      const updated: EquipmentVariableQuery = {
+        ...query,
+        dataModelId: versionedStringAsId(option.value),
+      };
+      onChange(updated, `DataModel: ${option.value}`);
       setIsLoadingView(true);
       try {
         const oneHopTimeSeriesViews = await datasource.getOneHopTimeSeriesViews(versionedStringAsId(option.value));
@@ -71,9 +75,15 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
   }
 
   const onViewChange = async (option: SelectableValue<string>) => {
-      if (option.value) {
-          setViewId(option.value);
+      if (!option.value) {
+          return
       }
+      setViewId(option.value);
+      const updated: EquipmentVariableQuery = {
+        ...query,
+        viewId: versionedStringAsId(option.value),
+      };
+      onChange(updated, `View: ${option.value}`);
   }
 
   return (
@@ -113,7 +123,13 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
         )}
         {!isLoadingView && !loadViewError && (
           <InlineField label="View" labelWidth={20} tooltip="Select the view to use as basis for the variable">
-            <Select id="variable-editor-view" options={viewOptions} value={viewId} onChange={onViewChange} width={42} />
+            <Select
+                id="variable-editor-view"
+                options={viewOptions}
+                value={viewId}
+                onChange={onViewChange}
+                width={42}
+            />
           </InlineField>
         )}
       </FieldSet>
