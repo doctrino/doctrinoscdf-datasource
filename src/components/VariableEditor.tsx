@@ -12,6 +12,7 @@ interface VariableQueryProps {
 }
 
 export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQueryProps) => {
+    //
   const [isLoadingModel, setIsLoadingModel] = useState(true);
   const [loadModelError, setLoadModelError] = useState('');
   const [dataModelOptions, setDataModelOptions] = useState<Array<SelectableValue<string>>>([]);

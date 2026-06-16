@@ -15,7 +15,7 @@
 6. [ ] **Create a TimeSeries selector based on asset/equipment**. Basic idea is to have the user
    select a data model, then find all views that have single direct/reverse/edge connections
    to a time series views. This will be an equipment/asset-centric way to select time series. 
-7. [ ] **Create a variable query editor**. This should fit well with the selector
+7. [x] **Create a variable query editor**. This should fit well with the selector
    based on asset/equipment. This should make it easy to create a dashboard with selected
    time series for, for example, a wind turbine. Then have the wind turbine as a variable
    that can be used to select different turbines in the dashboard. Including selecting multiple
@@ -47,3 +47,6 @@ Single tasks
       views that has a connection to a time series view. Required for asset/equipment-centric selection.
 * [ ] Refactor out the filtering selection used in the SearchTab to reuse in the Variable selection to narrow
       down the equipment that is shown and used.
+* [ ] Add aggregation call to the Variable Editor such that the user can see how many assets/equipment that
+      matches the filter + selected view. Give a warning if it is above 1000 (Search endpoint limit) and 
+      suggest the user to narrow down the filter.
