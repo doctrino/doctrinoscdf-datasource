@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FieldSet, InlineField, InlineFieldRow, Select, Spinner } from '@grafana/ui';
+import { FieldSet, InlineField, Select, Spinner } from '@grafana/ui';
 import { EquipmentVariableQuery } from '../types';
 import {SelectableValue} from "@grafana/data";
 import {DataSource} from "../datasource";
