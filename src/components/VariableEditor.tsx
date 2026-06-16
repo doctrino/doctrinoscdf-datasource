@@ -3,7 +3,7 @@ import { FieldSet, InlineField, Select, Spinner } from '@grafana/ui';
 import { EquipmentVariableQuery } from '../types';
 import {SelectableValue} from "@grafana/data";
 import {DataSource} from "../datasource";
-import {versionedIdAsString} from "../utils";
+import { versionedIdAsString, versionedStringAsId } from '../utils';
 
 interface VariableQueryProps {
   query: EquipmentVariableQuery;
@@ -18,7 +18,7 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
   const [dataModelOptions, setDataModelOptions] = useState<Array<SelectableValue<string>>>([]);
   const [dataModelId, setDataModelId] = useState<string>('');
 
-  const [isLoadingView, setIsLoadingView] = useState(false);
+  const [isLoadingView, setIsLoadingView] = useState(true);
   const [loadViewError, setLoadViewError] = useState('');
   const [viewOptions, setViewOptions] = useState<Array<SelectableValue<string>>>([]);
   const [viewId, setViewId] = useState<string>('');
@@ -52,14 +52,29 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
       }
   }, [datasource])
 
-  const onDataModelChange = (option: SelectableValue<string>)=> {
-      if (option.value) {
-          setDataModelId(option.value);
+  const onDataModelChange = async  (option: SelectableValue<string>)=> {
+      if (!option.value) {
+          return
+      }
+      setDataModelId(option.value);
+      setIsLoadingView(true);
+      try {
+        const oneHopTimeSeriesViews = await datasource.getOneHopTimeSeriesViews(versionedStringAsId(option.value));
+        const viewOptions = oneHopTimeSeriesViews.map((view) =>( {label: versionedIdAsString(view), value: versionedIdAsString(view) }))
+        setViewOptions(viewOptions);
+       } catch (err) {
+          setLoadViewError(err instanceof Error ? err.message : JSON.stringify(err, null, 2));
+
+      } finally {
+          setIsLoadingView(false);
       }
   }
 
-
-
+  const onViewChange = async (option: SelectableValue<string>) => {
+      if (option.value) {
+          setViewId(option.value);
+      }
+  }
 
   return (
     <>
@@ -83,6 +98,26 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
           />
         </InlineField>
         )}
+            { isLoadingView && (
+                <span><Spinner />Loading views for {dataModelId}</span>
+            )}
+            {!isLoadingView && loadViewError && (
+                <div>Error loading views for {dataModelId}: {loadViewError}</div>
+            )}
+            {
+                !isLoadingView && !loadViewError && (
+                    <InlineField label="View" labelWidth={20} tooltip="Select the view to use as basis for the variable">
+                        <Select
+                            id="variable-editor-view"
+                            options={viewOptions}
+                            value={viewId}
+                            onChange={onViewChange}
+                            width={28}
+                            />
+                    </InlineField>
+                )
+            }
+
         </FieldSet>
     </>
   );
