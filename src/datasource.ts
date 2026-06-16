@@ -23,7 +23,7 @@ import {
   DataModelFullResponse, ViewPropResponse,
 } from './types';
 import {EquipmentVariableSelection} from "./equipmentVariableSelection";
-import { versionedIdAsString } from './utils';
+import { instanceIdAsString, versionedIdAsString } from './utils';
 import {COGNITE_TIMESERIES} from "./const";
 
 export interface DeviceCodeStartResponse {
@@ -66,8 +66,12 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     return !!query.queryText;
   }
 
-  async createEquipmentVariableDropdown(_: EquipmentVariableQuery): Promise<MetricFindValue[]> {
-    throw new Error('createEquipmentVariableDropdown is not implemented yet');
+  async createEquipmentVariableDropdown(query: EquipmentVariableQuery): Promise<MetricFindValue[]> {
+    const result = await this.searchTimeSeries(query.viewId);
+    return result.map((item) => ({
+      text: item.name ?? instanceIdAsString(item.space, item.externalId),
+      value: instanceIdAsString(item.space, item.externalId),
+    }));
   }
 
   async getTimeSeriesDataModels(): Promise<DataModelId[]> {

@@ -56,11 +56,6 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
           return
       }
       setDataModelId(option.value);
-      const updated: EquipmentVariableQuery = {
-        ...query,
-        dataModelId: versionedStringAsId(option.value),
-      };
-      onChange(updated, `DataModel: ${option.value}`);
       setIsLoadingView(true);
       try {
         const oneHopTimeSeriesViews = await datasource.getOneHopTimeSeriesViews(versionedStringAsId(option.value));

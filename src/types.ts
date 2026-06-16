@@ -327,7 +327,6 @@ export interface SpaceStatisticsResponse {
 }
 
 export interface EquipmentVariableQuery extends DataQuery {
-  dataModelId: DataModelId;
   viewId: ViewId;
   // Todo delete
   namespace: string;
