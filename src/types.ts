@@ -10,12 +10,10 @@ export interface SelectedTimeSeriesItem {
 
 export interface SelectedTimeSeriesQuery extends DataQuery {
   queryText?: string;
-  constant: number;
   items: SelectedTimeSeriesItem[];
 }
 
 export const DEFAULT_QUERY: Partial<SelectedTimeSeriesQuery> = {
-  constant: 6.5,
   items: [],
 };
 

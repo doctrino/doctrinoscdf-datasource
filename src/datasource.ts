@@ -130,6 +130,10 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
       });
   }
 
+  // async getTimeSeriesConnections(viewId: ViewId): Promise<> {
+  //
+  // }
+
   async searchTimeSeries(
     view: ViewId,
     query?: string,
