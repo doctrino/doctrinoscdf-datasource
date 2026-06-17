@@ -18,10 +18,13 @@ import {
   ViewContainerPropResponse,
   ViewId,
   ViewResponse,
-  DataModelId, DataModelResponse,
+  DataModelId,
+  DataModelResponse,
+  DataModelFullResponse, ViewPropResponse,
 } from './types';
 import {EquipmentVariableSelection} from "./equipmentVariableSelection";
-import { versionedIdAsString } from './utils';
+import { instanceIdAsString, versionedIdAsString } from './utils';
+import {COGNITE_TIMESERIES} from "./const";
 
 export interface DeviceCodeStartResponse {
   userCode: string;
@@ -63,8 +66,12 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     return !!query.queryText;
   }
 
-  async createEquipmentVariableDropdown(_: EquipmentVariableQuery): Promise<MetricFindValue[]> {
-    throw new Error('createEquipmentVariableDropdown is not implemented yet');
+  async createEquipmentVariableDropdown(query: EquipmentVariableQuery): Promise<MetricFindValue[]> {
+    const result = await this.searchTimeSeries(query.viewId);
+    return result.map((item) => ({
+      text: item.name ?? instanceIdAsString(item.space, item.externalId),
+      value: instanceIdAsString(item.space, item.externalId),
+    }));
   }
 
   async getTimeSeriesDataModels(): Promise<DataModelId[]> {
@@ -82,14 +89,37 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
 
   async getTimeSeriesViews(): Promise<ViewId[]> {
     const response: ContainerInspectResult[] = await this.postResource('containers/inspect', {
-      items: [
-        {
-          space: 'cdf_cdm',
-          externalId: 'CogniteTimeSeries',
-        },
-      ],
+      items: [COGNITE_TIMESERIES],
     });
     return response[0].inspectionResults.involvedViews;
+  }
+
+  async getOneHopTimeSeriesViews(dataModelId: DataModelId): Promise<ViewId[]> {
+    // First look up data model in backend
+    // then, find all timeseries views by checking mapped containers.
+    // finally, find all views that have an connection to a timeseries with one hop.
+    const response: DataModelFullResponse[] = await this.postResource("/dataModels/retrieve", {
+      "items": [dataModelId],
+    })
+    if (response.length !== 1) {
+        throw new Error(`Expected exactly one data model for ${versionedIdAsString(dataModelId)}, got ${response.length}`);
+    }
+    const dataModel = response[0];
+    const timeSeriesViews = new Set(
+      (dataModel.views ?? [])
+        .filter((view) =>
+          view.mappedContainers.some(
+            (container) => container.space === COGNITE_TIMESERIES.space && container.externalId === COGNITE_TIMESERIES.externalId
+          )
+        )
+        .map((view) => versionedIdAsString({ space: view.space, externalId: view.externalId, version: view.version }))
+    );
+    return (dataModel.views ?? []).filter((view) => hasConnection(view.properties, timeSeriesViews)).map((view) => {
+      return {space: view.space,
+      externalId: view.externalId,
+      version: view.version,}
+    })
+
   }
 
   async searchTimeSeries(
@@ -192,4 +222,26 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     }
     return this.instanceSpaces;
   }
+}
+
+function hasConnection(properties: Record<string, ViewPropResponse>, targetViews: Set<string>): boolean {
+  for (const property of Object.values(properties)) {
+    if ('source' in property && property.source !== undefined) {
+      // Edge and reverse connection
+      const sourceKey = versionedIdAsString({
+        space: property.source.space,
+        externalId: property.source.externalId,
+        version: property.source.version,
+      });
+      if (targetViews.has(sourceKey)) {
+        return true;
+      }
+    } else if ("type" in property && "source" in property.type && property.type.source !== undefined) {
+      const sourceKey = versionedIdAsString({space: property.type.source.space, externalId: property.type.source.externalId, version: property.type.source.version})
+      if (targetViews.has(sourceKey)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }

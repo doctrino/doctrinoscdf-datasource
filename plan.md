@@ -15,7 +15,7 @@
 6. [ ] **Create a TimeSeries selector based on asset/equipment**. Basic idea is to have the user
    select a data model, then find all views that have single direct/reverse/edge connections
    to a time series views. This will be an equipment/asset-centric way to select time series. 
-7. [ ] **Create a variable query editor**. This should fit well with the selector
+7. [x] **Create a variable query editor**. This should fit well with the selector
    based on asset/equipment. This should make it easy to create a dashboard with selected
    time series for, for example, a wind turbine. Then have the wind turbine as a variable
    that can be used to select different turbines in the dashboard. Including selecting multiple
@@ -37,13 +37,14 @@
 13. [ ] **Show the total number of timeseries in the TimeSeries Search editor**: Always show the total number of
     available timeseries in the search editor, even if there is more than 1000. 
 14. [ ] **Add documentation strings for the frontend Search and Equipment tabs**.
-
-
------------------------
-Single tasks
-* [x] Add data modeling list endpoint to backend for selecting data model. Should include the full view. Required for
+15. [x] Add data modeling list endpoint to backend for selecting data model. Should include the full view. Required for
    variable selection and asset/equipment-centric selection.
-* [x] Add data modeling retrieve endpoint. Needed in the query editor for finding specific data model and show all
+16. [x] Add data modeling retrieve endpoint. Needed in the query editor for finding specific data model and show all
       views that has a connection to a time series view. Required for asset/equipment-centric selection.
-* [ ] Refactor out the filtering selection used in the SearchTab to reuse in the Variable selection to narrow
+17. [ ] Refactor out the filtering selection used in the SearchTab to reuse in the Variable selection to narrow
       down the equipment that is shown and used.
+18. [ ] Add aggregation call to the Variable Editor such that the user can see how many assets/equipment that
+      matches the filter + selected view. Give a warning if it is above 1000 (Search endpoint limit) and 
+      suggest the user to narrow down the filter.
+19. [ ] Add end-to-end test for the different flows of selecting time series in the frontend, including search based and
+        asset/equipment based selection.
