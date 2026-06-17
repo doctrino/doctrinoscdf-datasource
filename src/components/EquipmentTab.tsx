@@ -6,13 +6,15 @@ import { PlaceholderTimeSeries, QueryEditorTimeSeriesState, TimeSeries } from '.
 import { DocumentationBlock } from './DocumentationBlock';
 import { TimeSeriesList } from './TimeSeriesList';
 import { timeSeriesById } from './SeriesPanel';
+import { DataSource } from '../datasource';
 
 interface EquipmentTabProps {
+  datasource: DataSource;
   seriesState: Map<string, QueryEditorTimeSeriesState>;
   onAddSeries: (timeseries: TimeSeries) => void;
 }
 
-export function EquipmentTab({ seriesState, onAddSeries }: EquipmentTabProps) {
+export function EquipmentTab({ datasource, seriesState, onAddSeries }: EquipmentTabProps) {
   const [equipmentId, setEquipmentId] = useState(PLACEHOLDER_EQUIPMENT[0].id);
 
   const equipmentOptions: Array<SelectableValue<string>> = PLACEHOLDER_EQUIPMENT.map((item) => ({

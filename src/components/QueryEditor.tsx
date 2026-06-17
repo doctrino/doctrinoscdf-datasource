@@ -110,7 +110,7 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
       {activeTab === 'search' ? (
         <SearchTab datasource={datasource} seriesState={seriesState} onAddSeries={onAddSeries} />
       ) : (
-        <EquipmentTab seriesState={seriesState} onAddSeries={onAddSeries} />
+        <EquipmentTab datasource={datasource} seriesState={seriesState} onAddSeries={onAddSeries} />
       )}
 
       <SeriesPanel
