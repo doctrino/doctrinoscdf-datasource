@@ -29,6 +29,7 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
       return;
       }
     setSelectedVariable(option.value);
+    console.log(option.value);
   }
 
   const equipmentOptions: Array<SelectableValue<string>> = PLACEHOLDER_EQUIPMENT.map((item) => ({
