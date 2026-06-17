@@ -9,7 +9,6 @@ export interface SelectedTimeSeriesItem {
 }
 
 export interface SelectedTimeSeriesQuery extends DataQuery {
-  queryText?: string;
   items: SelectedTimeSeriesItem[];
 }
 

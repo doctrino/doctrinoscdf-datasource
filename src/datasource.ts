@@ -1,4 +1,4 @@
-import { CoreApp, DataSourceInstanceSettings, MetricFindValue, QueryVariableModel, ScopedVars } from '@grafana/data';
+import { CoreApp, DataSourceInstanceSettings, MetricFindValue, QueryVariableModel } from '@grafana/data';
 import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
 
 import {
@@ -54,16 +54,10 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     return DEFAULT_QUERY;
   }
 
-  applyTemplateVariables(query: SelectedTimeSeriesQuery, scopedVars: ScopedVars) {
-    return {
-      ...query,
-      queryText: getTemplateSrv().replace(query.queryText, scopedVars),
-    };
-  }
 
   filterQuery(query: SelectedTimeSeriesQuery): boolean {
     // if no query has been provided, prevent the query from being executed
-    return !!query.queryText;
+    return true;
   }
 
   listQueryVariables(): QueryVariableModel[] {
