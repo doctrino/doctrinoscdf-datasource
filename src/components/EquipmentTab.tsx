@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { SelectableValue } from '@grafana/data';
+import { SelectableValue, QueryVariableModel } from '@grafana/data';
 import { InlineField, Select, Stack } from '@grafana/ui';
 import { PLACEHOLDER_EQUIPMENT } from './PlaceholderValues';
 import { PlaceholderTimeSeries, QueryEditorTimeSeriesState, TimeSeries } from '../types';
@@ -15,7 +15,21 @@ interface EquipmentTabProps {
 }
 
 export function EquipmentTab({ datasource, seriesState, onAddSeries }: EquipmentTabProps) {
+  const [selectedVariable, setSelectedVariable] = useState<QueryVariableModel | null>(null);
+
   const [equipmentId, setEquipmentId] = useState(PLACEHOLDER_EQUIPMENT[0].id);
+
+  const variableOptions = datasource.listQueryVariables().map((variable) => ({
+    label: variable.name,
+    value: variable,
+  }));
+
+  const onVariableChange = (option: SelectableValue<QueryVariableModel>)=> {
+    if (!option.value) {
+      return;
+      }
+    setSelectedVariable(option.value);
+  }
 
   const equipmentOptions: Array<SelectableValue<string>> = PLACEHOLDER_EQUIPMENT.map((item) => ({
     label: item.name,
@@ -44,7 +58,18 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
   return (
     <Stack direction="column" gap={1}>
       <DocumentationBlock testId="query-editor-equipment-documentation" />
-
+      <InlineField label="Query Variable" labelWidth={15}>
+        <Select
+          id="query-editor-equipment-variable"
+          value={selectedVariable? {label: selectedVariable.name, value: selectedVariable} : null}
+          options={variableOptions}
+          onChange={onVariableChange}
+          width={32}
+        />
+      </InlineField>
+      {selectedVariable && (
+        <div><span>{JSON.stringify(selectedVariable)}</span></div>
+      )}
       <InlineField label="Equipment" labelWidth={12}>
         <Select
           inputId="query-editor-equipment"

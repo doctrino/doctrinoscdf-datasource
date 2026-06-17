@@ -1,4 +1,4 @@
-import { CoreApp, DataSourceInstanceSettings, MetricFindValue, ScopedVars } from '@grafana/data';
+import { CoreApp, DataSourceInstanceSettings, MetricFindValue, QueryVariableModel, ScopedVars } from '@grafana/data';
 import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
 
 import {
@@ -66,6 +66,10 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     return !!query.queryText;
   }
 
+  listQueryVariables(): QueryVariableModel[] {
+    return getTemplateSrv().getVariables().filter((variable) => variable.type === "query")
+  }
+
   async createEquipmentVariableDropdown(query: EquipmentVariableQuery): Promise<MetricFindValue[]> {
     const result = await this.searchTimeSeries(query.viewId);
     return result.map((item) => ({
@@ -80,11 +84,13 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
       includeGlobal: true,
     });
     const timeSeriesViewSet = new Set(timeSeriesViews.map(versionedIdAsString));
-    return allDataModels.filter((model) => (model.views ?? []).some((view) => timeSeriesViewSet.has(versionedIdAsString(view)))).map((model) => ({
-      space: model.space,
-      externalId: model.externalId,
-      version: model.version,
-    }));
+    return allDataModels
+      .filter((model) => (model.views ?? []).some((view) => timeSeriesViewSet.has(versionedIdAsString(view))))
+      .map((model) => ({
+        space: model.space,
+        externalId: model.externalId,
+        version: model.version,
+      }));
   }
 
   async getTimeSeriesViews(): Promise<ViewId[]> {
@@ -98,28 +104,30 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     // First look up data model in backend
     // then, find all timeseries views by checking mapped containers.
     // finally, find all views that have an connection to a timeseries with one hop.
-    const response: DataModelFullResponse[] = await this.postResource("/dataModels/retrieve", {
-      "items": [dataModelId],
-    })
+    const response: DataModelFullResponse[] = await this.postResource('/dataModels/retrieve', {
+      items: [dataModelId],
+    });
     if (response.length !== 1) {
-        throw new Error(`Expected exactly one data model for ${versionedIdAsString(dataModelId)}, got ${response.length}`);
+      throw new Error(
+        `Expected exactly one data model for ${versionedIdAsString(dataModelId)}, got ${response.length}`
+      );
     }
     const dataModel = response[0];
     const timeSeriesViews = new Set(
       (dataModel.views ?? [])
         .filter((view) =>
           view.mappedContainers.some(
-            (container) => container.space === COGNITE_TIMESERIES.space && container.externalId === COGNITE_TIMESERIES.externalId
+            (container) =>
+              container.space === COGNITE_TIMESERIES.space && container.externalId === COGNITE_TIMESERIES.externalId
           )
         )
         .map((view) => versionedIdAsString({ space: view.space, externalId: view.externalId, version: view.version }))
     );
-    return (dataModel.views ?? []).filter((view) => hasConnection(view.properties, timeSeriesViews)).map((view) => {
-      return {space: view.space,
-      externalId: view.externalId,
-      version: view.version,}
-    })
-
+    return (dataModel.views ?? [])
+      .filter((view) => hasConnection(view.properties, timeSeriesViews))
+      .map((view) => {
+        return { space: view.space, externalId: view.externalId, version: view.version };
+      });
   }
 
   async searchTimeSeries(
