@@ -5,7 +5,6 @@ import { AggregationMethod,  QueryEditorTimeSeriesState } from '../types';
 import {
   DEFAULT_SERIES_CONFIG,
   FILTER_LABEL_WIDTH,
-   PLACEHOLDER_TIME_SERIES,
 } from './PlaceholderValues';
 import { SelectableValue } from '@grafana/data';
 
@@ -16,8 +15,6 @@ const aggregationOptions: Array<SelectableValue<AggregationMethod>> = [
   { label: 'Count', value: 'count' },
   { label: 'Sum', value: 'sum' },
 ];
-
-export const timeSeriesById = new Map(PLACEHOLDER_TIME_SERIES.map((series) => [series.externalId, series]));
 
 
 interface SeriesPanelProps {

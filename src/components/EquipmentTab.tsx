@@ -33,28 +33,6 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
     setSelectedViewId(versionedIdAsString(query.viewId));
   }
 
-  // const equipmentOptions: Array<SelectableValue<string>> = PLACEHOLDER_EQUIPMENT.map((item) => ({
-  //   label: item.name,
-  //   value: item.id,
-  // }));
-  //
-  // const equipmentTimeSeries = useMemo(() => {
-  //   const equipment = PLACEHOLDER_EQUIPMENT.find((item) => item.id === equipmentId);
-  //   if (!equipment) {
-  //     return [];
-  //   }
-  //
-  //   return equipment.timeSeriesIds
-  //     .map((id) => timeSeriesById.get(id))
-  //     .filter((series): series is PlaceholderTimeSeries => series !== undefined);
-  // }, [equipmentId]);
-  //
-  // const onEquipmentChange = (option: SelectableValue<string>) => {
-  //   if (option.value) {
-  //     setEquipmentId(option.value);
-  //   }
-  // };
-
   return (
     <Stack direction="column" gap={1}>
       <DocumentationBlock testId="query-editor-equipment-documentation" />
@@ -74,24 +52,6 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
         <Input width={42} readOnly value={selectedViewId ?? 'Given by selected variable'} />
       </InlineField>
 
-      {/*<InlineField label="Equipment" labelWidth={12}>*/}
-      {/*  <Select*/}
-      {/*    inputId="query-editor-equipment"*/}
-      {/*    options={equipmentOptions}*/}
-      {/*    value={equipmentId}*/}
-      {/*    onChange={onEquipmentChange}*/}
-      {/*    width={32}*/}
-      {/*  />*/}
-      {/*</InlineField>*/}
-
-      {/*<TimeSeriesList*/}
-      {/*  series={equipmentTimeSeries}*/}
-      {/*  seriesState={seriesState}*/}
-      {/*  onAddSeries={onAddSeries}*/}
-      {/*  emptyMessage="No time series linked to this equipment."*/}
-      {/*  contextLabel={`for ${selectedEquipment?.name ?? 'equipment'}`}*/}
-      {/*  listResetKey={equipmentId}*/}
-      {/*/>*/}
     </Stack>
   );
 }
