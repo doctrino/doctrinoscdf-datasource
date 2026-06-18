@@ -81,7 +81,7 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
     setViewId(option.value);
     const updated: EquipmentVariableQuery = {
       ...query,
-      viewId: option.value,
+      viewIdWithTimeSeries: option.value,
     };
     onChange(updated, `View: ${JSON.stringify(option.value)}`);
   };

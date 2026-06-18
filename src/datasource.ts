@@ -68,7 +68,7 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
   }
 
   async createEquipmentVariableDropdown(query: EquipmentVariableQuery): Promise<MetricFindValue[]> {
-    const result = await this.searchTimeSeries(query.viewId);
+    const result = await this.searchTimeSeries(query.viewIdWithTimeSeries);
     return result.map((item) => ({
       text: item.name ?? instanceIdAsString(item.space, item.externalId),
       value: instanceIdAsString(item.space, item.externalId),

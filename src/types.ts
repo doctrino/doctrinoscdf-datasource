@@ -325,11 +325,12 @@ export interface SpaceStatisticsResponse {
   recordsOnlyContainerProperties?: number;
 }
 
-export interface EquipmentVariableQuery extends DataQuery {
-  dataModelId: DataModelId;
-  viewId: ViewId;
+export interface ViewIdWithTimeSeries extends ViewId {
+  timeseriesProperties: Record<string, ViewPropResponse>;
 }
 
-export interface ViewIdWithTimeSeries extends ViewId {
-  timeseriesProperties: Record<string, ViewPropResponse>
+export interface EquipmentVariableQuery extends DataQuery {
+  dataModelId: DataModelId;
+  viewIdWithTimeSeries: ViewIdWithTimeSeries;
 }
+

@@ -30,7 +30,7 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
     setSelectedVariable(option.value);
     const query = option.value.query as EquipmentVariableQuery;
     setSelectedDataModelId(versionedIdAsString(query.dataModelId));
-    setSelectedViewId(versionedIdAsString(query.viewId));
+    setSelectedViewId(versionedIdAsString(query.viewIdWithTimeSeries));
   }
 
   return (
