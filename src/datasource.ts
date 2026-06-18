@@ -20,7 +20,9 @@ import {
   ViewResponse,
   DataModelId,
   DataModelResponse,
-  DataModelFullResponse, ViewPropResponse,
+  DataModelFullResponse,
+  ViewPropResponse,
+  ViewIdWithTimeSeries,
 } from './types';
 import {EquipmentVariableSelection} from "./equipmentVariableSelection";
 import { instanceIdAsString, versionedIdAsString } from './utils';
@@ -54,14 +56,15 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     return DEFAULT_QUERY;
   }
 
-
   filterQuery(query: SelectedTimeSeriesQuery): boolean {
     // if no query has been provided, prevent the query from being executed
     return true;
   }
 
   listQueryVariables(): QueryVariableModel[] {
-    return getTemplateSrv().getVariables().filter((variable) => variable.type === "query")
+    return getTemplateSrv()
+      .getVariables()
+      .filter((variable) => variable.type === 'query');
   }
 
   async createEquipmentVariableDropdown(query: EquipmentVariableQuery): Promise<MetricFindValue[]> {
@@ -94,10 +97,7 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     return response[0].inspectionResults.involvedViews;
   }
 
-  async getOneHopTimeSeriesViews(dataModelId: DataModelId): Promise<ViewId[]> {
-    // First look up data model in backend
-    // then, find all timeseries views by checking mapped containers.
-    // finally, find all views that have an connection to a timeseries with one hop.
+  async getOneHopTimeSeriesViews(dataModelId: DataModelId): Promise<ViewIdWithTimeSeries[]> {
     const response: DataModelFullResponse[] = await this.postResource('/dataModels/retrieve', {
       items: [dataModelId],
     });
@@ -118,15 +118,10 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
         .map((view) => versionedIdAsString({ space: view.space, externalId: view.externalId, version: view.version }))
     );
     return (dataModel.views ?? [])
-      .filter((view) => hasConnection(view.properties, timeSeriesViews))
       .map((view) => {
-        return { space: view.space, externalId: view.externalId, version: view.version };
-      });
+        return { space: view.space, externalId: view.externalId, version: view.version, timeseriesProperties: filterConnections(view.properties, timeSeriesViews)
+      }}).filter((view) => view.timeseriesProperties && Object.keys(view.timeseriesProperties).length > 0);
   }
-
-  // async getTimeSeriesConnections(viewId: ViewId): Promise<> {
-  //
-  // }
 
   async searchTimeSeries(
     view: ViewId,
@@ -230,8 +225,9 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
   }
 }
 
-function hasConnection(properties: Record<string, ViewPropResponse>, targetViews: Set<string>): boolean {
-  for (const property of Object.values(properties)) {
+function filterConnections(properties: Record<string, ViewPropResponse>, targetViews: Set<string>): Record<string, ViewPropResponse> {
+  const result: Record<string, ViewPropResponse> = {}
+  for (const [propertyID, property] of Object.entries(properties)) {
     if ('source' in property && property.source !== undefined) {
       // Edge and reverse connection
       const sourceKey = versionedIdAsString({
@@ -240,14 +236,15 @@ function hasConnection(properties: Record<string, ViewPropResponse>, targetViews
         version: property.source.version,
       });
       if (targetViews.has(sourceKey)) {
-        return true;
+        result[propertyID] = property;
       }
     } else if ("type" in property && "source" in property.type && property.type.source !== undefined) {
       const sourceKey = versionedIdAsString({space: property.type.source.space, externalId: property.type.source.externalId, version: property.type.source.version})
+      // Direct relation connection
       if (targetViews.has(sourceKey)) {
-        return true;
+        result[propertyID] = property
       }
     }
   }
-  return false;
+  return result;
 }

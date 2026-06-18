@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FieldSet, InlineField, Select, Spinner } from '@grafana/ui';
-import { DataModelId, EquipmentVariableQuery, ViewId } from '../types';
+import { DataModelId, EquipmentVariableQuery, ViewIdWithTimeSeries } from '../types';
 import {SelectableValue} from "@grafana/data";
 import {DataSource} from "../datasource";
 import { versionedIdAsString} from '../utils';
@@ -20,8 +20,8 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
 
   const [isLoadingView, setIsLoadingView] = useState(true);
   const [loadViewError, setLoadViewError] = useState('');
-  const [viewOptions, setViewOptions] = useState<Array<SelectableValue<ViewId>>>([]);
-  const [viewId, setViewId] = useState<ViewId | null>(null);
+  const [viewOptions, setViewOptions] = useState<Array<SelectableValue<ViewIdWithTimeSeries>>>([]);
+  const [viewId, setViewId] = useState<ViewIdWithTimeSeries | null>(null);
 
 
   // Load Data Models
@@ -74,17 +74,17 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
       }
   }
 
-  const onViewChange = async (option: SelectableValue<ViewId>) => {
-      if (!option.value) {
-          return
-      }
-      setViewId(option.value);
-      const updated: EquipmentVariableQuery = {
-        ...query,
-        viewId: option.value,
-      };
-      onChange(updated, `View: ${JSON.stringify(option.value)}`);
-  }
+  const onViewChange = async (option: SelectableValue<ViewIdWithTimeSeries>) => {
+    if (!option.value) {
+      return;
+    }
+    setViewId(option.value);
+    const updated: EquipmentVariableQuery = {
+      ...query,
+      viewId: option.value,
+    };
+    onChange(updated, `View: ${JSON.stringify(option.value)}`);
+  };
 
   return (
     <>
