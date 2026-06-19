@@ -1,15 +1,19 @@
 import { DataSourceJsonData } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
 
-export interface SelectedTimeSeriesItem {
+export interface StaticTimeSeries {
   space: string;
   externalId: string;
   aggregation: string;
   label: string;
 }
 
+export interface DynamicTimeSeries {
+
+}
+
 export interface SelectedTimeSeriesQuery extends DataQuery {
-  items: SelectedTimeSeriesItem[];
+  items: StaticTimeSeries[];
 }
 
 export const DEFAULT_QUERY: Partial<SelectedTimeSeriesQuery> = {

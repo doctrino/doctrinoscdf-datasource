@@ -5,7 +5,7 @@ import { DataSource } from '../datasource';
 import {
   AggregationMethod,
   CDFLoginOptions,
-  SelectedTimeSeriesItem,
+  StaticTimeSeries,
   SelectedTimeSeriesQuery,
   QueryEditorTimeSeriesState,
   TimeSeries,
@@ -57,7 +57,7 @@ export function QueryEditor({ datasource, query, onChange, onRunQuery }: Props) 
     }
     const labelOptions = [timeseries.externalId, ...Object.values(timeseries.stringProperties)].sort();
     setLabelOptionsCache((prev) => new Map(prev).set(identifier, labelOptions));
-    const nextItems: SelectedTimeSeriesItem[] = [
+    const nextItems: StaticTimeSeries[] = [
       ...(query.items ?? []),
       {
         space: timeseries.space,
