@@ -284,14 +284,12 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
     setTsProperties(query.viewIdWithTimeSeries.timeseriesProperties ?? {});
   };
 
-  const connectionProperty = useMemo<ViewConnectionFrontEnd[]>(() => {
-    return Object.entries(tsProperties)
-      .map(([id, prop]) => asFrontEndConnection(id, prop))
-      .filter((p): p is ViewConnectionFrontEnd => p !== null);
-  }, [tsProperties]);
+  const connectionProperty = Object.entries(tsProperties)
+  .map(([id, prop]) => asFrontEndConnection(id, prop))
+  .filter((p): p is ViewConnectionFrontEnd => p !== null);
 
-  const singles = connectionProperty.filter((p) => !p.isList);
-  const lists = connectionProperty.filter((p) => p.isList);
+  const singleConnections = connectionProperty.filter((p) => !p.isList);
+  const listConnections = connectionProperty.filter((p) => p.isList);
 
   return (
     <Stack direction="column" gap={1}>
@@ -316,10 +314,10 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
         <p>No time-series connections exposed by this view.</p>
       )}
 
-      {singles.length > 0 && (
+      {singleConnections.length > 0 && (
         <>
           <h5>Single connections</h5>
-          {singles.map((p) => (
+          {singleConnections.map((p) => (
             <SinglePropertyRow
               key={p.propertyId}
               property={p}
@@ -330,10 +328,10 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
         </>
       )}
 
-      {lists.length > 0 && (
+      {listConnections.length > 0 && (
         <>
           <h5>List connections</h5>
-          {lists.map((p) => (
+          {listConnections.map((p) => (
             <ListPropertyRow
               key={p.propertyId}
               property={p}
