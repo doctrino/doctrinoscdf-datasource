@@ -30,8 +30,8 @@ type ConnectionKind =
   | 'edge_connection'
   | 'reverse_direct_relation';
 
-interface ClassifiedProperty {
-  propertyId: string; // key in timeseriesProperties
+interface ViewConnectionFrontEnd {
+  propertyId: string;
   displayName: string;
   description?: string;
   isList: boolean;
@@ -51,7 +51,7 @@ function isReverseProp(p: ViewPropResponse): p is ViewReverseDirectRelationRespo
   return c === 'multi_reverse_direct_relation' || c === 'single_reverse_direct_relation';
 }
 
-function classifyProperty(propertyId: string, prop: ViewPropResponse): ClassifiedProperty | null {
+function asFrontEndConnection(propertyId: string, prop: ViewPropResponse): ViewConnectionFrontEnd | null {
   if (isContainerProp(prop)) {
     // Only direct-relation container props can connect to time series
     if (prop.type.type !== 'direct') {
@@ -132,7 +132,7 @@ function placeholderListTimeSeries(propertyId: string, groupBy: string, category
 // ---------- Sub-components ----------
 
 interface SinglePropertyRowProps {
-  property: ClassifiedProperty;
+  property: ViewConnectionFrontEnd;
   seriesState: Map<string, QueryEditorTimeSeriesState>;
   onAddSeries: (ts: TimeSeries) => void;
 }
@@ -162,7 +162,7 @@ function SinglePropertyRow({ property, seriesState, onAddSeries }: SinglePropert
 }
 
 interface ListPropertyRowProps {
-  property: ClassifiedProperty;
+  property: ViewConnectionFrontEnd;
   seriesState: Map<string, QueryEditorTimeSeriesState>;
   onAddSeries: (ts: TimeSeries) => void;
 }
@@ -284,14 +284,14 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
     setTsProperties(query.viewIdWithTimeSeries.timeseriesProperties ?? {});
   };
 
-  const classified = useMemo<ClassifiedProperty[]>(() => {
+  const connectionProperty = useMemo<ViewConnectionFrontEnd[]>(() => {
     return Object.entries(tsProperties)
-      .map(([id, prop]) => classifyProperty(id, prop))
-      .filter((p): p is ClassifiedProperty => p !== null);
+      .map(([id, prop]) => asFrontEndConnection(id, prop))
+      .filter((p): p is ViewConnectionFrontEnd => p !== null);
   }, [tsProperties]);
 
-  const singles = classified.filter((p) => !p.isList);
-  const lists = classified.filter((p) => p.isList);
+  const singles = connectionProperty.filter((p) => !p.isList);
+  const lists = connectionProperty.filter((p) => p.isList);
 
   return (
     <Stack direction="column" gap={1}>
@@ -312,7 +312,7 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
         <Input width={42} readOnly value={selectedViewId ?? 'Given by selected variable'} />
       </InlineField>
 
-      {selectedVariable && classified.length === 0 && (
+      {selectedVariable && connectionProperty.length === 0 && (
         <p>No time-series connections exposed by this view.</p>
       )}
 
