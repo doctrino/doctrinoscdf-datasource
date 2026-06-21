@@ -9,7 +9,7 @@ export interface StaticTimeSeries {
 }
 
 export interface DynamicTimeSeries {
-
+  
 }
 
 export interface SelectedTimeSeriesQuery extends DataQuery {

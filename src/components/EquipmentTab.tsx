@@ -266,6 +266,7 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
   const [selectedVariable, setSelectedVariable] = useState<QueryVariableModel | null>(null);
   const [selectedDataModelId, setSelectedDataModelId] = useState<string | null>(null);
   const [selectedViewId, setSelectedViewId] = useState<string | null>(null);
+  const [currentVariableValue, setCurrentVariableValue] = useState<string | null>(null);
   const [tsProperties, setTsProperties] = useState<Record<string, ViewPropResponse>>({});
 
   const variableOptions = datasource.listQueryVariables().map((variable) => ({
@@ -282,6 +283,12 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
     setSelectedDataModelId(versionedIdAsString(query.dataModelId));
     setSelectedViewId(versionedIdAsString(query.viewIdWithTimeSeries));
     setTsProperties(query.viewIdWithTimeSeries.timeseriesProperties ?? {});
+    const currentValue = option.value.current.value
+    if (typeof currentValue === "string"){
+      setCurrentVariableValue(currentValue);
+    } else if (Array.isArray(currentValue)) {
+      setCurrentVariableValue(currentValue.join(" "));
+    }
   };
 
   const connectionProperty = Object.entries(tsProperties)
@@ -308,6 +315,9 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
       </InlineField>
       <InlineField label="View" labelWidth={16} tooltip={'Selected view for query variable'}>
         <Input width={42} readOnly value={selectedViewId ?? 'Given by selected variable'} />
+      </InlineField>
+      <InlineField>
+        <Input width={32} readOnly value={currentVariableValue ?? 'Given by selected variable'} />
       </InlineField>
 
       {selectedVariable && connectionProperty.length === 0 && (
