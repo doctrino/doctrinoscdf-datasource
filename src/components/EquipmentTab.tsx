@@ -102,7 +102,7 @@ function readCurrentValue(variableName: string): string | null {
   if (!variable) {
     return null;
   }
-  const currentValue = (variable as QueryVariableModel).current?.value;
+  const currentValue = (variable as QueryVariableModel).current?.text;
   if (typeof currentValue === 'string') {
     return currentValue;
   }
@@ -327,12 +327,11 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
       </InlineField>
 
       {selectedVariable && connectionProperty.length === 0 && (
-        <p>No time-series connections exposed by this view.</p>
+        <p>The view {selectedViewId} does not have any time series properties</p>
       )}
       {selectedVariable && connectionProperty.length >0 && (
-        <h5>TimeSeries properties for {selectedViewId}</h5>
+        <h5>Time series properties for {selectedViewId}</h5>
       )}
-
 
       {singleConnections.length > 0 && (
         <>
