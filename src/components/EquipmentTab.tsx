@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { GrafanaTheme2, QueryVariableModel, SelectableValue } from '@grafana/data';
+import { GrafanaTheme2, QueryVariableModel, SelectableValue, BusEventBase } from '@grafana/data';
 import { Button, Card, IconButton, InlineField, Input, Select, Stack, Tag, useStyles2 } from '@grafana/ui';
 import { css } from '@emotion/css';
-import { BusEventBase } from '@grafana/data';
-import { getAppEvents, getTemplateSrv, RefreshEvent } from '@grafana/runtime';
+import { getAppEvents, getTemplateSrv} from '@grafana/runtime';
 import {
   EquipmentVariableQuery,
   QueryEditorTimeSeriesState,
@@ -24,7 +23,6 @@ import { TimeSeriesList } from './TimeSeriesList';
 class VariablesChangedEvent extends BusEventBase {
   static type = 'variables-changed';
 }
-
 
 interface EquipmentTabProps {
   datasource: DataSource;
