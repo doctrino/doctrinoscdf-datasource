@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { GrafanaTheme2, QueryVariableModel, SelectableValue } from '@grafana/data';
 import { Button, Card, IconButton, InlineField, Input, Select, Stack, Tag, useStyles2 } from '@grafana/ui';
 import { css } from '@emotion/css';
+import { BusEventBase } from '@grafana/data';
+import { getAppEvents, getTemplateSrv, RefreshEvent } from '@grafana/runtime';
 import {
   EquipmentVariableQuery,
   QueryEditorTimeSeriesState,
@@ -17,13 +19,18 @@ import { DataSource } from '../datasource';
 import { instanceIdAsString, versionedIdAsString } from '../utils';
 import { TimeSeriesList } from './TimeSeriesList';
 
+// Grafana publishes this on the app event bus whenever a dashboard variable changes.
+// Not exported from @grafana/runtime in your version, so we declare a local stand-in.
+class VariablesChangedEvent extends BusEventBase {
+  static type = 'variables-changed';
+}
+
+
 interface EquipmentTabProps {
   datasource: DataSource;
   seriesState: Map<string, QueryEditorTimeSeriesState>;
   onAddSeries: (timeseries: TimeSeries) => void;
 }
-
-// ---------- Classification helpers ----------
 
 type ConnectionKind =
   | 'direct_relation'
@@ -89,6 +96,43 @@ function asFrontEndConnection(propertyId: string, prop: ViewPropResponse): ViewC
   }
   return null;
 }
+
+function readCurrentValue(variableName: string): string | null {
+  const variable =  getTemplateSrv()
+    .getVariables()
+    .find((v) => v.name === variableName);
+  if (!variable) {
+    return null;
+  }
+  const currentValue = (variable as QueryVariableModel).current?.value;
+  if (typeof currentValue === 'string') {
+    return currentValue;
+  }
+  if (Array.isArray(currentValue)) {
+    return currentValue.join(' ');
+  }
+  return null
+}
+
+function useVariableCurrentValue(variableName: string | null): string  | null {
+  const [value, setValue] = useState<string | null>(() => variableName ? readCurrentValue(variableName) : null);
+
+  useEffect(() => {
+    const updateValue = () => {
+      setValue(variableName ? readCurrentValue(variableName) : null);
+      if (!variableName) {
+        return;
+      }
+      const sub = getAppEvents().subscribe(VariablesChangedEvent, () => {
+        setValue(readCurrentValue(variableName));
+      });
+      return () => sub.unsubscribe();
+    }
+    return updateValue();
+  }, [variableName])
+  return value
+}
+
 
 // ---------- Placeholder data generators (replace with backend calls later) ----------
 
@@ -266,7 +310,9 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
   const [selectedVariable, setSelectedVariable] = useState<QueryVariableModel | null>(null);
   const [selectedDataModelId, setSelectedDataModelId] = useState<string | null>(null);
   const [selectedViewId, setSelectedViewId] = useState<string | null>(null);
-  const [currentVariableValue, setCurrentVariableValue] = useState<string | null>(null);
+
+  const currentVariableValue = useVariableCurrentValue(selectedVariable?.name ?? null);
+
   const [tsProperties, setTsProperties] = useState<Record<string, ViewPropResponse>>({});
 
   const variableOptions = datasource.listQueryVariables().map((variable) => ({
@@ -283,12 +329,6 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
     setSelectedDataModelId(versionedIdAsString(query.dataModelId));
     setSelectedViewId(versionedIdAsString(query.viewIdWithTimeSeries));
     setTsProperties(query.viewIdWithTimeSeries.timeseriesProperties ?? {});
-    const currentValue = option.value.current.value
-    if (typeof currentValue === "string"){
-      setCurrentVariableValue(currentValue);
-    } else if (Array.isArray(currentValue)) {
-      setCurrentVariableValue(currentValue.join(" "));
-    }
   };
 
   const connectionProperty = Object.entries(tsProperties)
