@@ -16,7 +16,7 @@ import {
 import { DocumentationBlock } from './DocumentationBlock';
 import { DataSource } from '../datasource';
 import { instanceIdAsString, versionedIdAsString } from '../utils';
-import { TimeSeriesList } from './TimeSeriesList';
+
 
 // Grafana publishes this on the app event bus whenever a dashboard variable changes.
 // Not exported from @grafana/runtime in your version, so we declare a local stand-in.
@@ -154,23 +154,6 @@ function placeholderGroupingOptions(propertyId: string): Array<SelectableValue<s
   ].map((o) => ({ ...o, description: `Group "${propertyId}" by ${o.label}` }));
 }
 
-/** Unique category values once a grouping property is chosen. */
-function placeholderCategories(propertyId: string, groupBy: string): string[] {
-  return ['power', 'flow', 'voltage', 'temperature'].map((c) => `${c}__${groupBy}`);
-}
-
-/** Time series belonging to one (groupBy, category) bucket. */
-function placeholderListTimeSeries(propertyId: string, groupBy: string, category: string): TimeSeries[] {
-  return Array.from({ length: 6 }).map((_, i) => ({
-    space: 'placeholder_space',
-    externalId: `${propertyId}_${category}_${i}`,
-    name: `${propertyId} · ${category} #${i + 1}`,
-    description: `Placeholder ts grouped by ${groupBy}=${category}`,
-    unit: 'unit',
-    stringProperties: { [groupBy]: category },
-  }));
-}
-
 // ---------- Sub-components ----------
 
 interface SinglePropertyRowProps {
@@ -212,27 +195,15 @@ interface ListPropertyRowProps {
 function ListPropertyRow({ property, seriesState, onAddSeries }: ListPropertyRowProps) {
   const styles = useStyles2(getStyles);
   const [expanded, setExpanded] = useState(false);
-  const [groupBy, setGroupBy] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [identifier, setIdentifier] = useState<string | null>(null);
 
-  const groupingOptions = useMemo(() => placeholderGroupingOptions(property.propertyId), [property.propertyId]);
-  const categories = useMemo(
-    () => (groupBy ? placeholderCategories(property.propertyId, groupBy) : []),
-    [property.propertyId, groupBy]
-  );
-  const categorySeries = useMemo(
-    () =>
-      groupBy && activeCategory
-        ? placeholderListTimeSeries(property.propertyId, groupBy, activeCategory)
-        : [],
-    [property.propertyId, groupBy, activeCategory]
-  );
+  const identifierOptions = useMemo(() => placeholderGroupingOptions(property.propertyId), [property.propertyId]);
 
   return (
     <Card>
       <Card.Heading>
         <div className={styles.listHeader}>
-          <span>{property.displayName}</span>
+          <span>{property.displayName} ({kindLabel(property.kind)})</span>
           <IconButton
             name={expanded ? 'angle-up' : 'angle-down'}
             aria-label={expanded ? 'Collapse' : 'Expand'}
@@ -240,50 +211,47 @@ function ListPropertyRow({ property, seriesState, onAddSeries }: ListPropertyRow
           />
         </div>
       </Card.Heading>
-      <Card.Meta>{['List', kindLabel(property.kind)]}</Card.Meta>
-      {property.description && <Card.Description>{property.description}</Card.Description>}
+      <Card.Meta>{property.description}</Card.Meta>
 
       {expanded && (
         <Card.Description>
           <Stack direction="column" gap={1}>
-            <InlineField label="Group by" labelWidth={14} tooltip="Pick a property to categorize the time series">
+            <InlineField label="Identify by" labelWidth={14} tooltip="Pick a property to identify by">
               <Select
-                options={groupingOptions}
-                value={groupBy}
+                options={identifierOptions}
+                value={identifier}
                 onChange={(opt) => {
-                  setGroupBy(opt.value ?? null);
-                  setActiveCategory(null);
+                  setIdentifier(opt.value ?? null);
                 }}
                 placeholder="Select property…"
                 width={32}
               />
             </InlineField>
 
-            {groupBy && (
-              <div className={styles.categoryRow}>
-                {categories.map((cat) => (
-                  <Button
-                    key={cat}
-                    size="sm"
-                    variant={activeCategory === cat ? 'primary' : 'secondary'}
-                    onClick={() => setActiveCategory(cat)}
-                  >
-                    {cat}
-                  </Button>
-                ))}
-              </div>
-            )}
+            {/*{identifier && (*/}
+            {/*  <div className={styles.categoryRow}>*/}
+            {/*    {categories.map((cat) => (*/}
+            {/*      <Button*/}
+            {/*        key={cat}*/}
+            {/*        size="sm"*/}
+            {/*        onClick={() => setActiveCategory(cat)}*/}
+            {/*      >*/}
+            {/*        {cat}*/}
+            {/*      </Button>*/}
+            {/*    ))}*/}
+            {/*  </div>*/}
+            {/*)}*/}
 
-            {groupBy && activeCategory && (
-              <TimeSeriesList
-                series={categorySeries}
-                seriesState={seriesState}
-                onAddSeries={onAddSeries}
-                emptyMessage={`No time series in ${activeCategory}.`}
-                contextLabel={`in ${property.displayName} · ${activeCategory}`}
-                listResetKey={`${property.propertyId}|${groupBy}|${activeCategory}`}
-              />
-            )}
+            {/*{identifier && activeCategory && (*/}
+            {/*  <TimeSeriesList*/}
+            {/*    series={categorySeries}*/}
+            {/*    seriesState={seriesState}*/}
+            {/*    onAddSeries={onAddSeries}*/}
+            {/*    emptyMessage={`No time series in ${activeCategory}.`}*/}
+            {/*    contextLabel={`in ${property.displayName} · ${activeCategory}`}*/}
+            {/*    listResetKey={`${property.propertyId}|${identifier}|${activeCategory}`}*/}
+            {/*  />*/}
+            {/*)}*/}
           </Stack>
         </Card.Description>
       )}
