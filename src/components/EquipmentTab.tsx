@@ -204,6 +204,8 @@ function ListPropertyRow({ property, viewId, datasource, seriesState, onAddSerie
       setIsIdentifierLoading(true);
       setIdentifierError(null);
       try {
+        // Todo: Include direct relation properties as well. These can be used to point to a classification
+        //     for example.
         const textProperties = await datasource.getTextProperties(viewId);
         if (cancelled) {
           return;
