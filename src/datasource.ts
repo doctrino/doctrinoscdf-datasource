@@ -171,6 +171,20 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     });
   }
 
+  async getTextProperties(viewId: ViewId): Promise<Array<[string, ViewContainerPropResponse]>> {
+    const response: ViewResponse[] = await this.postResource('views/retrieve', { items: [viewId] });
+    if (response.length !== 1) {
+      throw new Error(`Expected 1 view, got ${response.length}`);
+    }
+    return Object.entries(response[0].properties)
+      .filter(
+        (entry): entry is [string, ViewContainerPropResponse] =>
+          'container' in entry[1] &&
+          entry[1].type.type === 'text' &&
+          !(entry[1].type.list ?? false)
+      )
+  }
+
   async getFilterFields(viewId: ViewId): Promise<FilterField[]> {
     const response: ViewResponse[] = await this.postResource('views/retrieve', { items: [viewId] });
     if (response.length !== 1) {

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { GrafanaTheme2, QueryVariableModel, SelectableValue, BusEventBase } from '@grafana/data';
-import { Button, Card, IconButton, InlineField, Input, Select, Stack, Tag, useStyles2 } from '@grafana/ui';
+import { Alert, Button, Card, IconButton, InlineField, Input, Select, Stack, Tag, useStyles2 } from '@grafana/ui';
 import { css } from '@emotion/css';
 import { getAppEvents, getTemplateSrv} from '@grafana/runtime';
 import {
@@ -9,13 +9,14 @@ import {
   TimeSeries,
   ViewContainerPropResponse,
   ViewDirectNodeRelation,
-  ViewEdgeConnectionResponse,
+  ViewEdgeConnectionResponse, ViewId,
   ViewPropResponse,
   ViewReverseDirectRelationResponse,
 } from '../types';
 import { DocumentationBlock } from './DocumentationBlock';
 import { DataSource } from '../datasource';
-import { instanceIdAsString, versionedIdAsString } from '../utils';
+import { instanceIdAsString, versionedIdAsString, versionedStringAsId } from '../utils';
+
 
 
 // Grafana publishes this on the app event bus whenever a dashboard variable changes.
@@ -41,6 +42,7 @@ interface ViewConnectionFrontEnd {
   description?: string;
   isList: boolean;
   kind: ConnectionKind;
+  targetView: ViewId;
   raw: ViewPropResponse;
 }
 
@@ -70,6 +72,7 @@ function asFrontEndConnection(propertyId: string, prop: ViewPropResponse): ViewC
       isList: direct.list === true,
       kind: 'direct_relation',
       raw: prop,
+      targetView: prop.type.source as ViewId,
     };
   }
   if (isEdgeProp(prop)) {
@@ -80,6 +83,7 @@ function asFrontEndConnection(propertyId: string, prop: ViewPropResponse): ViewC
       isList: prop.connectionType === 'multi_edge_connection',
       kind: 'edge_connection',
       raw: prop,
+      targetView: prop.source,
     };
   }
   if (isReverseProp(prop)) {
@@ -90,6 +94,7 @@ function asFrontEndConnection(propertyId: string, prop: ViewPropResponse): ViewC
       isList: prop.connectionType === 'multi_reverse_direct_relation',
       kind: 'reverse_direct_relation',
       raw: prop,
+      targetView: prop.source,
     };
   }
   return null;
@@ -145,15 +150,6 @@ function placeholderSingleTimeSeries(propertyId: string): TimeSeries {
   };
 }
 
-/** Property keys (on the connected TimeSeries) that the user can group by. */
-function placeholderGroupingOptions(propertyId: string): Array<SelectableValue<string>> {
-  return [
-    { label: 'measurement type', value: 'measurement_type' },
-    { label: 'location', value: 'location' },
-    { label: 'source system', value: 'source_system' },
-  ].map((o) => ({ ...o, description: `Group "${propertyId}" by ${o.label}` }));
-}
-
 // ---------- Sub-components ----------
 
 interface SinglePropertyRowProps {
@@ -188,20 +184,57 @@ function SinglePropertyRow({ property, seriesState, onAddSeries }: SinglePropert
 
 interface ListPropertyRowProps {
   property: ViewConnectionFrontEnd;
+  viewId: ViewId;
+  datasource: DataSource;
   seriesState: Map<string, QueryEditorTimeSeriesState>;
   onAddSeries: (ts: TimeSeries) => void;
 }
 
-function ListPropertyRow({ property, seriesState, onAddSeries }: ListPropertyRowProps) {
+function ListPropertyRow({ property, viewId, datasource, seriesState, onAddSeries }: ListPropertyRowProps) {
   const styles = useStyles2(getStyles);
   const [expanded, setExpanded] = useState(false);
+  const [identifierOptions, setIdentifierOptions] = useState<Array<SelectableValue<string>>>([]);
+  const [isIdentifierLoading, setIsIdentifierLoading] = useState(false);
+  const [identifierError, setIdentifierError] = useState<string | null>(null);
   const [identifier, setIdentifier] = useState<string | null>(null);
 
-  const identifierOptions = useMemo(() => placeholderGroupingOptions(property.propertyId), [property.propertyId]);
+  useEffect(() => {
+    let cancelled = false;
+    const loadOptions = async () => {
+      setIsIdentifierLoading(true);
+      setIdentifierError(null);
+      try {
+        const textProperties = await datasource.getTextProperties(viewId);
+        if (cancelled) {
+          return;
+        }
+        const options = textProperties.map(([key, prop], _) => ({
+          label: prop.name ?? key,
+          value: key
+        }))
+        setIdentifierOptions(options);
+        if (identifier === null && options.some(o => o.value === "name")){
+          setIdentifier("name");
+        }
+      } catch (err) {
+        setIdentifierError(err instanceof Error ? err.message : JSON.stringify(err, null, 2));
+      } finally {
+        if (!cancelled) {
+          setIsIdentifierLoading(false);
+        }
+      }
+    }
+    void loadOptions();
+    return () => {
+      cancelled = true;
+    };
+  },[datasource, identifier, viewId])
+
 
   return (
     <Card>
       <Card.Heading>
+
         <div className={styles.listHeader}>
           <span>{property.displayName} ({kindLabel(property.kind)})</span>
           <IconButton
@@ -216,6 +249,12 @@ function ListPropertyRow({ property, seriesState, onAddSeries }: ListPropertyRow
       {expanded && (
         <Card.Description>
           <Stack direction="column" gap={1}>
+            {identifierError && (
+              <Alert severity="error" title="Failed to load view">
+                {identifierError}
+              </Alert>
+            )}
+            {!identifierError && (
             <InlineField label="Identify by" labelWidth={14} tooltip="Pick a property to identify by">
               <Select
                 options={identifierOptions}
@@ -223,10 +262,12 @@ function ListPropertyRow({ property, seriesState, onAddSeries }: ListPropertyRow
                 onChange={(opt) => {
                   setIdentifier(opt.value ?? null);
                 }}
+                isLoading={isIdentifierLoading}
                 placeholder="Select property…"
                 width={32}
               />
             </InlineField>
+            )}
 
             {/*{identifier && (*/}
             {/*  <div className={styles.categoryRow}>*/}
@@ -322,26 +363,19 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
       <InlineField label="View" labelWidth={22} tooltip={'Selected view for query variable'}>
         <Input width={42} readOnly value={selectedViewId ?? 'Given by selected variable'} />
       </InlineField>
-      <InlineField label="Currently selected" labelWidth={22} tooltip='Change by editing the variable on the dashboard'>
+      <InlineField label="Currently selected" labelWidth={22} tooltip="Change by editing the variable on the dashboard">
         <Input width={32} readOnly value={currentVariableValue ?? 'Given by selected variable'} />
       </InlineField>
 
       {selectedVariable && connectionProperty.length === 0 && (
         <p>The view {selectedViewId} does not have any time series properties</p>
       )}
-      {selectedVariable && connectionProperty.length >0 && (
-        <h5>Time series properties for {selectedViewId}</h5>
-      )}
+      {selectedVariable && connectionProperty.length > 0 && <h5>Time series properties for {selectedViewId}</h5>}
 
       {singleConnections.length > 0 && (
         <>
           {singleConnections.map((p) => (
-            <SinglePropertyRow
-              key={p.propertyId}
-              property={p}
-              seriesState={seriesState}
-              onAddSeries={onAddSeries}
-            />
+            <SinglePropertyRow key={p.propertyId} property={p} seriesState={seriesState} onAddSeries={onAddSeries} />
           ))}
         </>
       )}
@@ -352,6 +386,8 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
             <ListPropertyRow
               key={p.propertyId}
               property={p}
+              viewId={p.targetView}
+              datasource={datasource}
               seriesState={seriesState}
               onAddSeries={onAddSeries}
             />
