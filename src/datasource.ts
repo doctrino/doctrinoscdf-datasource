@@ -77,7 +77,7 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
     return result.map((item) => ({
       text: item.name ?? instanceIdAsString(item.space, item.externalId),
       value: instanceIdAsString(item.space, item.externalId),
-    }));
+    })).sort((a, b) => a.text.localeCompare(b.text));
   }
 
   async getTimeSeriesDataModels(): Promise<DataModelId[]> {
