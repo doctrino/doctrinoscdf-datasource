@@ -348,23 +348,26 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
           width={32}
         />
       </InlineField>
-      <InlineField label="Data Model" labelWidth={16} tooltip={'Selected data model for query variable'}>
+      <InlineField label="Data Model" labelWidth={22} tooltip={'Selected data model for query variable'}>
         <Input width={42} readOnly value={selectedDataModelId ?? 'Given by selected variable'} />
       </InlineField>
-      <InlineField label="View" labelWidth={16} tooltip={'Selected view for query variable'}>
+      <InlineField label="View" labelWidth={22} tooltip={'Selected view for query variable'}>
         <Input width={42} readOnly value={selectedViewId ?? 'Given by selected variable'} />
       </InlineField>
-      <InlineField>
+      <InlineField label="Currently selected" labelWidth={22} tooltip='Change by editing the variable on the dashboard'>
         <Input width={32} readOnly value={currentVariableValue ?? 'Given by selected variable'} />
       </InlineField>
 
       {selectedVariable && connectionProperty.length === 0 && (
         <p>No time-series connections exposed by this view.</p>
       )}
+      {selectedVariable && connectionProperty.length >0 && (
+        <h5>TimeSeries properties for {selectedViewId}</h5>
+      )}
+
 
       {singleConnections.length > 0 && (
         <>
-          <h5>Single connections</h5>
           {singleConnections.map((p) => (
             <SinglePropertyRow
               key={p.propertyId}
@@ -378,7 +381,6 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
 
       {listConnections.length > 0 && (
         <>
-          <h5>List connections</h5>
           {listConnections.map((p) => (
             <ListPropertyRow
               key={p.propertyId}
