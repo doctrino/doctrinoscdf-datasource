@@ -15,7 +15,7 @@ import {
 } from '../types';
 import { DocumentationBlock } from './DocumentationBlock';
 import { DataSource } from '../datasource';
-import { instanceIdAsString, versionedIdAsString, versionedStringAsId } from '../utils';
+import { instanceIdAsString, versionedIdAsString } from '../utils';
 
 
 
