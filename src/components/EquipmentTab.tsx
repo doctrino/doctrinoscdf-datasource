@@ -4,7 +4,7 @@ import { Alert, Button, Card, IconButton, InlineField, Input, Select, Stack, Tag
 import { css } from '@emotion/css';
 import { getAppEvents, getTemplateSrv} from '@grafana/runtime';
 import {
-  EquipmentVariableQuery,
+  EquipmentVariableQuery, InstanceId,
   QueryEditorTimeSeriesState,
   TimeSeries,
   ViewContainerPropResponse,
@@ -15,7 +15,8 @@ import {
 } from '../types';
 import { DocumentationBlock } from './DocumentationBlock';
 import { DataSource } from '../datasource';
-import { instanceIdAsString, versionedIdAsString } from '../utils';
+import { instanceIdAsString, instanceStringAsId, versionedIdAsString } from '../utils';
+import { TimeSeriesList } from './TimeSeriesList';
 
 
 
@@ -100,25 +101,34 @@ function asFrontEndConnection(propertyId: string, prop: ViewPropResponse): ViewC
   return null;
 }
 
-function readCurrentValue(variableName: string): string | null {
-  const variable =  getTemplateSrv()
+
+
+function readCurrentValue(variableName: string): QueryVariableModel | null {
+  const result = getTemplateSrv()
     .getVariables()
     .find((v) => v.name === variableName);
+  if (!result) {
+    return null;
+  }
+  return result as QueryVariableModel;
+}
+
+function queryVariableAsString(variable: string | string[] | null | undefined): string | null {
   if (!variable) {
     return null;
   }
-  const currentValue = (variable as QueryVariableModel).current?.text;
-  if (typeof currentValue === 'string') {
-    return currentValue;
+  if (typeof variable === 'string') {
+    return variable;
   }
-  if (Array.isArray(currentValue)) {
-    return currentValue.join(' ');
+  if (Array.isArray(variable)) {
+    return variable.join(' ');
   }
-  return null
+  return null;
+
 }
 
-function useVariableCurrentValue(variableName: string | null): string  | null {
-  const [value, setValue] = useState<string | null>(() => variableName ? readCurrentValue(variableName) : null);
+function useVariableCurrentValue(variableName: string | null): QueryVariableModel | null {
+  const [value, setValue] = useState<QueryVariableModel | null>(() => (variableName ? readCurrentValue(variableName) : null));
 
   useEffect(() => {
     const updateValue = () => {
@@ -130,10 +140,10 @@ function useVariableCurrentValue(variableName: string | null): string  | null {
         setValue(readCurrentValue(variableName));
       });
       return () => sub.unsubscribe();
-    }
+    };
     return updateValue();
-  }, [variableName])
-  return value
+  }, [variableName]);
+  return value;
 }
 
 
@@ -185,12 +195,13 @@ function SinglePropertyRow({ property, seriesState, onAddSeries }: SinglePropert
 interface ListPropertyRowProps {
   property: ViewConnectionFrontEnd;
   viewId: ViewId;
+  instanceId: InstanceId;
   datasource: DataSource;
   seriesState: Map<string, QueryEditorTimeSeriesState>;
   onAddSeries: (ts: TimeSeries) => void;
 }
 
-function ListPropertyRow({ property, viewId, datasource, seriesState, onAddSeries }: ListPropertyRowProps) {
+function ListPropertyRow({ property, viewId, instanceId, datasource, seriesState, onAddSeries }: ListPropertyRowProps) {
   const styles = useStyles2(getStyles);
   const [expanded, setExpanded] = useState(false);
   const [identifierOptions, setIdentifierOptions] = useState<Array<SelectableValue<string>>>([]);
@@ -198,14 +209,16 @@ function ListPropertyRow({ property, viewId, datasource, seriesState, onAddSerie
   const [identifierError, setIdentifierError] = useState<string | null>(null);
   const [identifier, setIdentifier] = useState<string | null>(null);
 
+  const [connectedTimeSeries, setConnectedTimeSeries] = useState<TimeSeries[]>([]);
+
   useEffect(() => {
     let cancelled = false;
     const loadOptions = async () => {
       setIsIdentifierLoading(true);
       setIdentifierError(null);
       try {
-        // Todo: Include direct relation properties as well. These can be used to point to a classification
-        //     for example.
+        // Todo: Include direct relation properties as well. These can be used to point to a classification of the
+        //     timeseries, which can then be used for identificatoin.
         const textProperties = await datasource.getTextProperties(viewId);
         if (cancelled) {
           return;
@@ -232,13 +245,43 @@ function ListPropertyRow({ property, viewId, datasource, seriesState, onAddSerie
     };
   },[datasource, identifier, viewId])
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const findConnectedTimeSeries = async () => {
+      try {
+        const searchResult = await datasource.searchTimeSeries(
+          viewId,
+          undefined,
+          {
+            containsAny: {
+              property: [viewId.space, `${viewId.externalId}/${viewId.version}`, property.propertyId],
+              values: [{space: instanceId.space, externalId: instanceId.externalId}]
+            },
+          },
+          1000
+        );
+        setConnectedTimeSeries(searchResult);
+        }
+        catch (err) {
+        if (!cancelled) {
+          setConnectedTimeSeries([])
+        }
+        }
+    }
+    void findConnectedTimeSeries();
+    return () => {
+      cancelled = true;
+    }
+  }, [datasource, identifier, instanceId, viewId, property]);
 
   return (
     <Card>
       <Card.Heading>
-
         <div className={styles.listHeader}>
-          <span>{property.displayName} ({kindLabel(property.kind)})</span>
+          <span>
+            {property.displayName} ({kindLabel(property.kind)})
+          </span>
           <IconButton
             name={expanded ? 'angle-up' : 'angle-down'}
             aria-label={expanded ? 'Collapse' : 'Expand'}
@@ -257,44 +300,28 @@ function ListPropertyRow({ property, viewId, datasource, seriesState, onAddSerie
               </Alert>
             )}
             {!identifierError && (
-            <InlineField label="Identify by" labelWidth={14} tooltip="Pick a property to identify by">
-              <Select
-                options={identifierOptions}
-                value={identifier}
-                onChange={(opt) => {
-                  setIdentifier(opt.value ?? null);
-                }}
-                isLoading={isIdentifierLoading}
-                placeholder="Select property…"
-                width={32}
-              />
-            </InlineField>
+              <InlineField label="Identify by" labelWidth={14} tooltip="Pick a property to identify by">
+                <Select
+                  options={identifierOptions}
+                  value={identifier}
+                  onChange={(opt) => {
+                    setIdentifier(opt.value ?? null);
+                  }}
+                  isLoading={isIdentifierLoading}
+                  placeholder="Select property…"
+                  width={32}
+                />
+              </InlineField>
             )}
-
-            {/*{identifier && (*/}
-            {/*  <div className={styles.categoryRow}>*/}
-            {/*    {categories.map((cat) => (*/}
-            {/*      <Button*/}
-            {/*        key={cat}*/}
-            {/*        size="sm"*/}
-            {/*        onClick={() => setActiveCategory(cat)}*/}
-            {/*      >*/}
-            {/*        {cat}*/}
-            {/*      </Button>*/}
-            {/*    ))}*/}
-            {/*  </div>*/}
-            {/*)}*/}
-
-            {/*{identifier && activeCategory && (*/}
-            {/*  <TimeSeriesList*/}
-            {/*    series={categorySeries}*/}
-            {/*    seriesState={seriesState}*/}
-            {/*    onAddSeries={onAddSeries}*/}
-            {/*    emptyMessage={`No time series in ${activeCategory}.`}*/}
-            {/*    contextLabel={`in ${property.displayName} · ${activeCategory}`}*/}
-            {/*    listResetKey={`${property.propertyId}|${identifier}|${activeCategory}`}*/}
-            {/*  />*/}
-            {/*)}*/}
+            <TimeSeriesList
+              series={connectedTimeSeries}
+              seriesState={seriesState}
+              onAddSeries={onAddSeries}
+              emptyMessage={`No time series connected view.`}
+              contextLabel={`connected to ${viewId ?? 'view'}`}
+              listResetKey={`${viewId}`}
+              // listResetKey={`${viewId}|${searchQuery}|${filters.space}|${filters.externalIdPrefix}|${filters.type}|${filters.isStep}|${filters.heightMin}|${filters.heightMax}|${filters.createdTimeMin}|${filters.createdTimeMax}`}
+            />
           </Stack>
         </Card.Description>
       )}
@@ -366,7 +393,7 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
         <Input width={42} readOnly value={selectedViewId ?? 'Given by selected variable'} />
       </InlineField>
       <InlineField label="Currently selected" labelWidth={22} tooltip="Change by editing the variable on the dashboard">
-        <Input width={32} readOnly value={currentVariableValue ?? 'Given by selected variable'} />
+        <Input width={32} readOnly value={currentVariableValue?.current.text ?? 'Given by selected variable'} />
       </InlineField>
 
       {selectedVariable && connectionProperty.length === 0 && (
@@ -389,6 +416,7 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
               key={p.propertyId}
               property={p}
               viewId={p.targetView}
+              instanceId={instanceStringAsId(queryVariableAsString(currentVariableValue?.current.value) ?? '')}
               datasource={datasource}
               seriesState={seriesState}
               onAddSeries={onAddSeries}
