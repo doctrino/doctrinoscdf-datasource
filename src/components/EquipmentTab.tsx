@@ -128,7 +128,6 @@ function asFrontEndConnection(propertyId: string, prop: ViewPropResponse, viewId
 }
 
 
-
 function readCurrentValue(variableName: string): QueryVariableModel | null {
   const result = getTemplateSrv()
     .getVariables()
