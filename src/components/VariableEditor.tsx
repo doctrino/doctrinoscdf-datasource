@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FieldSet, InlineField, Select, Spinner } from '@grafana/ui';
-import { EquipmentVariableQuery } from '../types';
+import { DataModelId, EquipmentVariableQuery, ViewIdWithTimeSeries } from '../types';
 import {SelectableValue} from "@grafana/data";
 import {DataSource} from "../datasource";
-import { versionedIdAsString, versionedStringAsId } from '../utils';
+import { versionedIdAsString} from '../utils';
 
 interface VariableQueryProps {
   query: EquipmentVariableQuery;
@@ -15,13 +15,13 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
     //
   const [isLoadingModel, setIsLoadingModel] = useState(true);
   const [loadModelError, setLoadModelError] = useState('');
-  const [dataModelOptions, setDataModelOptions] = useState<Array<SelectableValue<string>>>([]);
-  const [dataModelId, setDataModelId] = useState<string>('');
+  const [dataModelOptions, setDataModelOptions] = useState<Array<SelectableValue<DataModelId>>>([]);
+  const [dataModelId, setDataModelId] = useState<DataModelId | null>(null);
 
   const [isLoadingView, setIsLoadingView] = useState(true);
   const [loadViewError, setLoadViewError] = useState('');
-  const [viewOptions, setViewOptions] = useState<Array<SelectableValue<string>>>([]);
-  const [viewId, setViewId] = useState<string>('');
+  const [viewOptions, setViewOptions] = useState<Array<SelectableValue<ViewIdWithTimeSeries>>>([]);
+  const [viewId, setViewId] = useState<ViewIdWithTimeSeries | null>(null);
 
 
   // Load Data Models
@@ -36,7 +36,7 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
               if (cancelled) {
                   return;
               }
-              const options = dataModels.map((model) => ({label: versionedIdAsString(model), value: versionedIdAsString(model)}))
+              const options = dataModels.map((model) => ({label: versionedIdAsString(model), value: model}))
               setDataModelOptions(options);
           } catch (err) {
               setLoadModelError(err instanceof Error ? err.message : JSON.stringify(err, null, 2));
@@ -46,41 +46,45 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
                 }
           }
       }
-      loadDataModels();
+      void loadDataModels();
       return () => {
           cancelled = true;
       }
   }, [datasource])
 
-  const onDataModelChange = async  (option: SelectableValue<string>)=> {
+  const onDataModelChange = async  (option: SelectableValue<DataModelId>)=> {
       if (!option.value) {
           return
       }
       setDataModelId(option.value);
       setIsLoadingView(true);
       try {
-        const oneHopTimeSeriesViews = await datasource.getOneHopTimeSeriesViews(versionedStringAsId(option.value));
-        const viewOptions = oneHopTimeSeriesViews.map((view) =>( {label: versionedIdAsString(view), value: versionedIdAsString(view) }))
+        const oneHopTimeSeriesViews = await datasource.getOneHopTimeSeriesViews(option.value);
+        const viewOptions = oneHopTimeSeriesViews.map((view) =>( {label: versionedIdAsString(view), value: view }))
         setViewOptions(viewOptions);
+          const updated: EquipmentVariableQuery = {
+            ...query,
+            dataModelId: option.value,
+          };
+          onChange(updated, `DataModel: ${JSON.stringify(option.value)}`);
        } catch (err) {
           setLoadViewError(err instanceof Error ? err.message : JSON.stringify(err, null, 2));
-
       } finally {
           setIsLoadingView(false);
       }
   }
 
-  const onViewChange = async (option: SelectableValue<string>) => {
-      if (!option.value) {
-          return
-      }
-      setViewId(option.value);
-      const updated: EquipmentVariableQuery = {
-        ...query,
-        viewId: versionedStringAsId(option.value),
-      };
-      onChange(updated, `View: ${option.value}`);
-  }
+  const onViewChange = async (option: SelectableValue<ViewIdWithTimeSeries>) => {
+    if (!option.value) {
+      return;
+    }
+    setViewId(option.value);
+    const updated: EquipmentVariableQuery = {
+      ...query,
+      viewIdWithTimeSeries: option.value,
+    };
+    onChange(updated, `View: ${JSON.stringify(option.value)}`);
+  };
 
   return (
     <>
@@ -100,7 +104,7 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
             <Select
               id="variable-editor-data-model"
               options={dataModelOptions}
-              value={dataModelId}
+              value={dataModelId ? {label: versionedIdAsString(dataModelId), value: dataModelId} : null}
               onChange={onDataModelChange}
               width={42}
             />
@@ -109,12 +113,12 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
         {isLoadingView && (
           <span>
             <Spinner />
-            Loading views for {dataModelId}
+            Loading views for {dataModelId ? versionedIdAsString(dataModelId) : 'selected data model'}...
           </span>
         )}
         {!isLoadingView && loadViewError && (
           <div>
-            Error loading views for {dataModelId}: {loadViewError}
+            Error loading views for {dataModelId ? versionedIdAsString(dataModelId) : 'selected data model'}: {loadViewError}
           </div>
         )}
         {!isLoadingView && !loadViewError && (
@@ -122,7 +126,7 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
             <Select
                 id="variable-editor-view"
                 options={viewOptions}
-                value={viewId}
+                value={viewId ? {label: versionedIdAsString(viewId), value: viewId} : null}
                 onChange={onViewChange}
                 width={42}
             />

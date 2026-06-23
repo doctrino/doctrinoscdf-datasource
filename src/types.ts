@@ -1,21 +1,22 @@
 import { DataSourceJsonData } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
 
-export interface SelectedTimeSeriesItem {
+export interface StaticTimeSeries {
   space: string;
   externalId: string;
   aggregation: string;
   label: string;
 }
 
+export interface DynamicTimeSeries {
+  
+}
+
 export interface SelectedTimeSeriesQuery extends DataQuery {
-  queryText?: string;
-  constant: number;
-  items: SelectedTimeSeriesItem[];
+  items: StaticTimeSeries[];
 }
 
 export const DEFAULT_QUERY: Partial<SelectedTimeSeriesQuery> = {
-  constant: 6.5,
   items: [],
 };
 
@@ -104,7 +105,6 @@ export interface DataModelFullResponse {
   isGlobal: boolean;
 }
 
-
 export type ConstraintStatus = "current" | "pending"  | "failed"
 
 export interface ConstraintState {
@@ -159,7 +159,6 @@ export interface EnumProperty {
 }
 
 export type ContainerProperty = TextProperty | PrimitiveProperty | CDFExternalIdReference | ViewDirectNodeRelation | EnumProperty;
-
 
 export interface ViewContainerPropResponse {
   container: ContainerId;
@@ -258,6 +257,10 @@ export interface TimeSeries {
   stringProperties: Record<string, string>;
 }
 
+export interface TimeSeriesConnection {
+  propertyID: string;
+}
+
 export type TimeSeriesType = 'string' | 'numeric' | 'state';
 export type AggregationMethod = 'average' | 'max' | 'maxDatapoint' | 'min' | 'minDatapoint' | 'count' | 'sum';
 
@@ -326,6 +329,12 @@ export interface SpaceStatisticsResponse {
   recordsOnlyContainerProperties?: number;
 }
 
-export interface EquipmentVariableQuery extends DataQuery {
-  viewId: ViewId;
+export interface ViewIdWithTimeSeries extends ViewId {
+  timeseriesProperties: Record<string, ViewPropResponse>;
 }
+
+export interface EquipmentVariableQuery extends DataQuery {
+  dataModelId: DataModelId;
+  viewIdWithTimeSeries: ViewIdWithTimeSeries;
+}
+

@@ -12,7 +12,7 @@
 5. [x] **Create a TimeSeries Search query editor**. Enable the user to search for specific
    time series in the UI. This should use the inspect endpoint to find time series views and
    then have predefined search options defined on the field type. 
-6. [ ] **Create a TimeSeries selector based on asset/equipment**. Basic idea is to have the user
+6. [x] **Create a TimeSeries selector based on asset/equipment**. Basic idea is to have the user
    select a data model, then find all views that have single direct/reverse/edge connections
    to a time series views. This will be an equipment/asset-centric way to select time series. 
 7. [x] **Create a variable query editor**. This should fit well with the selector
@@ -48,3 +48,9 @@
       suggest the user to narrow down the filter.
 19. [ ] Add end-to-end test for the different flows of selecting time series in the frontend, including search based and
         asset/equipment based selection.
+20. [ ] In the TimeSeriesList component, add sort and search functionality for the up to time series shown in the browser.
+21. [ ] Equipment selection, add support for edges.
+22. [ ] Equipment selection, add support for direct relations.
+23. [ ] Equipment selection, add support for single connections (edges, direct reverse).
+24. [ ] Introduce dynamic time series in the backend/frontend. This should change the timeseries based on the variable selection in
+        the dashboard.
