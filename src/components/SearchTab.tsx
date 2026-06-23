@@ -119,9 +119,7 @@ export function SearchTab({ datasource, seriesState, onAddSeries }: SearchTabPro
 
     const searchTimeSeries = async () => {
       try {
-        console.log("Filter values are ", filterValues);
         const apiFilter = filterSchema && filterValues ? buildAPIFilter(filterValues, filterSchema) :undefined
-        console.log("Built API filter is ", apiFilter);
         const searchResults = await datasource.searchTimeSeries(versionedStringAsId(viewId), searchQuery, apiFilter, 1000);
         if (cancelled) {
           return;
