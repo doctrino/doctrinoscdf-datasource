@@ -172,7 +172,7 @@ export class DataSource extends DataSourceWithBackend<SelectedTimeSeriesQuery, C
   }
 
   async getTextProperties(viewId: ViewId): Promise<Array<[string, ViewContainerPropResponse]>> {
-    const response: ViewResponse[] = await this.postResource('views/retrieve', { items: [viewId] });
+    const response: ViewResponse[] = await this.postResource('views/retrieve', { items: [{space: viewId.space, externalId: viewId.externalId, version: viewId.version}] });
     if (response.length !== 1) {
       throw new Error(`Expected 1 view, got ${response.length}`);
     }
