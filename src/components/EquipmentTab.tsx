@@ -15,7 +15,7 @@ import {
 } from '../types';
 import { DocumentationBlock } from './DocumentationBlock';
 import { DataSource } from '../datasource';
-import { instanceIdAsString, instanceStringAsId, versionedIdAsString } from '../utils';
+import { instanceIdAsString, instanceStringAsId, versionedIdAsString, versionedStringAsId } from '../utils';
 import { TimeSeriesList } from './TimeSeriesList';
 
 
@@ -45,6 +45,7 @@ interface ViewConnectionFrontEnd {
   kind: ConnectionKind;
   targetView: ViewId;
   raw: ViewPropResponse;
+  createFilter: (instanceId: InstanceId) => Record<string, any>;
 }
 
 function isContainerProp(p: ViewPropResponse): p is ViewContainerPropResponse {
@@ -59,7 +60,7 @@ function isReverseProp(p: ViewPropResponse): p is ViewReverseDirectRelationRespo
   return c === 'multi_reverse_direct_relation' || c === 'single_reverse_direct_relation';
 }
 
-function asFrontEndConnection(propertyId: string, prop: ViewPropResponse): ViewConnectionFrontEnd | null {
+function asFrontEndConnection(propertyId: string, prop: ViewPropResponse, viewId: ViewId): ViewConnectionFrontEnd | null {
   if (isContainerProp(prop)) {
     // Only direct-relation container props can connect to time series
     if (prop.type.type !== 'direct') {
@@ -74,6 +75,23 @@ function asFrontEndConnection(propertyId: string, prop: ViewPropResponse): ViewC
       kind: 'direct_relation',
       raw: prop,
       targetView: prop.type.source as ViewId,
+      createFilter: (instanceId: InstanceId) => {
+        if (direct.list) {
+          return {
+            containsAny: {
+              property: [viewId.space, `${viewId.externalId}/${viewId.version}`, propertyId],
+              values: [{space: instanceId.space, externalId: instanceId.externalId}],
+            }
+          }
+        } else {
+          return {
+            equals: {
+              property: [viewId.space, `${viewId.externalId}/${viewId.version}`, propertyId],
+              value: { space: instanceId.space, externalId: instanceId.externalId },
+            },
+          };
+        }
+      }
     };
   }
   if (isEdgeProp(prop)) {
@@ -85,6 +103,8 @@ function asFrontEndConnection(propertyId: string, prop: ViewPropResponse): ViewC
       kind: 'edge_connection',
       raw: prop,
       targetView: prop.source,
+      // Todo how to deal with edges??
+      createFilter: (instanceId: InstanceId) => ({}),
     };
   }
   if (isReverseProp(prop)) {
@@ -96,6 +116,12 @@ function asFrontEndConnection(propertyId: string, prop: ViewPropResponse): ViewC
       kind: 'reverse_direct_relation',
       raw: prop,
       targetView: prop.source,
+      createFilter: (instanceId: InstanceId) => ({
+        containsAny: {
+          property: [prop.through.source.space, `${prop.through.source.externalId}/${prop.through.source.version}`, prop.through.identifier],
+          values: [{space: instanceId.space, externalId: instanceId.externalId}]
+        },
+      })
     };
   }
   return null;
@@ -218,7 +244,7 @@ function ListPropertyRow({ property, viewId, instanceId, datasource, seriesState
       setIdentifierError(null);
       try {
         // Todo: Include direct relation properties as well. These can be used to point to a classification of the
-        //     timeseries, which can then be used for identificatoin.
+        //     timeseries, which can then be used for identification.
         const textProperties = await datasource.getTextProperties(viewId);
         if (cancelled) {
           return;
@@ -250,15 +276,11 @@ function ListPropertyRow({ property, viewId, instanceId, datasource, seriesState
 
     const findConnectedTimeSeries = async () => {
       try {
+        const filter = property.createFilter(instanceId);
         const searchResult = await datasource.searchTimeSeries(
           viewId,
           undefined,
-          {
-            containsAny: {
-              property: [viewId.space, `${viewId.externalId}/${viewId.version}`, property.propertyId],
-              values: [{space: instanceId.space, externalId: instanceId.externalId}]
-            },
-          },
+            {myFilter: filter},
           1000
         );
         setConnectedTimeSeries(searchResult);
@@ -368,8 +390,8 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
   };
 
   const connectionProperty = Object.entries(tsProperties)
-  .map(([id, prop]) => asFrontEndConnection(id, prop))
-  .filter((p): p is ViewConnectionFrontEnd => p !== null);
+    .map(([id, prop]) => asFrontEndConnection(id, prop, versionedStringAsId(selectedViewId ?? '')))
+    .filter((p): p is ViewConnectionFrontEnd => p !== null);
 
   const singleConnections = connectionProperty.filter((p) => !p.isList);
   const listConnections = connectionProperty.filter((p) => p.isList);
