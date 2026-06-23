@@ -221,7 +221,7 @@ function SinglePropertyRow({ property, seriesState, onAddSeries }: SinglePropert
 interface ListPropertyRowProps {
   property: ViewConnectionFrontEnd;
   viewId: ViewId;
-  instanceId: InstanceId;
+  instanceId: InstanceId | null;
   datasource: DataSource;
   seriesState: Map<string, QueryEditorTimeSeriesState>;
   onAddSeries: (ts: TimeSeries) => void;
@@ -275,6 +275,11 @@ function ListPropertyRow({ property, viewId, instanceId, datasource, seriesState
     let cancelled = false;
 
     const findConnectedTimeSeries = async () => {
+      if (!instanceId || !expanded) {
+        cancelled = true;
+        return;
+      }
+
       try {
         const filter = property.createFilter(instanceId);
         const searchResult = await datasource.searchTimeSeries(
@@ -295,7 +300,7 @@ function ListPropertyRow({ property, viewId, instanceId, datasource, seriesState
     return () => {
       cancelled = true;
     }
-  }, [datasource, identifier, instanceId, viewId, property]);
+  }, [datasource, identifier, instanceId, viewId, property, expanded]);
 
   return (
     <Card>
@@ -340,7 +345,7 @@ function ListPropertyRow({ property, viewId, instanceId, datasource, seriesState
               seriesState={seriesState}
               onAddSeries={onAddSeries}
               emptyMessage={`No time series connected view.`}
-              contextLabel={`connected to ${viewId ?? 'view'}`}
+              contextLabel={`connected to ${instanceId?.externalId ?? 'instance'}`}
               listResetKey={`${viewId}`}
               // listResetKey={`${viewId}|${searchQuery}|${filters.space}|${filters.externalIdPrefix}|${filters.type}|${filters.isStep}|${filters.heightMin}|${filters.heightMax}|${filters.createdTimeMin}|${filters.createdTimeMax}`}
             />
@@ -395,6 +400,7 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
 
   const singleConnections = connectionProperty.filter((p) => !p.isList);
   const listConnections = connectionProperty.filter((p) => p.isList);
+  const variableString = queryVariableAsString(currentVariableValue?.current.value)
 
   return (
     <Stack direction="column" gap={1}>
@@ -438,7 +444,7 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
               key={p.propertyId}
               property={p}
               viewId={p.targetView}
-              instanceId={instanceStringAsId(queryVariableAsString(currentVariableValue?.current.value) ?? '')}
+              instanceId={variableString ? instanceStringAsId(variableString) : null}
               datasource={datasource}
               seriesState={seriesState}
               onAddSeries={onAddSeries}
