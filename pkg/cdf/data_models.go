@@ -48,8 +48,8 @@ type DataModelResponse struct {
 	CreatedTime     int64          `json:"createdTime"`
 	LastUpdatedTime int64          `json:"lastUpdatedTime"`
 	IsGlobal        bool           `json:"isGlobal"`
-	Name            string         `json:"name"`
-	Description     string         `json:"description"`
+	Name            *string        `json:"name"`
+	Description     *string        `json:"description"`
 	Views           []ViewResponse `json:"views"`
 }
 

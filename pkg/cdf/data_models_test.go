@@ -67,7 +67,7 @@ func TestDataModels_Upsert(t *testing.T) {
 	model := responses[0]
 	require.Equal(t, "GrafanaPluginTest", model.ExternalId)
 	require.Equal(t, "v1", model.Version)
-	require.Equal(t, "Grafana Plugin Test", &model.Name)
-	require.Equal(t, "Part of the test suite for the Grafana plugin", &model.Description)
+	require.Equal(t, "Grafana Plugin Test", *model.Name)
+	require.Equal(t, "Part of the test suite for the Grafana plugin", *model.Description)
 	require.Equal(t, 1, len(model.Views), "Expected exactly one view in the model")
 }
