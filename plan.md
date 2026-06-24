@@ -55,3 +55,6 @@
 24. [ ] Introduce dynamic time series in the backend/frontend. This should change the timeseries based on the variable selection in
         the dashboard.
 25. [ ] Store QueryEditor state in the browser local storage. (Tab selection, search query, and on).
+26. [x] Implement the upsert endpoints for containers, views and data models.
+
+Completed tasks: 12
