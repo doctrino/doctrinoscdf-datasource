@@ -41,6 +41,21 @@ type ViewItemsResponse struct {
 	Items []ViewResponse `json:"items"`
 }
 
+type ViewRequest struct {
+	Space       string         `json:"space"`
+	ExternalId  string         `json:"externalId"`
+	Version     string         `json:"version"`
+	Name        *string        `json:"name,omitempty"`
+	Description *string        `json:"description,omitempty"`
+	Filter      map[string]any `json:"filter,omitempty"`
+	Implements  []ViewId       `json:"implements,omitempty"`
+	Properties  map[string]any `json:"properties,omitempty"`
+}
+
+type ViewCreateRequest struct {
+	Items []ViewRequest `json:"items"`
+}
+
 type views struct {
 	apiClient *apiClient
 }
@@ -58,6 +73,23 @@ func (v *views) Retrieve(ctx context.Context, request ViewRetrieveRequest) ([]Vi
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		return nil, fmt.Errorf("cdf /models/views/byids: %w", err)
+	}
+	return resp.Items, nil
+}
+
+func (v *views) Upsert(ctx context.Context, request ViewCreateRequest) ([]ViewResponse, error) {
+	data, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	body, err := v.apiClient.doBody(ctx, http.MethodPost, "/models/views", bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("Request to failed /models/views: %w", err)
+	}
+	var resp ViewItemsResponse
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return nil, fmt.Errorf("Unmarshalling of response from /models/views: %w", err)
 	}
 	return resp.Items, nil
 }

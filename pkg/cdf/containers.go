@@ -109,6 +109,9 @@ func (c *containers) Upsert(ctx context.Context, request ContainerCreateRequest)
 		return nil, err
 	}
 	body, err := c.apiClient.doBody(ctx, http.MethodPost, "/models/containers", bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("cdf models/containers: %w", err)
+	}
 	var resp ContainerItemResponse
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("cdf models/containers: %w", err)

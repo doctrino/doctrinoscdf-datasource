@@ -63,4 +63,9 @@ func TestContainers_Upsert(t *testing.T) {
 	containerResponses, err := testClient.Containers.Upsert(ctx, containerRequest)
 	require.NoError(t, err)
 	require.NotNil(t, containerResponses)
+
+	require.Equal(t, len(containerResponses), 1)
+	containerResponse := containerResponses[0]
+	require.Equal(t, containerResponse.Space, testSpace)
+	require.Equal(t, containerResponse.ExternalId, "SensorContainer")
 }
