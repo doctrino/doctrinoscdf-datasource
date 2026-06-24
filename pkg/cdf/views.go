@@ -84,12 +84,12 @@ func (v *views) Upsert(ctx context.Context, request ViewCreateRequest) ([]ViewRe
 	}
 	body, err := v.apiClient.doBody(ctx, http.MethodPost, "/models/views", bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("Request to failed /models/views: %w", err)
+		return nil, fmt.Errorf("request to failed /models/views: %w", err)
 	}
 	var resp ViewItemsResponse
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshalling of response from /models/views: %w", err)
+		return nil, fmt.Errorf("unmarshalling of response from /models/views: %w", err)
 	}
 	return resp.Items, nil
 }

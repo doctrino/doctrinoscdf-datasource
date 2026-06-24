@@ -137,12 +137,12 @@ func (d *dataModels) Upsert(ctx context.Context, request DataModelCreateRequest)
 	}
 	body, err := d.apiClient.doBody(ctx, http.MethodPost, "/models/datamodels", bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("Request to failed /models/datamodels: %w", err)
+		return nil, fmt.Errorf("request to failed /models/datamodels: %w", err)
 	}
 	var resp DataModelItemsResponse
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
-		return nil, fmt.Errorf("Unmarshalling of response from /models/datamodels: %w", err)
+		return nil, fmt.Errorf("unmarshalling of response from /models/datamodels: %w", err)
 	}
 	return resp.Items, nil
 }
