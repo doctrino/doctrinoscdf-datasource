@@ -54,3 +54,4 @@
 23. [ ] Equipment selection, add support for single connections (edges, direct reverse).
 24. [ ] Introduce dynamic time series in the backend/frontend. This should change the timeseries based on the variable selection in
         the dashboard.
+25. [ ] Store QueryEditor state in the browser local storage. (Tab selection, search query, and on).

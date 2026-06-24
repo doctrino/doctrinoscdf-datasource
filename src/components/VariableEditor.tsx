@@ -102,9 +102,9 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
             tooltip="Select data model containing your equipment/assets. Note only data models that have time series are shown."
           >
             <Select
-              id="variable-editor-data-model"
+              inputId="variable-editor-data-model"
               options={dataModelOptions}
-              value={dataModelId ? {label: versionedIdAsString(dataModelId), value: dataModelId} : null}
+              value={dataModelId ? { label: versionedIdAsString(dataModelId), value: dataModelId } : null}
               onChange={onDataModelChange}
               width={42}
             />
@@ -118,17 +118,18 @@ export const VariableQueryEditor = ({ query, onChange, datasource }: VariableQue
         )}
         {!isLoadingView && loadViewError && (
           <div>
-            Error loading views for {dataModelId ? versionedIdAsString(dataModelId) : 'selected data model'}: {loadViewError}
+            Error loading views for {dataModelId ? versionedIdAsString(dataModelId) : 'selected data model'}:{' '}
+            {loadViewError}
           </div>
         )}
         {!isLoadingView && !loadViewError && (
           <InlineField label="View" labelWidth={20} tooltip="Select the view to use as basis for the variable">
             <Select
-                id="variable-editor-view"
-                options={viewOptions}
-                value={viewId ? {label: versionedIdAsString(viewId), value: viewId} : null}
-                onChange={onViewChange}
-                width={42}
+              inputId="variable-editor-view"
+              options={viewOptions}
+              value={viewId ? { label: versionedIdAsString(viewId), value: viewId } : null}
+              onChange={onViewChange}
+              width={42}
             />
           </InlineField>
         )}
