@@ -46,9 +46,42 @@ type InspectionOperations struct {
 	TotalInvolvedViewCount TotalInvolvedViewCountFilter `json:"totalInvolvedViewCount"`
 }
 
+type ContainerRequest struct {
+	Space       string         `json:"space"`
+	ExternalId  string         `json:"externalId"`
+	Name        *string        `json:"name,omitempty"`
+	Description *string        `json:"description,omitempty"`
+	UsedFor     *string        `json:"usedFor,omitempty"`
+	Properties  map[string]any `json:"properties"`
+	Constraints map[string]any `json:"constraints"`
+	Indexes     map[string]any `json:"indexes"`
+}
+
+type ContainerResponse struct {
+	Space           string         `json:"space"`
+	ExternalId      string         `json:"externalId"`
+	Name            *string        `json:"name,omitempty"`
+	Description     *string        `json:"description,omitempty"`
+	UsedFor         *string        `json:"usedFor,omitempty"`
+	Properties      map[string]any `json:"properties"`
+	Constraints     map[string]any `json:"constraints"`
+	Indexes         map[string]any `json:"indexes"`
+	CreatedTime     int64          `json:"createdTime"`
+	LastUpdatedTime int64          `json:"lastUpdatedTime"`
+	IsGlobal        bool           `json:"isGlobal"`
+}
+
 type ContainersInspectRequest struct {
 	Items                []ContainerId         `json:"items"`
 	InspectionOperations *InspectionOperations `json:"inspectionOperations"`
+}
+
+type ContainerCreateRequest struct {
+	Items []ContainerRequest `json:"items"`
+}
+
+type ContainerItemResponse struct {
+	Items []ContainerResponse `json:"items"`
 }
 
 func (c *containers) Inspect(ctx context.Context, request ContainersInspectRequest) ([]ContainerInspectItem, error) {
@@ -66,6 +99,22 @@ func (c *containers) Inspect(ctx context.Context, request ContainersInspectReque
 	var resp ContainerInspectResponse
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("cdf /models/containers/inspect: %w", err)
+	}
+	return resp.Items, nil
+}
+
+func (c *containers) Upsert(ctx context.Context, request ContainerCreateRequest) ([]ContainerResponse, error) {
+	data, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	body, err := c.apiClient.doBody(ctx, http.MethodPost, "/models/containers", bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("cdf models/containers: %w", err)
+	}
+	var resp ContainerItemResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("cdf models/containers: %w", err)
 	}
 	return resp.Items, nil
 }

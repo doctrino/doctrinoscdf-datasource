@@ -43,3 +43,31 @@ func TestDataModels_Retrieve(t *testing.T) {
 		})
 	}
 }
+
+func TestDataModels_Upsert(t *testing.T) {
+	ctx := context.Background()
+	request := DataModelCreateRequest{
+		[]DataModelRequest{
+			{
+				Space:       testSpace,
+				ExternalId:  "GrafanaPluginTest",
+				Version:     "v1",
+				Name:        strPtr("Grafana Plugin Test"),
+				Description: strPtr("Part of the test suite for the Grafana plugin"),
+				Views: []ViewId{
+					{"view", "cdf_cdm", "CogniteDescribable", "v1"},
+				},
+			},
+		},
+	}
+	responses, err := testClient.DataModels.Upsert(ctx, request)
+	require.NoError(t, err)
+	require.NotNil(t, responses)
+	require.Equal(t, 1, len(responses), "Expected exactly one model in the response")
+	model := responses[0]
+	require.Equal(t, "GrafanaPluginTest", model.ExternalId)
+	require.Equal(t, "v1", model.Version)
+	require.Equal(t, "Grafana Plugin Test", *model.Name)
+	require.Equal(t, "Part of the test suite for the Grafana plugin", *model.Description)
+	require.Equal(t, 1, len(model.Views), "Expected exactly one view in the model")
+}
