@@ -68,6 +68,19 @@ type DataModelRetrieveRequest struct {
 	Items []DataModelId `json:"items"`
 }
 
+type DataModelRequest struct {
+	Space       string   `json:"space"`
+	ExternalId  string   `json:"externalId"`
+	Version     string   `json:"version"`
+	Name        *string  `json:"name,omitempty"`
+	Description *string  `json:"description,omitempty"`
+	Views       []ViewId `json:"views"`
+}
+
+type DataModelCreateRequest struct {
+	Items []DataModelRequest `json:"items"`
+}
+
 type dataModels struct {
 	apiClient *apiClient
 }
@@ -113,6 +126,23 @@ func (d *dataModels) Retrieve(ctx context.Context, request DataModelRetrieveRequ
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		return nil, fmt.Errorf("cdf /models/datamodels/byids: %w", err)
+	}
+	return resp.Items, nil
+}
+
+func (d *dataModels) Upsert(ctx context.Context, request DataModelCreateRequest) ([]DataModelResponse, error) {
+	data, err := json.Marshal(&request)
+	if err != nil {
+		return nil, err
+	}
+	body, err := d.apiClient.doBody(ctx, http.MethodPost, "/models/datamodels", bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("Request to failed /models/datamodels: %w", err)
+	}
+	var resp DataModelItemsResponse
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return nil, fmt.Errorf("Unmarshalling of response from /models/datamodels: %w", err)
 	}
 	return resp.Items, nil
 }
