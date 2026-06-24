@@ -406,7 +406,7 @@ export function EquipmentTab({ datasource, seriesState, onAddSeries }: Equipment
       <DocumentationBlock testId="query-editor-equipment-documentation" />
       <InlineField label="Query Variable" labelWidth={15}>
         <Select
-          id="query-editor-equipment-variable"
+          inputId="query-editor-equipment-variable"
           value={selectedVariable ? { label: selectedVariable.name, value: selectedVariable } : null}
           options={variableOptions}
           onChange={onVariableChange}

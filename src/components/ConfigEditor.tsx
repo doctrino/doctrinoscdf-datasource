@@ -76,7 +76,7 @@ export function ConfigEditor(props: Props) {
     <>
       <InlineField label="Input mode" labelWidth={14}>
         <Select
-          id="config-editor-login-helper-mode"
+          inputId="config-editor-login-helper-mode"
           options={loginModeOptions}
           value={mode}
           onChange={(opt) => {
@@ -124,7 +124,7 @@ export function ConfigEditor(props: Props) {
       <FieldSet label="Authentication">
         <InlineField label="Login Flow" labelWidth={14}>
           <Select
-            id="config-editor-login-flow"
+            inputId="config-editor-login-flow"
             options={loginFlowOptions}
             value={loginFlow}
             onChange={(opt) => {
@@ -150,7 +150,7 @@ export function ConfigEditor(props: Props) {
         {mode === 'guided' && loginFlow !== 'token' && (
           <InlineField label="IDP Provider" labelWidth={14}>
             <Select
-              id="config-editor-idp-provider"
+              inputId="config-editor-idp-provider"
               options={loginProviderOptions}
               value={idpProvider}
               onChange={(opt) => onJsonDataChange('idpProvider', opt.value as IdpProvider)}
