@@ -19,7 +19,7 @@ test('"Save & test" should be successful when configuration is valid', async ({
   const configPage = await createDataSourceConfigPage({ type: ds.type });
 
   // Set input mode to guided
-  await page.locator('#config-editor-login-helper-mode').click();
+  await page.locator('input#config-editor-login-helper-mode').click();
   await page.getByRole('option', { name: 'Guided' }).click();
 
   // Fill project fields
@@ -27,11 +27,11 @@ test('"Save & test" should be successful when configuration is valid', async ({
   await page.getByRole('textbox', { name: 'CDF Cluster' }).fill(ds.jsonData.cdfCluster ?? '');
 
   // Set login flow to client credentials
-  await page.locator('#config-editor-login-flow').click();
+  await page.locator('input#config-editor-login-flow').click();
   await page.getByRole('option', { name: 'Client Credentials' }).click();
 
-  await page.locator('#config-editor-idp-provider').waitFor({ state: 'visible' });
-  await page.locator('#config-editor-idp-provider').click();
+  await page.locator('input#config-editor-idp-provider').waitFor({ state: 'visible' });
+  await page.locator('input#config-editor-idp-provider').click();
   await page.getByRole('option', { name: ds.jsonData.idpProvider ?? '' }).click();
   await page.getByLabel('Tenant ID').fill(ds.jsonData.idpTenantID ?? '');
   await page.getByLabel('Client ID').fill(ds.jsonData.clientId ?? '');
