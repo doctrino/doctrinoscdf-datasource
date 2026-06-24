@@ -76,7 +76,7 @@ export function ConfigEditor(props: Props) {
     <>
       <InlineField label="Input mode" labelWidth={14}>
         <Select
-          id="config-editor-login-mode"
+          id="config-editor-login-helper-mode"
           options={loginModeOptions}
           value={mode}
           onChange={(opt) => {

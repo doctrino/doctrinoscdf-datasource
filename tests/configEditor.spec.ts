@@ -19,7 +19,7 @@ test('"Save & test" should be successful when configuration is valid', async ({
   const configPage = await createDataSourceConfigPage({ type: ds.type });
 
   // Set input mode to guided
-  await page.locator('#config-editor-login-mode').click();
+  await page.locator('#config-editor-login-helper-mode').click();
   await page.getByRole('option', { name: 'Guided' }).click();
 
   // Fill project fields
