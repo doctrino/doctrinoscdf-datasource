@@ -2,7 +2,8 @@ package main
 
 const (
 	Space         = "doctrinos_grafana_plugin"
-	WindTurbineID = "WindTurbine"
+	WindTurbineId = "WindTurbine"
 	SensorId      = "Sensor"
+	ModelId       = "GrafanaPluginTestModel"
 	Version       = "v1"
 )
