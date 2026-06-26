@@ -38,7 +38,28 @@ func seedSpace(ctx context.Context, client *cdf.CogniteClient) error {
 }
 
 func seedContainers(ctx context.Context, client *cdf.CogniteClient) error {
-	return nil
+	_, err := client.Containers.Upsert(ctx, cdf.ContainerCreateRequest{
+		Items: []cdf.ContainerRequest{
+			{
+				Space:       Space,
+				ExternalId:  WindTurbineId,
+				Name:        strPtr("Wind Turbine container"),
+				Description: strPtr("Container for wind turbine assets, used for EquipmentTab testing"),
+				UsedFor:     strPtr("node"),
+				Properties:  map[string]any{},
+				Constraints: map[string]any{},
+			},
+			{
+				Space:       Space,
+				ExternalId:  SensorId,
+				Name:        strPtr("Sensor container"),
+				Description: strPtr("Container for sensor sensor"),
+				Properties:  map[string]any{},
+				Constraints: map[string]any{},
+			},
+		},
+	})
+	return err
 }
 
 func seedViews(ctx context.Context, client *cdf.CogniteClient) error {
