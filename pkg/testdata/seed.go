@@ -519,6 +519,7 @@ func seedTestDataModel(ctx context.Context, client *cdf.CogniteClient) error {
 				{"view", Space, SensorId, Version},
 				{"view", Space, FinanceId, Version},
 				{"view", "cdf_cdm", "CogniteUnit", "v1"},
+				{"view", "cdf_cdm", "CogniteDescribable", "v1"},
 			},
 		}},
 	})
