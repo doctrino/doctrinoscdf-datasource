@@ -56,5 +56,6 @@
         the dashboard.
 25. [ ] Store QueryEditor state in the browser local storage. (Tab selection, search query, and on).
 26. [x] Implement the upsert endpoints for containers, views and data models.
+27. [ ] Create test data for development, testing and demoing. Use a simple WindTurbine example.
 
 Completed tasks: 12

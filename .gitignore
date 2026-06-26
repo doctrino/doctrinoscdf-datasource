@@ -46,3 +46,4 @@ ci/
 .eslintcache
 grafana_data/
 *.env
+tmp/
