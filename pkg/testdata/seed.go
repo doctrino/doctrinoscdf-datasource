@@ -20,8 +20,8 @@ func Seed(ctx context.Context, client *cdf.CogniteClient) error {
 	if err := seedTestDataModel(ctx, client); err != nil {
 		return fmt.Errorf("failed to seed test data model: %w", err)
 	}
-	if err := seedWindTurbinesAndSensors(ctx, client); err != nil {
-		return fmt.Errorf("failed to seed windturbines and sensors: %w", err)
+	if err := seedInstances(ctx, client); err != nil {
+		return fmt.Errorf("failed to seed instance for the test data model: %w", err)
 	}
 	return nil
 }
@@ -526,6 +526,6 @@ func seedTestDataModel(ctx context.Context, client *cdf.CogniteClient) error {
 	return err
 }
 
-func seedWindTurbinesAndSensors(ctx context.Context, client *cdf.CogniteClient) error {
+func seedInstances(ctx context.Context, client *cdf.CogniteClient) error {
 	return nil
 }
