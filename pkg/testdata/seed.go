@@ -120,6 +120,51 @@ func seedContainers(ctx context.Context, client *cdf.CogniteClient) error {
 					},
 				},
 			},
+			{
+				Space:       Space,
+				ExternalId:  FinanceId,
+				Name:        strPtr("Finance container"),
+				Description: strPtr("Container for financial data"),
+				Properties: map[string]any{
+					"asset": map[string]any{
+						"type": map[string]any{
+							"type": "direct",
+							"list": false,
+						},
+					},
+					"currency": map[string]any{
+						"type": map[string]any{
+							"type": "text",
+						},
+					},
+				},
+				Constraints: map[string]any{
+					"describablePresent": map[string]any{
+						"constraintType": "requires",
+						"require": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteDescribable",
+						},
+					},
+					"sourceablePresent": map[string]any{
+						"constraintType": "requires",
+						"require": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteSourceable",
+						},
+					},
+					"timeSeriesPresent": map[string]any{
+						"constraintType": "requires",
+						"require": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteTimeSeries",
+						},
+					},
+				},
+			},
 		},
 	})
 	return err
@@ -227,6 +272,37 @@ func seedViews(ctx context.Context, client *cdf.CogniteClient) error {
 						},
 						"direction": "outwards",
 					},
+					"netCashFlow": map[string]any{
+						"connectionType": "single_reverse_direct_relation",
+						"source": map[string]any{
+							"type":       "view",
+							"space":      Space,
+							"externalId": FinanceId,
+							"version":    Version,
+						},
+						"through": map[string]any{
+							"source": map[string]any{
+								"type":       "view",
+								"space":      Space,
+								"externalId": FinanceId,
+								"version":    Version,
+							},
+							"identifier": "windTurbine",
+						},
+					},
+					"maintenanceCost": map[string]any{
+						"connectionType": "single_edge_connection",
+						"type": map[string]any{
+							"space":      Space,
+							"externalId": "maintenanceCost",
+						},
+						"source": map[string]any{
+							"type":       "view",
+							"space":      Space,
+							"externalId": FinanceId,
+							"version":    Version,
+						},
+					},
 				},
 			},
 			{
@@ -319,6 +395,108 @@ func seedViews(ctx context.Context, client *cdf.CogniteClient) error {
 							"externalId": WindTurbineId,
 							"version":    Version,
 						},
+					},
+				},
+			},
+			{
+				Space:       Space,
+				ExternalId:  FinanceId,
+				Version:     Version,
+				Name:        strPtr("FinanceTimeSeries"),
+				Description: strPtr("Custom time series used to represent financial data"),
+				Properties: map[string]any{
+					"name": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteDescribable",
+						},
+						"containerPropertyIdentifier": "name",
+					},
+					"description": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteDescribable",
+						},
+						"containerPropertyIdentifier": "description",
+					},
+					"sourceId": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteSourceable",
+						},
+						"containerPropertyIdentifier": "sourceId",
+					},
+					"sourceContext": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteSourceable",
+						},
+						"containerPropertyIdentifier": "sourceContext",
+					},
+					"isStep": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteTimeSeries",
+						},
+						"containerPropertyIdentifier": "isStep",
+					},
+					"type": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteTimeSeries",
+						},
+						"containerPropertyIdentifier": "type",
+					},
+					"unit": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteTimeSeries",
+						},
+						"containerPropertyIdentifier": "unit",
+						"source": map[string]any{
+							"type":       "view",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteUnit",
+							"version":    "v1",
+						},
+					},
+					"sourceUnit": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteTimeSeries",
+						},
+						"containerPropertyIdentifier": "unit",
+					},
+					"windTurbine": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      Space,
+							"externalId": FinanceId,
+						},
+						"containerPropertyIdentifier": "asset",
+						"source": map[string]any{
+							"type":       "view",
+							"space":      Space,
+							"externalId": WindTurbineId,
+							"version":    Version,
+						},
+					},
+					"currency": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      Space,
+							"externalId": FinanceId,
+							"version":    Version,
+						},
+						"containerPropertyIdentifier": "currency",
 					},
 				},
 			},
