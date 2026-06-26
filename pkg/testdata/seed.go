@@ -46,16 +46,79 @@ func seedContainers(ctx context.Context, client *cdf.CogniteClient) error {
 				Name:        strPtr("Wind Turbine container"),
 				Description: strPtr("Container for wind turbine assets, used for EquipmentTab testing"),
 				UsedFor:     strPtr("node"),
-				Properties:  map[string]any{},
-				Constraints: map[string]any{},
+				Properties: map[string]any{
+					"power": map[string]any{
+						"type": map[string]any{
+							"type": "direct",
+							"list": false,
+						},
+					},
+					"electric": map[string]any{
+						"type": map[string]any{
+							"type":        "direct",
+							"list":        true,
+							"maxListSize": 1200,
+						},
+					},
+				},
+				Constraints: map[string]any{
+					"describablePresent": map[string]any{
+						"constraintType": "requires",
+						"require": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteDescribable",
+						},
+					},
+					"sourceablePresent": map[string]any{
+						"constraintType": "requires",
+						"require": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteSourceable",
+						},
+					},
+				},
 			},
 			{
 				Space:       Space,
 				ExternalId:  SensorId,
 				Name:        strPtr("Sensor container"),
 				Description: strPtr("Container for sensor sensor"),
-				Properties:  map[string]any{},
-				Constraints: map[string]any{},
+				Properties: map[string]any{
+					"asset": map[string]any{
+						"type": map[string]any{
+							"type": "direct",
+							"list": false,
+						},
+					},
+				},
+				Constraints: map[string]any{
+					"describablePresent": map[string]any{
+						"constraintType": "requires",
+						"require": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteDescribable",
+						},
+					},
+					"sourceablePresent": map[string]any{
+						"constraintType": "requires",
+						"require": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteSourceable",
+						},
+					},
+					"timeSeriesPresent": map[string]any{
+						"constraintType": "requires",
+						"require": map[string]any{
+							"type":       "container",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteTimeSeries",
+						},
+					},
+				},
 			},
 		},
 	})
@@ -119,8 +182,50 @@ func seedViews(ctx context.Context, client *cdf.CogniteClient) error {
 								"externalId": SensorId,
 								"version":    Version,
 							},
-							"identifier": "windTurbines",
+							"identifier": "windTurbine",
 						},
+					},
+					"power": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      Space,
+							"externalId": WindTurbineId,
+						},
+						"containerPropertyIdentifier": "power",
+						"source": map[string]any{
+							"type":       "view",
+							"space":      Space,
+							"externalId": SensorId,
+							"version":    Version,
+						},
+					},
+					"electric": map[string]any{
+						"container": map[string]any{
+							"type":       "container",
+							"space":      Space,
+							"externalId": WindTurbineId,
+						},
+						"containerPropertyIdentifier": "electric",
+						"source": map[string]any{
+							"type":       "view",
+							"space":      Space,
+							"externalId": SensorId,
+							"version":    Version,
+						},
+					},
+					"windSpeed": map[string]any{
+						"connectionType": "multi_edge_connection",
+						"type": map[string]any{
+							"space":      Space,
+							"externalId": "distance",
+						},
+						"source": map[string]any{
+							"type":       "view",
+							"space":      Space,
+							"externalId": SensorId,
+							"version":    Version,
+						},
+						"direction": "outwards",
 					},
 				},
 			},
@@ -186,6 +291,12 @@ func seedViews(ctx context.Context, client *cdf.CogniteClient) error {
 							"externalId": "CogniteTimeSeries",
 						},
 						"containerPropertyIdentifier": "unit",
+						"source": map[string]any{
+							"type":       "view",
+							"space":      "cdf_cdm",
+							"externalId": "CogniteUnit",
+							"version":    "v1",
+						},
 					},
 					"sourceUnit": map[string]any{
 						"container": map[string]any{
@@ -195,13 +306,19 @@ func seedViews(ctx context.Context, client *cdf.CogniteClient) error {
 						},
 						"containerPropertyIdentifier": "unit",
 					},
-					"windTurbines": map[string]any{
+					"windTurbine": map[string]any{
 						"container": map[string]any{
 							"type":       "container",
-							"space":      "cdf_cdm",
-							"externalId": "CogniteTimeSeries",
+							"space":      Space,
+							"externalId": SensorId,
 						},
-						"containerPropertyIdentifier": "assets",
+						"containerPropertyIdentifier": "asset",
+						"source": map[string]any{
+							"type":       "view",
+							"space":      Space,
+							"externalId": WindTurbineId,
+							"version":    Version,
+						},
 					},
 				},
 			},
@@ -221,6 +338,7 @@ func seedTestDataModel(ctx context.Context, client *cdf.CogniteClient) error {
 			Views: []cdf.ViewId{
 				{"view", Space, WindTurbineId, Version},
 				{"view", Space, SensorId, Version},
+				{"view", "cdf_cdm", "CogniteUnit", "v1"},
 			},
 		}},
 	})
