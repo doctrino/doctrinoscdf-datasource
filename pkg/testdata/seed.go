@@ -84,7 +84,8 @@ func seedContainers(ctx context.Context, client *cdf.CogniteClient) error {
 				Space:       Space,
 				ExternalId:  SensorId,
 				Name:        strPtr("Sensor container"),
-				Description: strPtr("Container for sensor sensor"),
+				Description: strPtr("Container for sensor"),
+				UsedFor:     strPtr("node"),
 				Properties: map[string]any{
 					"asset": map[string]any{
 						"type": map[string]any{
@@ -125,6 +126,7 @@ func seedContainers(ctx context.Context, client *cdf.CogniteClient) error {
 				ExternalId:  FinanceId,
 				Name:        strPtr("Finance container"),
 				Description: strPtr("Container for financial data"),
+				UsedFor:     strPtr("node"),
 				Properties: map[string]any{
 					"asset": map[string]any{
 						"type": map[string]any{
@@ -310,7 +312,7 @@ func seedViews(ctx context.Context, client *cdf.CogniteClient) error {
 				ExternalId:  SensorId,
 				Version:     Version,
 				Name:        strPtr("Sensor"),
-				Description: strPtr("Custom time series view used for EquipmentTab and Search tesitng"),
+				Description: strPtr("Custom time series view used for EquipmentTab and Search testing"),
 				Properties: map[string]any{
 					"name": map[string]any{
 						"container": map[string]any{
@@ -380,7 +382,7 @@ func seedViews(ctx context.Context, client *cdf.CogniteClient) error {
 							"space":      "cdf_cdm",
 							"externalId": "CogniteTimeSeries",
 						},
-						"containerPropertyIdentifier": "unit",
+						"containerPropertyIdentifier": "sourceUnit",
 					},
 					"windTurbine": map[string]any{
 						"container": map[string]any{
@@ -473,7 +475,7 @@ func seedViews(ctx context.Context, client *cdf.CogniteClient) error {
 							"space":      "cdf_cdm",
 							"externalId": "CogniteTimeSeries",
 						},
-						"containerPropertyIdentifier": "unit",
+						"containerPropertyIdentifier": "sourceUnit",
 					},
 					"windTurbine": map[string]any{
 						"container": map[string]any{
@@ -494,7 +496,6 @@ func seedViews(ctx context.Context, client *cdf.CogniteClient) error {
 							"type":       "container",
 							"space":      Space,
 							"externalId": FinanceId,
-							"version":    Version,
 						},
 						"containerPropertyIdentifier": "currency",
 					},
@@ -516,6 +517,7 @@ func seedTestDataModel(ctx context.Context, client *cdf.CogniteClient) error {
 			Views: []cdf.ViewId{
 				{"view", Space, WindTurbineId, Version},
 				{"view", Space, SensorId, Version},
+				{"view", Space, FinanceId, Version},
 				{"view", "cdf_cdm", "CogniteUnit", "v1"},
 			},
 		}},
