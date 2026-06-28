@@ -100,6 +100,8 @@ type InstanceRequest struct {
 	ExternalId      string         `json:"externalId"`
 	Type            *InstanceId    `json:"type,omitempty"`
 	Sources         []InstanceData `json:"sources,omitempty"`
+	StartNode       *InstanceId    `json:"startNode,omitempty"`
+	EndNode         *InstanceId    `json:"endNode,omitempty"`
 }
 
 type InstanceUpsertRequest struct {
