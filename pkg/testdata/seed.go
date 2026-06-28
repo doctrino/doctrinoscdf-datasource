@@ -697,13 +697,14 @@ func seedInstances(ctx context.Context, client *cdf.CogniteClient) error {
 				InstanceType: "node",
 				Sources: []cdf.InstanceData{
 					{
-						Source: cdf.ViewId{Type: "view", Space: Space, ExternalId: SensorId, Version: Version},
+						Source: cdf.ViewId{Type: "view", Space: Space, ExternalId: FinanceId, Version: Version},
 						Properties: map[string]any{
 							"name":        "Net Cash Flow",
 							"description": "Net cash flow for turbine " + turbine,
 							"sourceId":    SourceId,
 							"isStep":      true,
 							"type":        "numeric",
+							"currency":    "EUR",
 							"windTurbine": map[string]string{
 								"space":      InstanceSpace,
 								"externalId": turbine,
@@ -719,13 +720,14 @@ func seedInstances(ctx context.Context, client *cdf.CogniteClient) error {
 				InstanceType: "node",
 				Sources: []cdf.InstanceData{
 					{
-						Source: cdf.ViewId{Type: "view", Space: Space, ExternalId: SensorId, Version: Version},
+						Source: cdf.ViewId{Type: "view", Space: Space, ExternalId: FinanceId, Version: Version},
 						Properties: map[string]any{
 							"name":        "Maintenance Cost",
 							"description": "Maintenance cost for turbine " + turbine,
 							"sourceId":    SourceId,
 							"isStep":      true,
 							"type":        "numeric",
+							"currency":    "EUR",
 							"windTurbine": map[string]string{
 								"space":      InstanceSpace,
 								"externalId": turbine,
