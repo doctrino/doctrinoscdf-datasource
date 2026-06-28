@@ -52,3 +52,7 @@ func mustEnv(k string) string {
 func strPtr(s string) *string {
 	return &s
 }
+
+func instancePtr(inst cdf.InstanceId) *cdf.InstanceId {
+	return &inst
+}
